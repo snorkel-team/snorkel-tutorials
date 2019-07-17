@@ -1,0 +1,10 @@
+#### ESSENTIAL LIBRARIES
+
+git+https://github.com/HazyResearch/snorkel.git@redux
+
+
+#### DEV TOOLS
+
+black==19.3b0
+flake8==3.7.8
+jupytext==1.1.7
