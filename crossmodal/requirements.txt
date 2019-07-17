@@ -1,0 +1,10 @@
+dask[complete]
+jupyter
+matplotlib
+numpy
+pandas
+scipy
+snorkel-metal==0.4.1
+tensorboardX==1.4.0
+torchvision
+ludwig
