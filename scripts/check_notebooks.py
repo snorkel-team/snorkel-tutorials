@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import difflib
 import glob
 import os
@@ -24,8 +22,7 @@ class Notebook:
 
 def check_notebook(notebook: Notebook) -> None:
     assert os.path.exists(notebook.py)
-    with open(notebook.py, "r") as f:
-        py_file = jupytext.readf(f, fmt=dict(extension=".py"))
+    py_file = jupytext.readf(notebook.py, fmt=dict(extension=".py"))
     ipynb_expected = jupytext.writes(py_file, fmt="ipynb")
     with open(notebook.ipynb, "r") as f:
         ipynb_actual = f.read()

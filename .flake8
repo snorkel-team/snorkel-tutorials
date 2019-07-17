@@ -3,6 +3,7 @@ ignore =
     E203,
     E265, # For Jupytext percent format
     E266,
+    E402,
     E501,
     E731,
     E741,
