@@ -1,0 +1,21 @@
+[flake8]
+ignore =
+    E203,
+    E265, # For Jupytext percent format
+    E266,
+    E501,
+    E731,
+    E741,
+    W503,
+    W605,
+    F403
+exclude =
+    .eggs,
+    .git,
+    .mypy_cache,
+    .tox,
+    .env,
+    .venv,
+    _build,
+    build,
+    dist
