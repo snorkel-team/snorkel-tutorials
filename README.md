@@ -3,6 +3,7 @@ A collection of tutorials for Snorkel
 
 ## Adding a new tutorial
 
+0. Install your dev environment with `tox -e dev` then `source .env/bin/activate`
 1. Create a new top-level directory
 2. Add a `requirements.txt` to your directory if additional ones are needed
 3. Write your tutorial in [Jupytext percent format](https://gist.github.com/mwouts/91f3e1262871cdaa6d35394cd14f9bdc)
