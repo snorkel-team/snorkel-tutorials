@@ -23,7 +23,12 @@ def load_spam_dataset():
         dfs.append(df)
 
     df_train = pd.concat(dfs[:4])
-    df_valid, df_test = train_test_split(dfs[4], test_size=0.5)
+    df_valid, df_test = train_test_split(
+        dfs[4],
+        test_size=0.5,
+        random_state=123,
+        stratify=dfs[4].LABEL,
+    )
 
     # TODO: Drop the label column for train
     return df_train, df_valid, df_test
