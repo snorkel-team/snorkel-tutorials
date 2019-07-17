@@ -127,3 +127,6 @@ dmypy.json
 
 # Dask
 dask-worker-space/
+
+# MacOS
+.DS_Store
