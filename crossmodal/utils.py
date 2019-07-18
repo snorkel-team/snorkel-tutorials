@@ -1,4 +1,5 @@
-import os
+import warnings
+
 import numpy as np
 import torch
 import torchvision.transforms as transforms
@@ -8,9 +9,11 @@ try:
 except ImportError:
     pil_image = None
 
+
 def load_ids(filename):
     fin = open(filename, "r")
     return [_.strip() for _ in fin]
+
 
 class StdNormalize(object):
     """
@@ -30,6 +33,7 @@ def transform(input_size):
         [transforms.Resize(input_size), transforms.ToTensor(), StdNormalize()]
     )
 
+
 # default xray loader from png
 def default_xray_loader(xray_path, img_rows=224, img_cols=224):
     xray = load_img(
@@ -42,7 +46,17 @@ def default_xray_loader(xray_path, img_rows=224, img_cols=224):
 
 
 class CXRFileList(torch.utils.data.Dataset):
-    def __init__(self, paths, label=None, transform=None, loader=default_xray_loader, ref=None, lfs=None, slice_mode=None, get_slice_labels=False):
+    def __init__(
+        self,
+        paths,
+        label=None,
+        transform=None,
+        loader=default_xray_loader,
+        ref=None,
+        lfs=None,
+        slice_mode=None,
+        get_slice_labels=False,
+    ):
         self.paths = paths
         self.label = label
         self.transform = transform
@@ -53,12 +67,10 @@ class CXRFileList(torch.utils.data.Dataset):
             self.lfs = torch.from_numpy(np.array(lfs).astype(np.float32))
 
     def __getitem__(self, index):
-        idx = 0
-        if self.ref is not None and isinstance(self.paths[index],list):
+        if self.ref is not None and isinstance(self.paths[index], list):
             for i in range(len(self.paths[index])):
                 impath = self.paths[index][i]
                 if impath in self.ref:
-                    idx=i
                     break
         else:
             impath = self.paths[index]
@@ -70,35 +82,25 @@ class CXRFileList(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.paths)
-    
-def get_data_loader(
-    paths, 
-    labels, 
-    batch_size=32, 
-    input_size=224,
-    shuffle=False,
-):
+
+
+def get_data_loader(paths, labels, batch_size=32, input_size=224, shuffle=False):
     # Load front image index
-    fin=open('./data/front_view_ids.txt', "r")
+    fin = open("./data/front_view_ids.txt", "r")
     front_view_ids = [_.strip() for _ in fin]
     fin.close()
 
     dataset = CXRFileList(
-            paths=paths,
-            label=labels,
-            transform=transform(input_size),
-            ref=front_view_ids,
-        )
+        paths=paths, label=labels, transform=transform(input_size), ref=front_view_ids
+    )
 
     # Build data loader
     data_loader = torch.utils.data.DataLoader(
-        dataset,
-        sampler=None,
-        batch_size=batch_size,
-        shuffle=shuffle,
+        dataset, sampler=None, batch_size=batch_size, shuffle=shuffle
     )
-    
-    return data_loader 
+
+    return data_loader
+
 
 def img_to_array(img, data_format="channels_last", dtype="float32"):
     """Converts a PIL Image instance to a Numpy array.
@@ -182,7 +184,8 @@ def array_to_img(x, data_format="channels_last", scale=True, dtype="float32"):
         return pil_image.fromarray(x[:, :, 0].astype("uint8"), "L")
     else:
         raise ValueError("Unsupported channel number: %s" % (x.shape[2],))
-        
+
+
 if pil_image is not None:
     _PIL_INTERPOLATION_METHODS = {
         "nearest": pil_image.NEAREST,
@@ -197,7 +200,8 @@ if pil_image is not None:
     # This method is new in version 1.1.3 (2013).
     if hasattr(pil_image, "LANCZOS"):
         _PIL_INTERPOLATION_METHODS["lanczos"] = pil_image.LANCZOS
-        
+
+
 def load_img(
     path, grayscale=False, color_mode="rgb", target_size=None, interpolation="nearest"
 ):
@@ -252,4 +256,3 @@ def load_img(
             resample = _PIL_INTERPOLATION_METHODS[interpolation]
             img = img.resize(width_height_tuple, resample)
     return img
-
