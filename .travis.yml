@@ -27,7 +27,7 @@ install:
   - tox --notest
 
 script:
-  # Run all environments except dev and fix
+  # Run all environments except dev, fix, and sync
   # This should correspond to style and all tutorial envs
   - ENVS=$(tox -a | grep -v -e '^dev$' -e '^fix$' -e '^sync$' | paste -sd "," -)
   - tox -e $ENVS
