@@ -7,12 +7,16 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.2'
-#       jupytext_version: 1.1.7
+#       jupytext_version: 1.2.0
+#   kernelspec:
+#     display_name: .env
+#     language: python
+#     name: .env
 # ---
 
 # %% [markdown]
 # ## Let's write some LFs!
-# This should be fun
+# This should be fun.
 
 # %%
 from snorkel.labeling.lf import labeling_function

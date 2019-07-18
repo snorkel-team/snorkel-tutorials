@@ -1,10 +1,11 @@
-import difflib
 import glob
 import os
-from pprint import pprint
+import subprocess
+import tempfile
 
 import click
 import jupytext
+from jupytext.compare import compare_notebooks
 
 
 class Notebook:
@@ -22,16 +23,12 @@ class Notebook:
 
 def check_notebook(notebook: Notebook) -> None:
     assert os.path.exists(notebook.py)
-    py_file = jupytext.readf(notebook.py, fmt=dict(extension=".py"))
-    ipynb_expected = jupytext.writes(py_file, fmt="ipynb")
-    with open(notebook.ipynb, "r") as f:
-        ipynb_actual = f.read()
-    ipynb_actual_lines = ipynb_actual.splitlines(keepends=False)
-    ipynb_expected_lines = ipynb_expected.splitlines(keepends=False)
-    if ipynb_actual_lines != ipynb_expected_lines:
-        d = difflib.Differ()
-        pprint(list(d.compare(ipynb_actual_lines, ipynb_expected_lines)))
-        raise ValueError("Notebook version has unexpected differences.")
+    notebook_actual = jupytext.read(notebook.ipynb, fmt=dict(extension="ipynb"))
+    with tempfile.NamedTemporaryFile(suffix=".ipynb") as f:
+        args = ["jupytext", "--to", "notebook", "--execute", notebook.py, "-o", f.name]
+        subprocess.run(args)
+        notebook_expected = jupytext.read(f.name, fmt=dict(extension="ipynb"))
+        compare_notebooks(notebook_actual, notebook_expected, compare_outputs=True)
 
 
 @click.command()
