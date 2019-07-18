@@ -21,24 +21,49 @@ class Notebook:
         return f"{self.basename}.ipynb"
 
 
+def call_jupytext(notebook: Notebook, out_fname: str) -> None:
+    args = [
+        "jupytext",
+        "--to",
+        "ipynb",
+        "--from",
+        "py:percent",
+        "--opt",
+        "notebook_metadata_filter=-all",
+        "--execute",
+        notebook.py,
+        "-o",
+        out_fname,
+    ]
+    subprocess.run(args)
+
+
 def check_notebook(notebook: Notebook) -> None:
     assert os.path.exists(notebook.py)
     notebook_actual = jupytext.read(notebook.ipynb, fmt=dict(extension="ipynb"))
     with tempfile.NamedTemporaryFile(suffix=".ipynb") as f:
-        args = ["jupytext", "--to", "notebook", "--execute", notebook.py, "-o", f.name]
-        subprocess.run(args)
+        call_jupytext(notebook, f.name)
         notebook_expected = jupytext.read(f.name, fmt=dict(extension="ipynb"))
         compare_notebooks(notebook_actual, notebook_expected, compare_outputs=True)
 
 
+def sync_notebook(notebook: Notebook) -> None:
+    call_jupytext(notebook, notebook.ipynb)
+
+
 @click.command()
 @click.argument("tutorial_dir")
-def check_notebooks(tutorial_dir: str) -> None:
+@click.option("--test", is_flag=True)
+def sync_notebooks(tutorial_dir: str, test: bool) -> None:
     path = os.path.abspath(tutorial_dir)
-    notebook_paths = glob.glob(os.path.join(path, "*.ipynb"), recursive=True)
+    pattern = "*.ipynb" if test else "*.py"
+    notebook_paths = glob.glob(os.path.join(path, pattern), recursive=True)
     for notebook in map(Notebook, notebook_paths):
-        check_notebook(notebook)
+        if test:
+            check_notebook(notebook)
+        else:
+            sync_notebook(notebook)
 
 
 if __name__ == "__main__":
-    check_notebooks()
+    sync_notebooks()

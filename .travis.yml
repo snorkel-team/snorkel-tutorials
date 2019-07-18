@@ -29,4 +29,5 @@ install:
 script:
   # Run all environments except dev and fix
   # This should correspond to style and all tutorial envs
-  - tox -e $(tox -a | grep -v -e '^dev$' -e '^fix$'  | paste -sd "," -)
+  - ENVS=$(tox -a | grep -v -e '^dev$' -e '^fix$' -e '^sync$' | paste -sd "," -)
+  - tox -e $ENVS
