@@ -34,6 +34,7 @@
 import os
 import pickle
 import tensorflow as tf
+import numpy as np
 import subprocess
 
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
@@ -46,6 +47,10 @@ with open(os.path.join("data/dev_data.pkl"), "rb") as f:
 
 with open(os.path.join("data/train_data.pkl"), "rb") as f:
     train_df = pickle.load(f)
+
+with open("data/test_data.pkl", "rb") as f:
+    test_df = pickle.load(f)
+    test_labels = pickle.load(f)
 # %% [markdown]
 # **Input Data:** `dev_df` is a Pandas DataFrame object, where each row represents a particular __candidate__. The DataFrames contain the fields `sentence`, which refers to the sentence the candidate is in, `tokens`, the tokenized form of the sentence, `person1_word_idx` and `person2_word_idx`, which represent `[start, end]` indices in the tokens at which the first and second person's name appear, respectively.
 #
@@ -74,12 +79,8 @@ print("Person 2:   \t", person_names[1])
 #
 # A labeling function is a Python function that accepts a candidate, or a row of the DataFrame, as the input argument and outputs a label for the candidate. For ease of exposition in this notebook, we return `1` if it says the pair of persons in the candidate were married at some point,  `-1` if the pair of persons in the candidate were never married, and `0` if it doesn't know how to vote and abstains. In practice, many labeling functions are often unipolar: it labels only `1`s and `0`s, or it labels only `-1`s and `0`s.
 #
-# (Note we will change our mapping to use `2` to represent the absence of a relationship to match the multiclass convention in the next notebook for the `LabelModel`. This does not affect this notebook.)
-#
+# (Note we will change our mapping to use `2` to represent the absence of a relationship to match the multiclass convention when feeding it to the LabelModel later.)
 # Recall that our goal is to ultimately train a high-performance classification model that predicts which of our candidates are true spouse relations. It turns out that we can do this by writing potentially low-quality labeling functions!
-
-# %%
-import numpy as np
 
 # %% [markdown]
 ##  I. Background
@@ -97,7 +98,7 @@ import numpy as np
 #
 # When writing labeling functions, there are several operators you will use over and over again. In the case of text relation extraction as with this task, common operators include fetching text between mentions of the two people in a candidate, examing word windows around person mentions, etc. Note that other domains and tasks, the required preprocessors will be different.
 #
-# We provide several helper functions in `spouse_preprocessors`:  these are Python helper functions that you can apply to candidates in the DataFrame to return objects that are helpful during LF development. You can (and should!) write your own helper functions to help write LFs.
+# We provide several helper functions in `preprocessors`:  these are Python helper functions that you can apply to candidates in the DataFrame to return objects that are helpful during LF development. You can (and should!) write your own helper functions to help write LFs.
 #
 # We provide an example of a preprocessor definition here:
 
@@ -329,8 +330,6 @@ lf_summary(csr_matrix(L_cat), Y_cat, lf_names=lf_names)
 # Make sure `dbpedia.pkl` is in the `tutorials/workshop/` directory.
 
 # %%
-import pickle
-
 with open("data/dbpedia.pkl", "rb") as f:
     known_spouses = pickle.load(f)
 
@@ -402,8 +401,6 @@ train_L = applier.apply(train_df)
 #
 # For example, we observe that when mentions of person names occur far apart in a sentence, this is a good indicator that the candidate's label is False. You can write a labeling function that uses preprocessor `get_text_between` or the existing field `get_between_tokens` to write such an LF!
 #
-#
-#
 # **IMPORTANT** Good labeling functions manage a trade-off between high coverage and high precision. When constructing your dictionaries, think about building larger, noiser sets of terms instead of relying on 1 or 2 keywords. Sometimes a single word can be very predictive (e.g., `ex-wife`) but it's almost always better to define something more general, such as a regular expression pattern capturing _any_ string with the `ex-` prefix.
 #
 # **Try editing and running the cells below!**
@@ -417,17 +414,15 @@ train_L = applier.apply(train_df)
 
 # %%
 # new_dev_L = applier.apply(dev_df)
-# sp.hstack((dev_L, new_dev_L), format='csr')
+# dev_L = sp.hstack((dev_L, new_dev_L), format='csr')
 
 # new_train_L = applier.apply(train_df)
-# sp.hstack((train_L, new_train_L), format='csr')
+# train_L = sp.hstack((train_L, new_train_L), format='csr')
 
 # %% [markdown]
 # ## Part 3: Training the Label Model
 #
 # Now, we'll train a model of the LFs to estimate their accuracies. Once the model is trained, we can combine the outputs of the LFs into a single, noise-aware training label set for our extractor. Intuitively, we'll model the LFs by observing how they overlap and conflict with each other.
-#
-
 
 # %% [markdown]
 # ## Label Model
@@ -437,7 +432,7 @@ train_L = applier.apply(train_df)
 
 # %% [markdown]
 # ### 1. Training the Model
-# When training the generative model, we'll tune our hyperparamters using a simple grid search. We use `plusminus_to_categorical` to map our labeling convention from `{0,-1,1}` in the previous notebook to `{0,1,2}` as the multiclass convention in this notebook for the `LabelModel`.
+# When training the generative model, we use convert_labels with arguments `plusminus` and `categorical` to map our labeling convention from `{0,-1,1}` in the labeling functions to `{0,1,2}` as required by the `LabelModel`.
 #
 # **Parameter Definitions**
 #
@@ -455,7 +450,7 @@ label_model = LabelModel(k=2, verbose=True, seed=123)
 label_model.train_model(
     csr_matrix(convert_labels(train_L.toarray(), "plusminus", "categorical")),
     lr=1e-1,
-    class_balance=[0.2, 0.8],
+    class_balance=[0.1, 0.9],
     n_epochs=5000,
     log_train_every=500,
 )
@@ -523,7 +518,7 @@ plt.show()
 # # %% [markdown]
 # ## II. Training a _Long Short-term Memory_ (LSTM) Neural Network
 #
-# [LSTMs](https://en.wikipedia.org/wiki/Long_short-term_memory) can acheive state-of-the-art performance on many text classification tasks. We'll train a simple LSTM model below. We start by importing functions to process features and build the tensorflow graphs for training and evaliation.
+# [LSTMs](https://en.wikipedia.org/wiki/Long_short-term_memory) can acheive state-of-the-art performance on many text classification tasks. We'll train a simple LSTM model below. tf_model contains functions for processing features and building the tensorflow graphs for training and evaliation.
 
 # %%
 from tf_model import get_features_and_labels, get_train_and_loss_op, get_predictions_op
@@ -538,9 +533,9 @@ tokens, idx1, idx2, label_probs = get_features_and_labels(
 train_op, mean_loss = get_train_and_loss_op(tokens, idx1, idx2, label_probs)
 # Evaluation ops
 # Change label format for consistency with predict_proba.
-dev_labels_flipped = 1 - convert_labels(dev_labels, 'plusminus', 'onezero')
-tokens, idx1, idx2, dev_labels_op = get_features_and_labels(
-    dev_df, np.expand_dims(dev_labels_flipped, 1), tf.int64
+test_labels_flipped = 1 - convert_labels(test_labels, "plusminus", "onezero")
+tokens, idx1, idx2, test_labels_op = get_features_and_labels(
+    test_df, np.expand_dims(test_labels_flipped, 1), tf.int64
 )
 predictions_op = get_predictions_op(tokens, idx1, idx2)
 
@@ -556,9 +551,9 @@ for step in range(2000):
 # Finally, we can measure the trained model's prediction accuracy.
 
 # %%
-# Measure model accuracy on dev set.
+# Measure model accuracy on test set.
 accuracy_op = tf.reduce_mean(
-    tf.cast(tf.equal(dev_labels_op, predictions_op), tf.float32)
+    tf.cast(tf.equal(test_labels_op, predictions_op), tf.float32)
 )
 mean_accuracy = sum([sess.run(accuracy_op) for _ in range(100)]) / 100.0
 print(mean_accuracy)
