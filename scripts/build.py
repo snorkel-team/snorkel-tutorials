@@ -24,20 +24,23 @@ class Notebook:
         return f"{self.basename}.ipynb"
 
 
-def call_jupytext(notebook: Notebook, out_fname: str) -> None:
+def call_jupytext(notebook: Notebook, out_fname: str, to_ipynb: bool) -> None:
+    to_fmt = "ipynb" if to_ipynb else "py:percent"
+    from_fmt = "py:percent" if to_ipynb else "ipynb"
     args = [
         "jupytext",
         "--to",
-        "ipynb",
+        to_fmt,
         "--from",
-        "py:percent",
+        from_fmt,
         "--opt",
         "notebook_metadata_filter=-all",
-        "--execute",
-        notebook.py,
+        notebook.py if to_ipynb else notebook.ipynb,
         "-o",
         out_fname,
     ]
+    if to_ipynb:
+        args.append("--execute")
     subprocess.run(args, check=True)
 
 
@@ -55,7 +58,7 @@ def check_notebook(notebook: Notebook) -> None:
     assert os.path.exists(notebook.py), f"No file {notebook.py}"
     notebook_actual = jupytext.read(notebook.ipynb, fmt=dict(extension="ipynb"))
     with tempfile.NamedTemporaryFile(suffix=".ipynb") as f:
-        call_jupytext(notebook, f.name)
+        call_jupytext(notebook, f.name, to_ipynb=True)
         notebook_expected = jupytext.read(f.name, fmt=dict(extension="ipynb"))
         compare_notebooks(notebook_actual, notebook_expected)
 
@@ -77,24 +80,29 @@ def build_html_notebook(notebook: Notebook, build_dir: str) -> None:
 
 def sync_notebook(notebook: Notebook) -> None:
     assert os.path.exists(notebook.py), f"No file {notebook.py}"
-    call_jupytext(notebook, notebook.ipynb)
+    call_jupytext(notebook, notebook.ipynb, to_ipynb=True)
+
+
+def sync_py(notebook: Notebook) -> None:
+    assert os.path.exists(notebook.ipynb), f"No file {notebook.ipynb}"
+    call_jupytext(notebook, notebook.py, to_ipynb=False)
 
 
 @click.group()
-def cli():
+def cli() -> None:
     pass
 
 
 @cli.command()
 @click.argument("tutorial_dir")
-def test(tutorial_dir):
+def test(tutorial_dir: str) -> None:
     for notebook in get_notebooks(tutorial_dir):
         check_notebook(notebook)
 
 
 @cli.command()
 @click.argument("tutorial_dir")
-def html(tutorial_dir):
+def html(tutorial_dir: str) -> None:
     build_dir = os.path.abspath(os.path.join(tutorial_dir, "..", "build"))
     for notebook in get_notebooks(tutorial_dir):
         build_html_notebook(notebook, build_dir)
@@ -102,9 +110,13 @@ def html(tutorial_dir):
 
 @cli.command()
 @click.argument("tutorial_dir")
-def sync(tutorial_dir):
+@click.option("--py", is_flag=True)
+def sync(tutorial_dir: str, py: bool) -> None:
     for notebook in get_notebooks(tutorial_dir):
-        sync_notebook(notebook)
+        if py:
+            sync_py(notebook)
+        else:
+            sync_notebook(notebook)
 
 
 if __name__ == "__main__":
