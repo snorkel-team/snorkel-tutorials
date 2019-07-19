@@ -533,8 +533,10 @@ tokens, idx1, idx2, label_probs = get_features_and_labels(
 )
 train_op, mean_loss = get_train_and_loss_op(tokens, idx1, idx2, label_probs)
 # Evaluation ops
+# Change label format for consistency with predict_proba.
+dev_labels_flipped = 1 - convert_labels(dev_labels, 'plusminus', 'onezero')
 tokens, idx1, idx2, dev_labels_op = get_features_and_labels(
-    dev_df, np.expand_dims(dev_labels, 1), tf.int64
+    dev_df, np.expand_dims(dev_labels_flipped, 1), tf.int64
 )
 predictions_op = get_predictions_op(tokens, idx1, idx2)
 
