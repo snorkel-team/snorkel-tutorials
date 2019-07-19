@@ -18,41 +18,67 @@
 # # Introductory Snorkel Tutorial: Spam Detection
 
 # %% [markdown]
-# * Nice introductory text
-# * Purpose of this tutorial...
-# * Steps:
-#     1. Load data
-#     2. Write labeling functions (LFs)
-#     3. Combine with Label Model
-#     4. Predict with Classifier
+# In this tutorial, we will walk through the process of using `Snorkel` to classify YouTube comments as `spam` or `ham` (not spam). For an overview of Snorkel, visit [snorkel.stanford.edu](http://snorkel.stanford.edu). 
+#
+# For our task, we have access to a large amount of *unlabeled data*, which can be prohibitively expensive and slow to label manually. We therefore turn to weak supervision using *labeling functions*, or noisy, programmatic heuristics, to assign labels to unlabeled training data efficiently. We also have access to a small amount of labeled data, which we only for evaluation purposes. 
+#
+# The tutorial is divided in four parts:
+# 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
+#
+# 2. **Writing Labeling Functions**: We write Python programs that take as input a datapoint and assign labels (or abstain) using heuristics, pattern matching, and third-party models.
+#
+# 3. **Combining Labels with the Label Model**: We use the outputs of the labeling functions over the train set as input to the LabelModel, which assings probabilistic labels to the train set.
+#
+# 4. **Training a Classifier**: We train a classifier that can predict labels for *any* YouTube comment using the probabilistic training labels from step 3.
 
 # %% [markdown]
 # ### Task: Spam Detection
 
 # %% [markdown]
-# * Here's what we're trying to do
-# * Here's where the data came from (cite properly)
-# * Show sample T and F in markdown
+# We use a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) that consists of YouTube comments from 5 videos. The task is to classify each comment as being `spam`, irrelevant or inappropriate messages, or `ham`, comments relevant to the video. 
+#
+# For example, the following comments are `spam`:
+#
+#         Subscribe to me for free Android games, apps..
+#
+#         Please check out my vidios
+#
+#         Subscribe to me and I'll subscribe back!!!
+#
+# and these are `ham`:
+#
+#
+#         Came here to check the views, goodbye.
+#
+#         2 billion....Coming soon
+#
+#         This is a weird video.
 
 # %% [markdown]
 # ### Data Splits in Snorkel
 
-# %% [markdown]
-# * 4 splits: train, dev, valid, test
-# * train is large and unlabeled
-# * valid/test is labeled and you don't look at it
-# * best to come up with LFs while looking at data. Options:
-#     * look at train for ideas; no labels, but np.
-#     * label small subset of train (e.g., 200), call it "dev"
-#     * in a pinch, use valid set as dev (note though that valid will no longer be good rep of test)
+# ### Data Splits in Snorkel
+#
+# We split our data into 4 sets:
+# * **Train Set**: This is the largest split of the dataset with no labels
+# * **Validation (Valid) Set**: A labeled set used to tune hyperparameters for the end classifier. 
+# * **Test Set**: A labeeld set used to evaluate the classifier. Note that users should not be looking at the test set and use it only for the final evaluation step.  
+#
+# While it is possible to write labeling functions without any labeled data and evaluate only with the classifier, ot os often usefule to have some labeled data to check performance against. We refer to this as the **development (dev) set**. This can either be a small labeled subset of the train set (e.g. 200 datapoints) or we can use the valid set as the dev set. Note that in the latter case, the our classifier can overfit to the valid set since both the labeling functions and the end model are tuned to the same labeled dataset.  
 
 # %% [markdown]
 # ## 1. Load data
 
 # %% [markdown]
-# * Start by loading data
-# * utility pulls from internet, re-splits, and shuffles
-# * for this application, train is videos 1-4, valid/test are video 5
+# We load the Kaggle dataset and create Pandas dataframe objects for each of the sets described above. Each dataframe consists of the following fields:
+# * **COMMENT_ID**: Comment ID
+# * **AUTHOR_ID**: Author ID
+# * **DATE**: Date and time the comment was posted
+# * **CONTENT**: The raw text content of the comment
+# * **LABEL**: Whether the comment is `spam` (1) or `ham` (2)
+# * **VIDEO_ID**: The video the comment is associated with
+#
+# The train and dev sets contain comments from 4 of the 5 videos in the dataset. The valid and test set both come from the last video and therefore belong to the same distribution, but are independent of the train and dev sets. The train set has `LABEL=0` for each comment, since it is unlabeled. 
 
 # %%
 from utils import load_spam_dataset
