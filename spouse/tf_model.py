@@ -51,7 +51,7 @@ def get_logits(tokens, idx1, idx2, reuse):
         # Set up rnn inputs
         num_buckets = 40000
         num_hashes = 3
-        embed_dim = 32
+        embed_dim = 12
         embeddings = [tf.stack([idx1_start, idx1_end, idx2_start, idx2_end], 2)]
         for i in range(num_hashes):
             ids = tf.strings.to_hash_bucket(str(i) + tokens, num_buckets)

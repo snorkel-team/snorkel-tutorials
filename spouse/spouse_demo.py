@@ -539,13 +539,16 @@ tokens, idx1, idx2, test_labels_op = get_features_and_labels(
 )
 predictions_op = get_predictions_op(tokens, idx1, idx2)
 
-# Initialize and train.
+# Initialize and train. Set num_train_steps to ~ 2000.
+# Note: Training ~2000 steps takes several minutes.
+num_train_steps = 5
 sess.run(tf.global_variables_initializer())
 print(sess.run(mean_loss))
-for step in range(2000):
+for step in range(num_train_steps):
     sess.run(train_op)
     if step % 200 == 0:
         print("step: %d loss: %f" % (step, sess.run(mean_loss)))
+print("Final loss: %f" % sess.run(mean_loss))
 
 # %% [markdown]
 # Finally, we can measure the trained model's prediction accuracy.
