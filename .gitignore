@@ -124,9 +124,13 @@ dmypy.json
 
 # Editors
 .vscode/
+*.swp
 
 # Dask
 dask-worker-space/
 
 # Generic data directories
 */data/*
+
+# Nohup
+nohup.out
