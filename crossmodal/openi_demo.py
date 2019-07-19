@@ -97,7 +97,7 @@ lfs = []
 
 # Example of a General Pattern LF
 noted_or_seen = ["is seen", "noted"]
-@labeling_function(resources=dict(noted_or_seen=noted_or_seen))
+@labeling_function()
 def LF_noted_or_seen(x, noted_or_seen):
     if any(word in x.text.lower() for word in noted_or_seen):
         return ABNORMAL
@@ -105,12 +105,11 @@ def LF_noted_or_seen(x, noted_or_seen):
         return ABSTAIN
 lfs.append(LF_noted_or_seen)
 
-negative_words = ["but", "however", "otherwise"]
-@labeling_function(resources=dict(negative_words=negative_words))
+@labeling_function()
 def LF_negative(x, negative_words):
     return (
         ABNORMAL
-        if any(word in x.text.lower() for word in negative_words)
+        if any(word in x.text.lower() for word in  ["but", "however", "otherwise"])
         else ABSTAIN
     )
 lfs.append(LF_negative)
@@ -143,9 +142,8 @@ def LF_lung_hyperdistention_demo(x):
     return ABSTAIN
 lfs.append(LF_lung_hyperdistention_demo)
 
-normalcy_words = ["clear", "no", "normal", "unremarkable", "free", "midline"]
-@labeling_function(resources=dict(normalcy_words=normalcy_words))
-def LF_consistency_in_report(x, normalcy_words):
+@labeling_function()
+def LF_consistency_in_report(x):
     """
     The words 'clear', 'no', 'normal', 'free', 'midline' in
     findings section of the report
@@ -154,6 +152,7 @@ def LF_consistency_in_report(x, normalcy_words):
     findings = findings[: findings.find("IMPRESSION:")]
     sents = findings.split(".")
 
+    normalcy_words = ["clear", "no", "normal", "unremarkable", "free", "midline"]
     num_sents_without_normal = ABSTAIN
     for sent in sents:
         sent = sent.lower()
