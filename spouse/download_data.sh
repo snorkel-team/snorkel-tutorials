@@ -6,7 +6,6 @@ if [ ! -d "data" ]; then
     mkdir -p data
     wget $DATA_URL -O data.zip
     cd data/
-    unzip data.zip	
-    rm data.zip
-    cd ..
+    unzip ../data.zip
+    rm ../data.zip
 fi

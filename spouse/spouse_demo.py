@@ -31,16 +31,20 @@
 # %autoreload 2
 # %matplotlib inline
 
+import os
 import pickle
 import tensorflow as tf
 import subprocess
 
-subprocess.call(["bash", "download_data.sh"], shell=True)
-with open("data/dev_data.pkl", "rb") as f:
+if os.path.basename(os.getcwd()) == "snorkel-tutorials":
+    os.chdir("spouse")
+
+subprocess.run(["bash", "download_data.sh"], check=True)
+with open(os.path.join("data/dev_data.pkl"), "rb") as f:
     dev_df = pickle.load(f)
     dev_labels = pickle.load(f)
 
-with open("data/train_data.pkl", "rb") as f:
+with open(os.path.join("data/train_data.pkl"), "rb") as f:
     train_df = pickle.load(f)
 # %% [markdown]
 # **Input Data:** `dev_df` is a Pandas DataFrame object, where each row represents a particular __candidate__. The DataFrames contain the fields `sentence`, which refers to the sentence the candidate is in, `tokens`, the tokenized form of the sentence, `person1_word_idx` and `person2_word_idx`, which represent `[start, end]` indices in the tokens at which the first and second person's name appear, respectively.
