@@ -48,7 +48,7 @@ with open(os.path.join("data/dev_data.pkl"), "rb") as f:
 with open(os.path.join("data/train_data.pkl"), "rb") as f:
     train_df = pickle.load(f)
 
-with open("data/test_data.pkl", "rb") as f:
+with open(os.path.join("data/test_data.pkl"), "rb") as f:
     test_df = pickle.load(f)
     test_labels = pickle.load(f)
 # %% [markdown]
