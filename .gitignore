@@ -127,3 +127,6 @@ dmypy.json
 
 # Dask
 dask-worker-space/
+
+# Generic data directories
+*/data/*
