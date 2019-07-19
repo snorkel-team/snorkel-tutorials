@@ -22,3 +22,9 @@ from types import SimpleNamespace
 x = SimpleNamespace(n_failures=8, n_successes=1)
 print("LF 1 output:", lf_1(x))
 print("LF 2 output:", lf_2(x))
+
+# %%
+%matplotlib inline
+import matplotlib.pyplot as plt
+
+plt.plot(list(range(10)))
