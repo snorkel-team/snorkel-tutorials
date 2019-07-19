@@ -19,12 +19,13 @@ def load_spam_dataset():
         df = pd.read_csv(filename)
         df["VIDEO_ID"] = [i] * len(df)
         df = df.rename(columns={"CLASS": "LABEL"})
-        df = df.sample(frac=1).reset_index(drop=True)  # Shuffle order
+        # Shuffle order
+        df = df.sample(frac=1, random_state=123).reset_index(drop=True)
         df['LABEL'] = df['LABEL'].map({0: 2, 1: 1})
         dfs.append(df)
 
     df_train = pd.concat(dfs[:4])
-    df_dev = df_train.sample(200)
+    df_dev = df_train.sample(200, random_state=123)
     df_valid_test = dfs[4]
     df_valid, df_test = train_test_split(
         df_valid_test,
