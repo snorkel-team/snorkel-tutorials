@@ -111,7 +111,7 @@ def LF_report_is_short_demo(report):
 
 # %%
 import numpy as np
-from metal.analysis import single_lf_summary, confusion_matrix
+from snorkel.labeling.analysis import single_lf_summary, confusion_matrix
 
 # Testing single LF
 lf_test = LF_lung_hyperdistention_demo
@@ -258,21 +258,13 @@ Ys = [
 # Now that we've done this, we can inspect our accuracy on the development set and other useful LF metrics using the simple MeTaL interface.
 
 # %%
-from metal.analysis import lf_summary
+from snorkel.labeling.analysis import lf_summary
 
 # Analyzing LF stats
 lf_summary(Ls[1], Y=Y_dev, lf_names=lf_names)
 
 # %% [markdown]
 # Note that all of our labeling functions, while certainly imperfect, are better than random chance.  This fulfills the only theoretical requirement of the cross-modal data programming algorithm.
-#
-# We can also get a sense of where the LFs overlap and conflict by inspecting the following plot; it is critical that some of the LFs overlap or conflict, or else we would not have any signal to learn their accuracies.
-
-# %%
-from metal.contrib.visualization.analysis import view_conflicts
-
-# Viewing conflicts
-view_conflicts(Ls[1], normalize=True)
 
 # %% [markdown]
 # ## Step 4: Train a Label Model in Snorkel MeTaL
@@ -283,47 +275,60 @@ view_conflicts(Ls[1], normalize=True)
 # We perform a simple random hyperparameter search over learning rate and L2 regularization, using our small labeled development set to choose the best model.
 
 # %%
-from metal.label_model import LabelModel
-from metal.tuners import RandomSearchTuner
+from snorkel.labeling.model.label_model import LabelModel
 
-# Creating search space
-search_space = {
-    "l2": {"range": [0.0001, 0.1], "scale": "log"},  # linear range
-    "lr": {"range": [0.0001, 0.1], "scale": "log"},  # log range
-}
+label_model = LabelModel(cardinality=2, seed=1701, verbose=True)
 
-searcher = RandomSearchTuner(LabelModel, log_dir="./run_logs", log_writer_class=None)
+# %%
+label_model.train_model(Ls[0])
 
-# Training label model
-label_model = searcher.search(
-    search_space,
-    (Ls[1], Ys[1]),
-    train_args=[Ls[0]],
-    init_args=[],
-    init_kwargs={"k": 2, "seed": 1701},
-    train_kwargs={"n_epochs": 200},
-    max_search=40,
-    verbose=True,
-)
+# %%
+# from metal.tuners import RandomSearchTuner
+
+# # Creating search space
+# search_space = {
+#     "l2": {"range": [0.0001, 0.1], "scale": "log"},  # linear range
+#     "lr": {"range": [0.0001, 0.1], "scale": "log"},  # log range
+# }
+
+# searcher = RandomSearchTuner(LabelModel, log_dir="./run_logs", log_writer_class=None)
+
+# # Training label model
+
+
+# label_model = searcher.search(
+#     search_space,
+#     (Ls[1], Ys[1]),
+#     train_args=[Ls[0]],
+#     init_args=[],
+#     init_kwargs={"k": 2, "seed": 1701},
+#     train_kwargs={"n_epochs": 200},
+#     max_search=40,
+#     verbose=True,
+# )
 
 # %% [markdown]
 # We evaluate our best model on the development set as below -- you should recover a model with best accuracy of approximately 85% on the development set -- this `LabelModel`will be applied to the training set to create weak labels, which we can then use to train our image classifier.
 
 # %%
+# BLOCKED
+
 # Getting scores
-scores = label_model.score(
-    (Ls[1], Ys[1]), metric=["accuracy", "precision", "recall", "f1"]
-)
+# scores = label_model.score(
+#     (Ls[1], Ys[1]), metric=["accuracy", "precision", "recall", "f1"]
+# )
 
 # %% [markdown]
 # Why is this useful?  If we compare to majority vote, we see a couple points of improvement in accuracy.  Note that the degree to which we expect this model to improve over majority vote varies based on the type of dataset involved, as detailed in the 2018 [VLDB Paper](http://www.vldb.org/pvldb/vol11/p269-ratner.pdf) describing the Snorkel system.
 
 # %%
-from metal.label_model.baselines import MajorityLabelVoter
+# BLOCKED
+
+# from snorkel.labeling.model.baselines import MajorityLabelVoter
 
 # Checking if we beat majority vote
-mv = MajorityLabelVoter(seed=123)
-scores = mv.score((Ls[1], Ys[1]), metric=["accuracy", "precision", "recall", "f1"])
+# # mv = MajorityLabelVoter(seed=123)
+# scores = mv.score((Ls[1], Ys[1]), metric=["accuracy", "precision", "recall", "f1"])
 
 # %% [markdown]
 # ## Step 5: Create a Weakly Labeled Training Set
@@ -341,20 +346,24 @@ Y_ps = [Y_train_ps, Y_dev_ps, Y_test_ps]
 # We can inspect the distribution of our weak training labels, and note that they are assigned varying degrees of probability.  An advantage of this labeling approach is that probabilistic labels can be very descriptive -- i.e., if an example has a 60% probability of being abnormal, we train against that 0.6 probability, rather than binarizing to 100%.
 
 # %%
-from metal.contrib.visualization.analysis import plot_probabilities_histogram
+# TODO
+
+# from metal.contrib.visualization.analysis import plot_probabilities_histogram
 
 # Looking at probability histogram for training labels
-plot_probabilities_histogram(Y_dev_ps[:, 0], title="Probablistic Label Distribution")
+# plot_probabilities_histogram(Y_dev_ps[:, 0], title="Probablistic Label Distribution")
 
 # %% [markdown]
 # Using the development set, we can also check that the class balance of our weak labels if we were to naively binarize at the 0.5 cutoff -- we see reasonable behavior here.
 
 # %%
-from metal.contrib.visualization.analysis import plot_predictions_histogram
+# TODO
+
+# from metal.contrib.visualization.analysis import plot_predictions_histogram
 
 # Obtaining binarized predictions
-Y_dev_p = label_model.predict(Ls[1])
-plot_predictions_histogram(Y_dev_p, Ys[1], title="Label Distribution")
+# Y_dev_p = label_model.predict(Ls[1])
+# plot_predictions_histogram(Y_dev_p, Ys[1], title="Label Distribution")
 
 # %% [markdown]
 # ## Step 6: Train a Weakly Supervised End Model
@@ -365,47 +374,49 @@ plot_predictions_histogram(Y_dev_p, Ys[1], title="Label Distribution")
 # First, we define PyTorch `DataLoader` objects to efficiently load our image data, associating each image with the weak label generated from its associated report.
 
 # %%
-import torch
-from torchvision import models
-from metal.end_model import EndModel
-from metal.logging.tensorboard import TensorBoardWriter
-from utils import get_data_loader
+# TODO: Replace end model
 
-# Setting up log directory
-log_config = {"log_dir": "./run_logs", "run_name": "openi_demo_ws"}
-tuner_config = {"max_search": 1}
-search_space = {"l2": [0.0005], "lr": [0.001]}  # linear range
+# import torch
+# from torchvision import models
+# from metal.end_model import EndModel
+# from metal.logging.tensorboard import TensorBoardWriter
+# from utils import get_data_loader
 
-# Create pytorch model
-num_classes = 2
-cnn_model = models.resnet18(pretrained=True)
-last_layer_input_size = int(cnn_model.fc.weight.size()[1])
-cnn_model.fc = torch.nn.Linear(last_layer_input_size, num_classes)
+# # Setting up log directory
+# log_config = {"log_dir": "./run_logs", "run_name": "openi_demo_ws"}
+# tuner_config = {"max_search": 1}
+# search_space = {"l2": [0.0005], "lr": [0.001]}  # linear range
 
-# Create data loaders
-loaders = {}
-loaders["train"] = get_data_loader(
-    data["train"]["xray_paths"].tolist(), Y_ps[0], batch_size=32, shuffle=True
-)
-loaders["dev"] = get_data_loader(
-    data["dev"]["xray_paths"].tolist(), Ys[1], batch_size=32, shuffle=False
-)
-loaders["test"] = get_data_loader(
-    data["test"]["xray_paths"].tolist(), Ys[2], batch_size=32, shuffle=False
-)
+# # Create pytorch model
+# num_classes = 2
+# cnn_model = models.resnet18(pretrained=True)
+# last_layer_input_size = int(cnn_model.fc.weight.size()[1])
+# cnn_model.fc = torch.nn.Linear(last_layer_input_size, num_classes)
+
+# # Create data loaders
+# loaders = {}
+# loaders["train"] = get_data_loader(
+#     data["train"]["xray_paths"].tolist(), Y_ps[0], batch_size=32, shuffle=True
+# )
+# loaders["dev"] = get_data_loader(
+#     data["dev"]["xray_paths"].tolist(), Ys[1], batch_size=32, shuffle=False
+# )
+# loaders["test"] = get_data_loader(
+#     data["test"]["xray_paths"].tolist(), Ys[2], batch_size=32, shuffle=False
+# )
 
 # %% [markdown]
 # As an example, a single datapoint yields an image like this:
 
 # %%
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-img, label = loaders["train"].dataset[0]
+# img, label = loaders["train"].dataset[0]
 
-plt.figure()
-plt.imshow(img[0, :, :], cmap="gray")
-plt.title("Example X-ray Image")
-ax = plt.axis("off")
+# plt.figure()
+# plt.imshow(img[0, :, :], cmap="gray")
+# plt.title("Example X-ray Image")
+# ax = plt.axis("off")
 
 # %% [markdown]
 # Now that our `DataLoaders` are set up, it is a simple matter to define and train our CNN model.
@@ -413,47 +424,47 @@ ax = plt.axis("off")
 # Note: While this will run if you do not have a CUDA-based GPU available (and will automatically detect it if you do), it will proceed *much* faster if you have one!  CPU-only per-epoch training time is ~ 15 minutes, while with a Titan X it is approximately 30 s!
 
 # %%
-# Defining network parameters
-num_classes = 2
-pretrained = True
-train_args = [loaders["train"]]
-init_args = [[num_classes]]
+# # Defining network parameters
+# num_classes = 2
+# pretrained = True
+# train_args = [loaders["train"]]
+# init_args = [[num_classes]]
 
-# Defining device variable
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# # Defining device variable
+# device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Initializing input module
-input_module = cnn_model
-init_kwargs = {
-    "input_module": input_module,
-    "skip_head": True,
-    "input_relu": False,
-    "input_batchnorm": False,
-    "device": device,
-    "seed": 1701,
-}
-train_kwargs = {"n_epochs": 5, "progress_bar": True}
+# # Initializing input module
+# input_module = cnn_model
+# init_kwargs = {
+#     "input_module": input_module,
+#     "skip_head": True,
+#     "input_relu": False,
+#     "input_batchnorm": False,
+#     "device": device,
+#     "seed": 1701,
+# }
+# train_kwargs = {"n_epochs": 5, "progress_bar": True}
 
-# Setting up logger and searcher
-searcher = RandomSearchTuner(
-    EndModel,
-    **log_config,
-    log_writer_class=TensorBoardWriter,
-    validation_metric="accuracy",
-    seed=1701,
-)
+# # Setting up logger and searcher
+# searcher = RandomSearchTuner(
+#     EndModel,
+#     **log_config,
+#     log_writer_class=TensorBoardWriter,
+#     validation_metric="accuracy",
+#     seed=1701,
+# )
 
-# Training weakly supervised model
-weakly_supervised_model = searcher.search(
-    search_space,
-    loaders["dev"],
-    train_args=train_args,
-    init_args=init_args,
-    init_kwargs=init_kwargs,
-    train_kwargs=train_kwargs,
-    max_search=tuner_config["max_search"],
-    clean_up=False,
-)
+# # Training weakly supervised model
+# weakly_supervised_model = searcher.search(
+#     search_space,
+#     loaders["dev"],
+#     train_args=train_args,
+#     init_args=init_args,
+#     init_kwargs=init_kwargs,
+#     train_kwargs=train_kwargs,
+#     max_search=tuner_config["max_search"],
+#     clean_up=False,
+# )
 
 # %% [markdown]
 # We can evaluate this model below, and see that we've learned some useful signal!  Remember that an Area Under the Receiver Operating Characteristic (ROC-AUC) score represents the probability across all possible cutoffs of ranking an abnormal example higher than a normal example.  If we've learned nothing useful, this value would be 0.5.
@@ -461,9 +472,9 @@ weakly_supervised_model = searcher.search(
 # You should expect a value just above 0.70 for this training run.
 
 # %%
-# Evaluating model
-print(f"Evaluating Weakly Supervised Model")
-scores = weakly_supervised_model.score(loaders["test"], metric=["roc-auc"])
+# # Evaluating model
+# print(f"Evaluating Weakly Supervised Model")
+# scores = weakly_supervised_model.score(loaders["test"], metric=["roc-auc"])
 
 # %% [markdown]
 # ## Step 7: Comparing to a Fully Supervised End Model
@@ -474,52 +485,52 @@ scores = weakly_supervised_model.score(loaders["test"], metric=["roc-auc"])
 # Executing this requires a simple change to the training dataloader to provide it with ground-truth labels.
 
 # %%
-# Updating logging config
-log_config = {"log_dir": "./run_logs", "run_name": "openi_demo_fs"}
+# # Updating logging config
+# log_config = {"log_dir": "./run_logs", "run_name": "openi_demo_fs"}
 
 
-# Creating dataloader with ground truth training labels
-loaders["full_train"] = get_data_loader(
-    data["train"]["xray_paths"].tolist(), Ys[0], batch_size=32, shuffle=True
-)
-train_args = [loaders["full_train"]]
+# # Creating dataloader with ground truth training labels
+# loaders["full_train"] = get_data_loader(
+#     data["train"]["xray_paths"].tolist(), Ys[0], batch_size=32, shuffle=True
+# )
+# train_args = [loaders["full_train"]]
 
-# Setting up logger and searcher
-searcher = RandomSearchTuner(
-    EndModel,
-    **log_config,
-    log_writer_class=TensorBoardWriter,
-    validation_metric="accuracy",
-    seed=1701,
-)
+# # Setting up logger and searcher
+# searcher = RandomSearchTuner(
+#     EndModel,
+#     **log_config,
+#     log_writer_class=TensorBoardWriter,
+#     validation_metric="accuracy",
+#     seed=1701,
+# )
 
-# Training
-fully_supervised_model = searcher.search(
-    search_space,
-    loaders["dev"],
-    train_args=train_args,
-    init_args=init_args,
-    init_kwargs=init_kwargs,
-    train_kwargs=train_kwargs,
-    max_search=tuner_config["max_search"],
-    clean_up=False,
-)
+# # Training
+# fully_supervised_model = searcher.search(
+#     search_space,
+#     loaders["dev"],
+#     train_args=train_args,
+#     init_args=init_args,
+#     init_kwargs=init_kwargs,
+#     train_kwargs=train_kwargs,
+#     max_search=tuner_config["max_search"],
+#     clean_up=False,
+# )
 
 # %% [markdown]
 # Now, we can evaluate the weakly and fully supervised models, observing that they achieve similar Area Under the Receiver Operating Characteristic (ROC-AUC) scores.  Note that due to the small size of the dataset and that we are not tuning the cutoff for a particular performance score, we report ROC-AUC in this demo.
 
 # %%
-# Evaluating weakly model
-print(f"Evaluating Weakly Supervised Model")
-weakly_supervised_scores = weakly_supervised_model.score(
-    loaders["test"], metric=["roc-auc"], print_confusion_matrix=False
-)
+# # Evaluating weakly model
+# print(f"Evaluating Weakly Supervised Model")
+# weakly_supervised_scores = weakly_supervised_model.score(
+#     loaders["test"], metric=["roc-auc"], print_confusion_matrix=False
+# )
 
-# Evaluating fully supervised model
-print(f"Evaluating Fully Supervised Model")
-fully_supervised_scores = fully_supervised_model.score(
-    loaders["test"], metric=["roc-auc"], print_confusion_matrix=False
-)
+# # Evaluating fully supervised model
+# print(f"Evaluating Fully Supervised Model")
+# fully_supervised_scores = fully_supervised_model.score(
+#     loaders["test"], metric=["roc-auc"], print_confusion_matrix=False
+# )
 
 # %% [markdown]
 # If the models have trained successfully, you should observe that the weakly and fully supervised models both achieve ROC-AUC scores around 0.70.  This indicates that the weak labels we created using our labeling functions over the text have successfully allowed us to train a CNN model that performs very similarly to one trained using ground truth, but *without having to label thousands of images*.
