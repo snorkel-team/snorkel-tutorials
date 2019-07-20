@@ -257,9 +257,6 @@ for idx in neg_idx[:3]:
     plt.show()
 
 # %%
-assert False
-
-# %%
 train_df.head()
 
 # %%
@@ -273,7 +270,26 @@ from torchvision import transforms
 
 from snorkel.classification.data import DictDataset, DictDataLoader, XDict, YDict
 
+def union(bbox1, bbox2):
+    """Creates the union of the two bboxes.
+    Args:
+        bbox1: y0, y1, x0, x1 format.
+        bbox2: y0, y1, x0, x1 format.
+    Returns:
+        The union of the arguments.
+    """
+    y0 = min(bbox1[0], bbox2[0])
+    y1 = max(bbox1[1], bbox2[1])
+    x0 = min(bbox1[2], bbox2[2])
+    x1 = max(bbox1[3], bbox2[3])
+    return [y0, y1, x0, x1]
+
+def crop_img_arr(img_arr, bbox):
+    """Crop img_arr [H x W x C] to bbox"""
+    return img_arr[bbox[0]:bbox[1], bbox[2]:bbox[3], :]
+
 class SceneGraphDataset(DictDataset):
+    
     def __init__(self, name: str, split: str, image_dir: str, df: pandas.DataFrame, image_size=224) -> None:
         self.image_dir = Path(image_dir)
         X_dict = {
@@ -295,15 +311,28 @@ class SceneGraphDataset(DictDataset):
 
     def __getitem__(self, index: int) -> Tuple[XDict, YDict]:
         img_fn = self.X_dict["img_fn"][index]
-        img = Image.open(self.image_dir /  img_fn)        
-        img = self.transform(img)
-        x_dict = {"img": img}
+        img_arr = np.array(Image.open(self.image_dir /  img_fn))
+
+        # compute crops
+        obj_bbox = self.X_dict["obj_bbox"][index]
+        sub_bbox = self.X_dict["sub_bbox"][index]
+        
+        obj_crop = crop_img_arr(img_arr, obj_bbox)
+        sub_crop = crop_img_arr(img_arr, sub_bbox)
+        union_crop = crop_img_arr(img_arr, union(obj_bbox, sub_bbox))
+
+        # transform each crop 
+        x_dict = {
+            "obj_crop": self.transform(Image.fromarray(obj_crop)),
+            "sub_crop": self.transform(Image.fromarray(sub_crop)),
+            "union_crop": self.transform(Image.fromarray(union_crop))
+        }
         y_dict = {name: label[index] for name, label in self.Y_dict.items()}
         return x_dict, y_dict
     
     def __len__(self):
         return len(self.X_dict["img_fn"])
-
+    
 train_dl = DictDataLoader(
     SceneGraphDataset("train_dataset", "train", TRAIN_DIR, train_df),
     batch_size=4,
@@ -338,13 +367,16 @@ for param in cnn.parameters():
 in_features = cnn.fc.in_features
 feature_extractor = nn.Sequential(*list(cnn.children())[:-1])
 
-# flatten features
-class Flatten(nn.Module):
-    def forward(self, input):
-        return input.view(input.size(0), -1)
+class FlatConcat(nn.Module):
+    """Module that flattens and concatenates features"""
+    def forward(self, *inputs):
+        return torch.cat(
+            [input.view(input.size(0), -1) for input in inputs],
+            dim=1
+        )
 
-# initialize fully connected layer—
-fc = nn.Linear(in_features, 2)
+# initialize fully connected layer—maps 3 sets of image features to class logits
+fc = nn.Linear(in_features*3, 2)
 init_fc(fc)
 
 # %%
@@ -354,28 +386,40 @@ from snorkel.classification.task import Task, Operation
 module_pool = nn.ModuleDict({
     "feat_extractor": feature_extractor,
     "prediction_head": fc,
-    "feat_flatten": Flatten()
+    "feat_concat": FlatConcat()
 })
 
-feature_op = Operation(
-    name="feature_op",
+union_feat_op = Operation(
+    name="union_feat_op",
     module_name="feat_extractor",
-    inputs=[("_input_", "img")]
+    inputs=[("_input_", "union_crop")]
 )
 
-flatten_op = Operation(
-    name="flatten_op",
-    module_name="feat_flatten",
-    inputs=[("feature_op", 0)]
+sub_feat_op = Operation(
+    name="sub_feat_op",
+    module_name="feat_extractor",
+    inputs=[("_input_", "sub_crop")]
+)
+
+obj_feat_op = Operation(
+    name="obj_feat_op",
+    module_name="feat_extractor",
+    inputs=[("_input_", "obj_crop")]
+)
+
+concat_op = Operation(
+    name="concat_op",
+    module_name="feat_concat",
+    inputs=[("obj_feat_op", 0), ("sub_feat_op", 0), ("union_feat_op", 0)]
 )
 
 prediction_op = Operation(
     name="head_op",
     module_name="prediction_head",
-    inputs=[("flatten_op", 0)]
+    inputs=[("concat_op", 0)]
 )
 
-task_flow = [feature_op, flatten_op, prediction_op]
+task_flow = [sub_feat_op, obj_feat_op, union_feat_op, concat_op, prediction_op]
 
 # %%
 # TODO
@@ -423,7 +467,7 @@ from snorkel.classification.training import Trainer
 from snorkel.classification.snorkel_classifier import SnorkelClassifier
 
 model = SnorkelClassifier([pred_cls_task])
-trainer = Trainer(n_epochs=30, optimizer_config={"lr":1e-4})
+trainer = Trainer(n_epochs=20, optimizer_config={"lr":1e-4})
 trainer.train_model(model, [train_dl])
 
 # %%
