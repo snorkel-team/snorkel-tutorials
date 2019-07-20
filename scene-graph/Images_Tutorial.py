@@ -227,4 +227,204 @@ metric_score(Y_valid, Y_preds_valid, probs=None, metric="f1")
 #
 # The only change needed from standard procedure is to deal with the fact that the training labels Snorkel generates are _probabilistic_ (i.e. for the binary case, in [0,1])— luckily, this is a one-liner in most modern ML frameworks! For example, in TensorFlow, you can use the [cross-entropy loss](https://www.tensorflow.org/versions/r1.1/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits).
 
+# %% [markdown]
+# ## Make DataLoaders
+
 # %%
+TRAIN_DIR  = "data/VRD/sg_dataset/sg_train_images"
+
+# %%
+# TODO: add bbox visualization
+
+import os
+from PIL import Image
+import matplotlib.pyplot as plt
+
+pos_idx = np.where(train_df["label"] == 1)[0]
+for idx in pos_idx[:3]:
+    img_path = os.path.join(TRAIN_DIR, train_df.iloc[idx].source_img)
+    img = np.array(Image.open(img_path))
+    plt.imshow(img)
+    plt.show()
+
+# %%
+# TODO: add bbox visualization
+neg_idx = np.where(train_df["label"] == 2)[0]
+for idx in neg_idx[:3]:
+    img_path = os.path.join(TRAIN_DIR, train_df.iloc[idx].source_img)
+    img = np.array(Image.open(img_path))
+    plt.imshow(img)
+    plt.show()
+
+# %%
+assert False
+
+# %%
+train_df.head()
+
+# %%
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
+
+import pandas
+import torch
+from torch import Tensor
+from torchvision import transforms
+
+from snorkel.classification.data import DictDataset, DictDataLoader, XDict, YDict
+
+class SceneGraphDataset(DictDataset):
+    def __init__(self, name: str, split: str, image_dir: str, df: pandas.DataFrame, image_size=224) -> None:
+        self.image_dir = Path(image_dir)
+        X_dict = {
+            "img_fn": df["source_img"].tolist(),
+            "obj_bbox": df["object_bbox"].tolist(),
+            "sub_bbox": df["subject_bbox"].tolist()
+        }
+        Y_dict = {"riding_task": torch.LongTensor(df["label"].to_numpy())}
+        super(SceneGraphDataset, self).__init__(name, split, X_dict, Y_dict)
+        
+        # define standard set of transformations to apply to each image
+        self.transform = transforms.Compose([
+            transforms.Resize((image_size, image_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225])
+        ])
+
+    def __getitem__(self, index: int) -> Tuple[XDict, YDict]:
+        img_fn = self.X_dict["img_fn"][index]
+        img = Image.open(self.image_dir /  img_fn)        
+        img = self.transform(img)
+        x_dict = {"img": img}
+        y_dict = {name: label[index] for name, label in self.Y_dict.items()}
+        return x_dict, y_dict
+    
+    def __len__(self):
+        return len(self.X_dict["img_fn"])
+
+train_dl = DictDataLoader(
+    SceneGraphDataset("train_dataset", "train", TRAIN_DIR, train_df),
+    batch_size=4,
+    shuffle=True
+)
+
+valid_dl = DictDataLoader(
+    SceneGraphDataset("valid_dataset", "valid", TRAIN_DIR, valid_df),
+    batch_size=4,
+    shuffle=False
+)
+
+# %% [markdown]
+# ## Build Model
+
+# %%
+import torch
+import torch.nn as nn
+import torchvision.models as models
+
+def init_fc(layer):
+    torch.nn.init.xavier_uniform_(fc.weight)
+    fc.bias.data.fill_(0.01)
+
+# initialize pretrained feature extractor
+cnn = models.resnet18(pretrained=True)
+
+# freeze the resnet weights
+for param in cnn.parameters():
+    param.requires_grad = False
+
+in_features = cnn.fc.in_features
+feature_extractor = nn.Sequential(*list(cnn.children())[:-1])
+
+# flatten features
+class Flatten(nn.Module):
+    def forward(self, input):
+        return input.view(input.size(0), -1)
+
+# initialize fully connected layer—
+fc = nn.Linear(in_features, 2)
+init_fc(fc)
+
+# %%
+from snorkel.classification.task import Task, Operation
+
+# %%
+module_pool = nn.ModuleDict({
+    "feat_extractor": feature_extractor,
+    "prediction_head": fc,
+    "feat_flatten": Flatten()
+})
+
+feature_op = Operation(
+    name="feature_op",
+    module_name="feat_extractor",
+    inputs=[("_input_", "img")]
+)
+
+flatten_op = Operation(
+    name="flatten_op",
+    module_name="feat_flatten",
+    inputs=[("feature_op", 0)]
+)
+
+prediction_op = Operation(
+    name="head_op",
+    module_name="prediction_head",
+    inputs=[("flatten_op", 0)]
+)
+
+task_flow = [feature_op, flatten_op, prediction_op]
+
+# %%
+# TODO
+
+# import pandas as pd
+# import csv
+
+# # # ! bash scripts/get_glove.sh
+# glove_data_file = "data/glove/glove.6B.200d.txt"
+# words = pd.read_table(glove_data_file, sep=" ", index_col=0, header=None, quoting=csv.QUOTE_NONE)
+
+# def get_wordvec(word):
+#     return words.loc[word].as_matrix()
+
+# %%
+from functools import partial
+from snorkel.classification.scorer import Scorer
+
+import torch.nn.functional as F
+def ce_loss(module_name, outputs, Y, active):
+    # Subtract 1 from hard labels in Y to account for Snorkel reserving the label 0 for
+    # abstains while F.cross_entropy() expects 0-indexed labels
+    return F.cross_entropy(outputs[module_name][0][active], (Y.view(-1) - 1)[active])
+
+
+def softmax(module_name, outputs):
+    return F.softmax(outputs[module_name][0], dim=1)
+
+pred_cls_task = Task(
+    name="riding_task",
+    module_pool=module_pool,
+    task_flow=task_flow,
+    loss_func=partial(ce_loss, "head_op"),
+    output_func=partial(softmax, "head_op"),
+    scorer = Scorer(metrics=["accuracy", "f1"])
+)
+
+# %% [markdown]
+# ## Train!
+
+# %%
+# %%time
+
+from snorkel.classification.training import Trainer
+from snorkel.classification.snorkel_classifier import SnorkelClassifier
+
+model = SnorkelClassifier([pred_cls_task])
+trainer = Trainer(n_epochs=30, optimizer_config={"lr":1e-4})
+trainer.train_model(model, [train_dl])
+
+# %%
+model.score([valid_dl])
