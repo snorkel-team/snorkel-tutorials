@@ -18,26 +18,26 @@
 # # Introductory Snorkel Tutorial: Spam Detection
 
 # %% [markdown]
-# In this tutorial, we will walk through the process of using `Snorkel` to classify YouTube comments as `spam` or `ham` (not spam). For an overview of Snorkel, visit [snorkel.stanford.edu](http://snorkel.stanford.edu). 
+# In this tutorial, we will walk through the process of using `Snorkel` to classify YouTube comments as `SPAM` or `HAM` (not spam). For an overview of Snorkel, visit [snorkel.stanford.edu](http://snorkel.stanford.edu). 
 #
-# For our task, we have access to a large amount of *unlabeled data*, which can be prohibitively expensive and slow to label manually. We therefore turn to weak supervision using *labeling functions*, or noisy, programmatic heuristics, to assign labels to unlabeled training data efficiently. We also have access to a small amount of labeled data, which we only for evaluation purposes. 
+# For our task, we have access to a large amount of *unlabeled data*, which can be prohibitively expensive and slow to label manually. We therefore turn to weak supervision using *labeling functions*, or noisy, programmatic heuristics, to assign labels to unlabeled training data efficiently. We also have access to a small amount of labeled data, which we only use for evaluation purposes. 
 #
-# The tutorial is divided in four parts:
+# The tutorial is divided into four parts:
 # 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
 #
-# 2. **Writing Labeling Functions**: We write Python programs that take as input a datapoint and assign labels (or abstain) using heuristics, pattern matching, and third-party models.
+# 2. **Writing Labeling Functions**: We write Python programs that take as input a data point and assign labels (or abstain) using heuristics, pattern matching, and third-party models.
 #
-# 3. **Combining Labels with the Label Model**: We use the outputs of the labeling functions over the train set as input to the LabelModel, which assings probabilistic labels to the train set.
+# 3. **Combining Labels with the Label Model**: We use the outputs of the labeling functions over the training set as input to the label model, which assings probabilistic labels to the training set.
 #
-# 4. **Training a Classifier**: We train a classifier that can predict labels for *any* YouTube comment using the probabilistic training labels from step 3.
+# 4. **Training a Classifier**: We train a classifier that can predict labels for *any* YouTube comment (not just the ones labeled by the labeling functions) using the probabilistic training labels from step 3.
 
 # %% [markdown]
 # ### Task: Spam Detection
 
 # %% [markdown]
-# We use a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) that consists of YouTube comments from 5 videos. The task is to classify each comment as being `spam`, irrelevant or inappropriate messages, or `ham`, comments relevant to the video. 
+# We use a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) that consists of YouTube comments from 5 videos. The task is to classify each comment as being `SPAM`, irrelevant or inappropriate messages, or `HAM`, comments relevant to the video. 
 #
-# For example, the following comments are `spam`:
+# For example, the following comments are `SPAM`:
 #
 #         Subscribe to me for free Android games, apps..
 #
@@ -45,12 +45,11 @@
 #
 #         Subscribe to me and I'll subscribe back!!!
 #
-# and these are `ham`:
+# and these are `HAM`:
 #
+#         3:46 so cute!
 #
-#         Came here to check the views, goodbye.
-#
-#         2 billion....Coming soon
+#         This looks so fun and it's a good song
 #
 #         This is a weird video.
 
@@ -58,11 +57,13 @@
 # ### Data Splits in Snorkel
 #
 # We split our data into 4 sets:
-# * **Train Set**: This is the largest split of the dataset with no labels
+# * **training set**: This is the largest split of the dataset with no labels
 # * **Validation (Valid) Set**: A labeled set used to tune hyperparameters for the end classifier. 
-# * **Test Set**: A labeeld set used to evaluate the classifier. Note that users should not be looking at the test set and use it only for the final evaluation step.  
+# * **Test Set**: A labeled set used to evaluate the classifier. Note that users should not be looking at the test set and use it only for the final evaluation step.
 #
-# While it is possible to write labeling functions without any labeled data and evaluate only with the classifier, ot os often usefule to have some labeled data to check performance against. We refer to this as the **development (dev) set**. This can either be a small labeled subset of the train set (e.g. 200 datapoints) or we can use the valid set as the dev set. Note that in the latter case, the our classifier can overfit to the valid set since both the labeling functions and the end model are tuned to the same labeled dataset.  
+# While it is possible to write labeling functions without any labeled data and evaluate only with the classifier, it is often useful to have some labeled data to estimate how the labeling functions are doing. For example, we can calculate the accuracy and coverage of the labeling functions over this labeled set, which can help guide how to edit existing labeling functions and/or what type of labeling functions to add.
+# 
+# . We refer to this as the **development (dev) set**. This can either be a small labeled subset of the training set (e.g. 100 data points) or we can use the valid set as the dev set. Note that in the latter case, the valid set will not be representative of the test set since the labeling functions are created to fit specifically to the validation set.  
 
 # %% [markdown]
 # ## 1. Load data
@@ -73,10 +74,10 @@
 # * **AUTHOR_ID**: Author ID
 # * **DATE**: Date and time the comment was posted
 # * **CONTENT**: The raw text content of the comment
-# * **LABEL**: Whether the comment is `spam` (1) or `ham` (2)
+# * **LABEL**: Whether the comment is `SPAM` (1) or `HAM` (2)
 # * **VIDEO_ID**: The video the comment is associated with
 #
-# The train and dev sets contain comments from 4 of the 5 videos in the dataset. The valid and test set both come from the last video and therefore belong to the same distribution, but are independent of the train and dev sets. The train set has `LABEL=0` for each comment, since it is unlabeled. 
+# The train and dev sets contain comments from 4 of the 5 videos in the dataset. The valid and test set both come from the last video and therefore belong to the same distribution, but are independent of the train and dev sets. The training set has `LABEL=0` for each comment, since it is unlabeled. 
 
 # %%
 from utils import load_spam_dataset
@@ -440,7 +441,7 @@ lf_summary(L=L_dev, Y=Y_dev_array, lf_names=lf_names)
 # * Pretty much copy prose from Spouse tutorial
 
 # %% [markdown]
-# * Run LabelModel, get probabilities
+# * Run label model, get probabilities
 #     * Note: no labels are required or used
 # * Look at probabilities (histogram)
 # * What if we used this directly as a classifier? (score)
