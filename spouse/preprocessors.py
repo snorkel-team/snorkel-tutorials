@@ -2,7 +2,8 @@ from snorkel.labeling.preprocess import preprocessor
 from snorkel.types import DataPoint
 
 
-def get_person_text(cand):
+@preprocessor()
+def get_person_text(cand: DataPoint) -> DataPoint:
     """
     Returns the text for the two person mentions in candidate cand
     """
@@ -12,21 +13,25 @@ def get_person_text(cand):
         start = cand[field_name][0]
         end = cand[field_name][1] + 1
         person_names.append(" ".join(cand["tokens"][start:end]))
-    return person_names
+    cand.person_names = person_names
+    return cand
 
 
-def get_person_last_names(cand):
+@preprocessor()
+def get_person_last_names(cand: DataPoint) -> DataPoint:
     """
     Returns the last names for the two person mentions in candidate cand
     """
-    person1_name, person2_name = get_person_text(cand)
+    cand = get_person_text(cand)
+    person1_name, person2_name = cand.person_names
     person1_lastname = (
         person1_name.split(" ")[-1] if len(person1_name.split(" ")) > 1 else None
     )
     person2_lastname = (
         person2_name.split(" ")[-1] if len(person2_name.split(" ")) > 1 else None
     )
-    return person1_lastname, person2_lastname
+    cand.person_lastnames = [person1_lastname, person2_lastname]
+    return cand
 
 
 @preprocessor()

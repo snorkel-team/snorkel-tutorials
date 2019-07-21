@@ -3,7 +3,7 @@
 
 # %% [markdown]
 # We will walk through an example text classification task to explore how Snorkel works with user-defined LFs. Run every cell in the notebook (unless otherwise noted) before proceeding to the next one!
-### Classification Task
+# ## Classification Task
 # <img src="imgs/sentence.jpg" width="700px;">
 #
 # We want to classify each __candidate__ or pair of people mentioned in a sentence, as being married at some point or not.
@@ -51,14 +51,14 @@ dev_df.head()
 from preprocessors import get_person_text
 
 candidate = dev_df.loc[112]
-person_names = get_person_text(candidate)
+person_names = get_person_text(candidate).person_names
 
 print("Sentence:   \t", candidate["sentence"])
 print("Person 1:   \t", person_names[0])
 print("Person 2:   \t", person_names[1])
 
 # %% [markdown]
-## Part 2: Writing  Labeling Functions
+# # Part 2: Writing  Labeling Functions
 #
 # In Snorkel, our primary interface through which we provide training signal to the end extraction model we are training is by writing **labeling functions (LFs)** (as opposed to hand-labeling massive training sets).  We'll go through some examples for our spouse classification task below.
 #
@@ -68,9 +68,9 @@ print("Person 2:   \t", person_names[1])
 # Recall that our goal is to ultimately train a high-performance classification model that predicts which of our candidates are true spouse relations. It turns out that we can do this by writing potentially low-quality labeling functions!
 
 # %% [markdown]
-##  I. Background
-
-### Preprocessing the Database
+# #  I. Background
+#
+# ## Preprocessing the Database
 #
 # In a real application, there is a lot of data preparation, parsing, and database loading that needs to be completed before we dive into writing labeling functions. Here we've pre-generated candidates in a pandas DataFrame object per split (train,dev,test).
 #
@@ -103,9 +103,13 @@ def get_text_between(cand):
 
 
 # %% [markdown]
-### Candidate PreProcessors
+# ## Candidate PreProcessors
 #
 # We provide a set of helper functions for this task in `preprocessors.py` that take as input a candidate, or row of a DataFrame in our case. For the purpose of the tutorial, we have two of these fields preprocessed in the data, which can be used when creating labeling functions.
+#
+# `get_person_text(cand)`
+#
+# `get_person_lastnames(cand)`
 #
 # `get_between_tokens(cand)`
 #
@@ -115,9 +119,9 @@ def get_text_between(cand):
 
 # %% [markdown]
 # II. Labeling Functions
-
-## A. Pattern Matching Labeling Functions
-
+#
+# # A. Pattern Matching Labeling Functions
+#
 # One powerful form of labeling function design is defining sets of keywords or regular expressions that, as a human labeler, you know are correlated with the true label. For example, we could define a dictionary of terms that occur between person names in a candidate. One simple dictionary of terms indicating a true relation could be, which we could use in a labeling function like shown below:
 #
 #     spouses = {'spouse', 'wife', 'husband', 'ex-wife', 'ex-husband'}
@@ -153,7 +157,7 @@ from snorkel.labeling.apply import PandasLFApplier
 from snorkel.labeling.lf import labeling_function
 from snorkel.types import DataPoint
 
-from preprocessors import get_left_tokens, get_person_last_names, get_person_text
+from preprocessors import get_left_tokens, get_person_last_names
 
 POS = 1
 NEG = -1
@@ -183,9 +187,9 @@ def LF_husband_wife_left_window(x, spouses):
 
 # %%
 # Check for the person mentions having the same last name
-@labeling_function()
+@labeling_function(preprocessors=[get_person_last_names])
 def LF_same_last_name(x):
-    p1_ln, p2_ln = get_person_last_names(x)
+    p1_ln, p2_ln = x.person_lastnames
 
     if p1_ln and p2_ln and p1_ln == p2_ln:
         return POS
@@ -223,7 +227,7 @@ family = set(family + [f + "-in-law" for f in family])
 
 @labeling_function(resources=dict(family=family))
 def LF_familial_relationship(x, family):
-    return POS if len(family.intersection(set(x.between_tokens))) > 0 else ABSTAIN
+    return NEG if len(family.intersection(set(x.between_tokens))) > 0 else ABSTAIN
 
 
 @labeling_function(resources=dict(family=family), preprocessors=[get_left_tokens])
@@ -312,7 +316,7 @@ lf_summary(csr_matrix(L_cat), Y_cat, lf_names=lf_names)
 #
 # We can look at some of the example entries from DBPedia and use them in a simple distant supervision labeling function.
 #
-# Make sure `dbpedia.pkl` is in the `tutorials/workshop/` directory.
+# Make sure `dbpedia.pkl` is in the `spouse/data` directory.
 
 # %%
 with open("data/dbpedia.pkl", "rb") as f:
@@ -320,10 +324,13 @@ with open("data/dbpedia.pkl", "rb") as f:
 
 list(known_spouses)[0:5]
 
+
 # %%
-@labeling_function(resources=dict(known_spouses=known_spouses))
+@labeling_function(
+    resources=dict(known_spouses=known_spouses), preprocessors=[get_person_text]
+)
 def LF_distant_supervision(x: DataPoint, known_spouses: List[str]) -> int:
-    p1, p2 = get_person_text(x)
+    p1, p2 = x.person_names
     return POS if (p1, p2) in known_spouses or (p2, p1) in known_spouses else ABSTAIN
 
 
@@ -344,9 +351,11 @@ last_names = set(
 )
 
 
-@labeling_function(resources=dict(last_names=last_names))
+@labeling_function(
+    resources=dict(last_names=last_names), preprocessors=[get_person_last_names]
+)
 def LF_distant_supervision_last_names(x: DataPoint, last_names: List[str]) -> int:
-    p1_ln, p2_ln = get_person_last_names(x)
+    p1_ln, p2_ln = x.person_lastnames
 
     return (
         POS
@@ -360,19 +369,18 @@ def LF_distant_supervision_last_names(x: DataPoint, last_names: List[str]) -> in
 # Every time you write a new labeling function, add it to appliers and make sure to include it in the new L matrix!
 
 # %%
-applier = PandasLFApplier(
-    [
-        LF_husband_wife,
-        LF_husband_wife_left_window,
-        LF_same_last_name,
-        LF_and_married,
-        LF_familial_relationship,
-        LF_family_left_window,
-        LF_other_relationship,
-        LF_distant_supervision,
-        LF_distant_supervision_last_names,
-    ]
-)
+lfs = [
+    LF_husband_wife,
+    LF_husband_wife_left_window,
+    LF_same_last_name,
+    LF_and_married,
+    LF_familial_relationship,
+    LF_family_left_window,
+    LF_other_relationship,
+    LF_distant_supervision,
+    LF_distant_supervision_last_names,
+]
+applier = PandasLFApplier(lfs)
 
 # %%
 dev_L = applier.apply(dev_df)
@@ -421,7 +429,7 @@ train_L = applier.apply(train_df)
 #
 # **Parameter Definitions**
 #
-#     k  Cardinality, or the number of classes in the task
+#     cardinality  Cardinality, or the number of classes in the task
 #     lr  The factor by which we update model weights after computing the gradient
 #     class_balance Proportion of [positive, negative] samples in the dataset
 #     n_epochs     A single pass through all the data in your training set
@@ -431,7 +439,7 @@ from snorkel.labeling.model.label_model import LabelModel
 from snorkel.analysis.utils import convert_labels
 from scipy.sparse import csr_matrix
 
-label_model = LabelModel(k=2, verbose=True, seed=123)
+label_model = LabelModel(cardinality=2, verbose=True, seed=123)
 label_model.train_model(
     csr_matrix(convert_labels(train_L.toarray(), "plusminus", "categorical")),
     lr=1e-1,
@@ -476,13 +484,13 @@ metric_score(
 
 # %% [markdown]
 # ### Plotting Probabilistic Labels
-# One immediate santity check  you can peform using the generative model is to visually examine the distribution of predicted training probabilistic labels. Ideally, there should get a bimodal distribution with large seperation between each peaks, as shown below by the far right image. The corresponds to good signal for true and positive class labels. For your first Snorkel application, you'll probably see probabilistic labels closer to the far left or middle images. With all mass centered around p=0.5, as shown on the **left**, you probably need to write more LFs got get more overall _coverage_. In the **right** image, you have good negative coverage, but not enough positive LFs
+# One immediate santity check  you can peform using the generative model is to visually examine the distribution of predicted training probabilistic labels. Ideally, there should get a bimodal distribution with large seperation between each peaks, as shown below by the far **right** image. The corresponds to good signal for true and positive class labels. For your first Snorkel application, you'll probably see probabilistic labels closer to the far left or middle images. With all mass centered around p=0.5, as shown on the **left**, you probably need to write more LFs got get more overall _coverage_. In the **middle** image, you have good negative coverage, but not enough positive LFs
 #
-# <img align="left" src="imgs/marginals-common.jpg" width="265px" style="margin-right:0px">
+# <img align="left" src="imgs/marginals-common.jpg" width="320px" style="margin-left:0px">
 #
-# <img align="center" src="imgs/marginals-real.jpg" width="265px" style="margin-right:0px">
+# <img align="left" src="imgs/marginals-real.jpg" width="320px" style="margin-right:0px">
 #
-# <img align="right" src="imgs/marginals-ideal.jpg" width="265px" style="margin-right:0px">
+# <img align="right" src="imgs/marginals-ideal.jpg" width="320px" style="margin-right:0px">
 
 # %%
 import matplotlib.pyplot as plt
