@@ -295,7 +295,9 @@ class SceneGraphDataset(DictDataset):
         X_dict = {
             "img_fn": df["source_img"].tolist(),
             "obj_bbox": df["object_bbox"].tolist(),
-            "sub_bbox": df["subject_bbox"].tolist()
+            "sub_bbox": df["subject_bbox"].tolist(),
+            "obj_category": df["object_category"].tolist(),
+            "sub_category": df["subject_category"].tolist()
         }
         Y_dict = {"riding_task": torch.LongTensor(df["label"].to_numpy())}
         super(SceneGraphDataset, self).__init__(name, split, X_dict, Y_dict)
@@ -313,10 +315,13 @@ class SceneGraphDataset(DictDataset):
         img_fn = self.X_dict["img_fn"][index]
         img_arr = np.array(Image.open(self.image_dir /  img_fn))
 
-        # compute crops
+
         obj_bbox = self.X_dict["obj_bbox"][index]
         sub_bbox = self.X_dict["sub_bbox"][index]
-        
+        obj_category = self.X_dict["obj_category"][index]
+        sub_category = self.X_dict["sub_category"][index]
+
+        # compute crops
         obj_crop = crop_img_arr(img_arr, obj_bbox)
         sub_crop = crop_img_arr(img_arr, sub_bbox)
         union_crop = crop_img_arr(img_arr, union(obj_bbox, sub_bbox))
@@ -325,8 +330,11 @@ class SceneGraphDataset(DictDataset):
         x_dict = {
             "obj_crop": self.transform(Image.fromarray(obj_crop)),
             "sub_crop": self.transform(Image.fromarray(sub_crop)),
-            "union_crop": self.transform(Image.fromarray(union_crop))
+            "union_crop": self.transform(Image.fromarray(union_crop)),
+            "obj_category": obj_category,
+            "sub_category": sub_category
         }
+
         y_dict = {name: label[index] for name, label in self.Y_dict.items()}
         return x_dict, y_dict
     
@@ -335,13 +343,13 @@ class SceneGraphDataset(DictDataset):
     
 train_dl = DictDataLoader(
     SceneGraphDataset("train_dataset", "train", TRAIN_DIR, train_df),
-    batch_size=4,
+    batch_size=16,
     shuffle=True
 )
 
 valid_dl = DictDataLoader(
     SceneGraphDataset("valid_dataset", "valid", TRAIN_DIR, valid_df),
-    batch_size=4,
+    batch_size=16,
     shuffle=False
 )
 
@@ -375,8 +383,38 @@ class FlatConcat(nn.Module):
             dim=1
         )
 
+
+# %%
+import pandas as pd
+import csv
+
+WEMB_SIZE = 100
+class WordEmb(nn.Module):
+    """Extract and concat word embeddings for obj and sub categories."""
+    
+    # ! bash scripts/get_glove.sh
+    def __init__(self, glove_fn="data/glove/glove.6B.100d.txt"):
+        super(WordEmb, self).__init__()
+
+        self.word_embs = pd.read_csv(
+            glove_fn, sep=" ", index_col=0, header=None, quoting=csv.QUOTE_NONE
+        )
+    
+    def _get_wordvec(self, word):
+        return self.word_embs.loc[word].as_matrix()
+
+    def forward(self, obj_category, sub_category):
+        obj_emb = self._get_wordvec(obj_category)
+        sub_emb = self._get_wordvec(sub_category)
+        embs = np.concatenate([obj_emb, sub_emb], axis=1)
+        return torch.FloatTensor(embs)
+
+
+
+# %%
 # initialize fully connected layer—maps 3 sets of image features to class logits
-fc = nn.Linear(in_features*3, 2)
+# includes 2x word embeddings for subj and obj category
+fc = nn.Linear(in_features*3 + 2*WEMB_SIZE, 2)
 init_fc(fc)
 
 # %%
@@ -386,7 +424,8 @@ from snorkel.classification.task import Task, Operation
 module_pool = nn.ModuleDict({
     "feat_extractor": feature_extractor,
     "prediction_head": fc,
-    "feat_concat": FlatConcat()
+    "feat_concat": FlatConcat(),
+    "word_emb": WordEmb()
 })
 
 union_feat_op = Operation(
@@ -407,10 +446,21 @@ obj_feat_op = Operation(
     inputs=[("_input_", "obj_crop")]
 )
 
+word_emb_op = Operation(
+    name="word_emb_op",
+    module_name="word_emb",
+    inputs=[("_input_", "sub_category"), ("_input_", "obj_category")]
+)
+
 concat_op = Operation(
     name="concat_op",
     module_name="feat_concat",
-    inputs=[("obj_feat_op", 0), ("sub_feat_op", 0), ("union_feat_op", 0)]
+    inputs=[
+        ("obj_feat_op", 0), 
+        ("sub_feat_op", 0), 
+        ("union_feat_op", 0), 
+        ("word_emb_op", 0)
+    ]
 )
 
 prediction_op = Operation(
@@ -419,20 +469,7 @@ prediction_op = Operation(
     inputs=[("concat_op", 0)]
 )
 
-task_flow = [sub_feat_op, obj_feat_op, union_feat_op, concat_op, prediction_op]
-
-# %%
-# TODO
-
-# import pandas as pd
-# import csv
-
-# # # ! bash scripts/get_glove.sh
-# glove_data_file = "data/glove/glove.6B.200d.txt"
-# words = pd.read_table(glove_data_file, sep=" ", index_col=0, header=None, quoting=csv.QUOTE_NONE)
-
-# def get_wordvec(word):
-#     return words.loc[word].as_matrix()
+task_flow = [sub_feat_op, obj_feat_op, union_feat_op, word_emb_op, concat_op, prediction_op]
 
 # %%
 from functools import partial
@@ -467,8 +504,13 @@ from snorkel.classification.training import Trainer
 from snorkel.classification.snorkel_classifier import SnorkelClassifier
 
 model = SnorkelClassifier([pred_cls_task])
-trainer = Trainer(n_epochs=20, optimizer_config={"lr":1e-4})
+trainer = Trainer(
+    n_epochs=20, optimizer_config={"lr":1e-3}, 
+    checkpointing=True, checkpointer_config={"checkpoint_dir": "checkpoint"}
+)
 trainer.train_model(model, [train_dl])
 
 # %%
 model.score([valid_dl])
+
+# %%
