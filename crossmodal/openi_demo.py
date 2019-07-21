@@ -35,6 +35,11 @@ import pandas as pd
 # %% [markdown]
 # First, we set up the data dictionary and load data that we've already split for you into an (approximately) 80% train split, 10% development split, and 10% test split.  Each raw data point contains three fields: a text report, a label (normal or abnormal), and a set of image paths.  The original data, from the OpenI dataset, is maintained by [NIH](https://openi.nlm.nih.gov/faq.php).
 
+# %% [markdown]
+# **TODO:**
+# 1. Move the dataset adjustment and conversion to a preprocessing script
+# 2. Do not include labels column in train
+
 # %%
 # Setting up data dictionary and defining data splits
 data = {}
@@ -48,12 +53,18 @@ for split in splits:
     data[split]["label"][data[split]["label"] == 0] = 2
     perc_pos = sum(data[split]["label"] == 1) / len(data[split])
     print(f"{len(data[split])} {split} examples: {100*perc_pos:0.1f}% Abnormal")
+    
+train_df = pd.DataFrame.from_dict(data["train"])
+valid_df = pd.DataFrame.from_dict(data["dev"])
+test_df = pd.DataFrame.from_dict(data["test"])
+
+valid_df.head()
 
 # %% [markdown]
-# You can see an example of a single data point below -- note that the raw label convention for our normal vs. abnormal classification problem is 1 for abnormal and 2 for abnormal.
+# You can see an example of a single data point below -- note that the raw label convention for our normal vs. abnormal classification problem is 1 for abnormal and 2 for normal.
 
 # %%
-sample = data["train"].iloc[0]
+sample = valid_df.iloc[0]
 print("RAW TEXT:\n \n", sample["text"], "\n")
 print("IMAGE PATHS: \n \n", sample["xray_paths"], "\n")
 print("LABEL:", sample["label"])
@@ -65,8 +76,13 @@ print("LABEL:", sample["label"])
 # We now define our *labeling functions* (LFs): simple, heuristic functions written by a domain expert (e.g., a radiologist) that correctly label a report as normal or abnormal with probability better than random chance.
 #
 # We give an example of all three types of LFs we reference in the paper: general pattern LFs that operate on patterns a non-expert user could easily identify, medical pattern LFs that operate on patterns easily identifiable by a clinician, and structural LFs that focus on specific structural elements of the report (e.g. how long it is) that have some correlation with the scan it describes being normal or abnormal.
+#
+# **TODO:**
+# 1. Convert regex things to preprocessors
 
 # %%
+from snorkel.labeling.apply import PandasLFApplier
+from snorkel.labeling.lf import labeling_function
 import re
 
 # Value to use for abstain votes
@@ -76,61 +92,134 @@ ABNORMAL = 1
 # Value to user for normal votes
 NORMAL = 2
 
+# %%
+lfs = []
 
 # Example of a General Pattern LF
-def LF_is_seen_or_noted_in_report_demo(report):
-    if any(word in report.lower() for word in ["is seen", "noted"]):
+noted_or_seen = ["is seen", "noted"]
+@labeling_function()
+def LF_noted_or_seen(x, noted_or_seen):
+    if any(word in x.text.lower() for word in noted_or_seen):
         return ABNORMAL
     else:
         return ABSTAIN
+lfs.append(LF_noted_or_seen)
 
+@labeling_function()
+def LF_negative(x, negative_words):
+    return (
+        ABNORMAL
+        if any(word in x.text.lower() for word in  ["but", "however", "otherwise"])
+        else ABSTAIN
+    )
+lfs.append(LF_negative)
+
+@labeling_function()
+def LF_disease_in_report(x):
+    return ABNORMAL if "disease" in x.text.lower() else ABSTAIN
+lfs.append(LF_disease_in_report)
+
+@labeling_function()
+def LF_recommend_in_report(x):
+    return ABNORMAL if "recommend" in x.text.lower() else ABSTAIN
+lfs.append(LF_recommend_in_report)
+
+@labeling_function()
+def LF_mm_in_report(x):
+    return ABNORMAL if any(word in x.text.lower() for word in ["mm", "cm"]) else ABSTAIN
+lfs.append(LF_mm_in_report)
 
 # Example of a Medical Pattern LF
-def LF_lung_hyperdistention_demo(report):
+@labeling_function()
+def LF_lung_hyperdistention_demo(x):
     """
     Votes abnormal for indications of lung hyperdistention.
     """
     reg_01 = re.compile("increased volume|hyperexpan|inflated", re.IGNORECASE)
-    for s in report.split("."):
+    for s in x.text.split("."):
         if reg_01.search(s):
             return ABNORMAL
-    ### *** ###
-    return NORMAL
+    return ABSTAIN
+lfs.append(LF_lung_hyperdistention_demo)
 
+@labeling_function()
+def LF_consistency_in_report(x):
+    """
+    The words 'clear', 'no', 'normal', 'free', 'midline' in
+    findings section of the report
+    """
+    findings = x.text[x.text.find("FINDINGS:") :]
+    findings = findings[: findings.find("IMPRESSION:")]
+    sents = findings.split(".")
+
+    normalcy_words = ["clear", "no", "normal", "unremarkable", "free", "midline"]
+    num_sents_without_normal = ABSTAIN
+    for sent in sents:
+        sent = sent.lower()
+        if not any(word in sent for word in normalcy_words):
+            num_sents_without_normal += 1
+        elif "not" in sent:
+            num_sents_without_normal += 1
+    return NORMAL if num_sents_without_normal < 2 else ABNORMAL
+lfs.append(LF_consistency_in_report)
+
+abnormal_mesh_terms = [
+    "opacity",
+    "cardiomegaly",
+    "calcinosis",
+    "hypoinflation",
+    "calcified granuloma",
+    "thoracic vertebrae",
+    "degenerative",
+    "hyperdistention",
+    "catheters",
+    "granulomatous",
+    "nodule",
+    "fracture" "surgical",
+    "instruments",
+    "emphysema",
+]
+@labeling_function(resources=dict(abnormal_mesh_terms=abnormal_mesh_terms))
+def LF_abnormal_mesh_terms_in_report(x, abnormal_mesh_terms):
+    if any(mesh in x.text.lower() for mesh in abnormal_mesh_terms):
+        return ABNORMAL
+    else:
+        return ABSTAIN
+lfs.append(LF_abnormal_mesh_terms_in_report)
 
 # Example of a Structural LF
-def LF_report_is_short_demo(report):
+@labeling_function()
+def LF_report_is_short_demo(x):
     """
     Checks if report is short.
     """
-    return NORMAL if len(report) < 280 else ABSTAIN
-
+    return NORMAL if len(x.text) < 280 else ABSTAIN
+lfs.append(LF_report_is_short_demo)
 
 # %% [markdown]
-# Now, we can see how well these LFs might do at correctly indicating normal or abnormal examples.  Check them out by changing the `lf_test` function in the cell below to reference one of those listed above.
+# Now, we can see how well these LFs might do at correctly indicating normal or abnormal examples by first applying the labeling functions to the examples and then printing some useful statistics.
 
 # %%
-import numpy as np
-from snorkel.labeling.analysis import single_lf_summary, confusion_matrix
+from snorkel.labeling.apply import PandasLFApplier
 
-# Testing single LF
-lf_test = LF_lung_hyperdistention_demo
-
-# Computing labels
-Y_lf = np.array([lf_test(doc["text"]) for ind, doc in data["dev"].iterrows()])
-Y_dev = np.array([doc["label"] for ind, doc in data["dev"].iterrows()])
-
-# Summarizing LF performance
-single_lf_summary(Y_lf, Y=Y_dev)
+applier = PandasLFApplier(lfs)
+L_train = applier.apply(train_df)
+L_valid = applier.apply(valid_df)
 
 # %% [markdown]
 # If we use analyze the `LF_lung_hyperdistention_demo` function -- in this case,  we see that it has polarity [1,2], meaning it votes on both class 1 and class 2 (and votes on every example because `coverage` = 1.0), but that it has low accuracy (around 44%).  Let's look at the confusion matrix to see why.
 
 # %%
-# Print confusion matrix
-conf = confusion_matrix(Y_dev, Y_lf)
+from snorkel.analysis.utils import convert_labels
+from snorkel.labeling.analysis import lf_summary
+
+Y_valid = valid_df.label.values
+lf_names= [lf.name for lf in lfs]
+lf_summary(L_valid, Y_valid, lf_names=lf_names)
 
 # %% [markdown]
+# **TODO: don't have interactive components that require users to change for good result in the tutorial**
+#
 # Clearly, this LF is much more accurate on abnormal examples (where y=1) than on abnormal examples (where y=2).  Why don't we adjust it to only vote in the positive direction and see how we do?
 #
 # Go ahead and change `NORMAL` to `ABSTAIN` in the `LF_lung_hyperdistention_demo` function (the line below the `### *** ###` comment), and rerun the last three code cells.
@@ -140,131 +229,50 @@ conf = confusion_matrix(Y_dev, Y_lf)
 # You may also notice that it's very easy to write these LFs over text, but it would be very hard to, say, write an `LF_lung_hyperdistention` version that operates over an image -- this is why cross-modality is so important!
 
 # %% [markdown]
-# ## Step 3: Computing the Label Matrix
-
-# %% [markdown]
 # Once we've designed a couple of LFs, it's time to execute them all on every example we have to create a *label matrix*.  This is an $n$ by $m$ matrix, where $n$ is the number of examples and $m$ is the number of LFs.
 
 # %%
-from labeling_functions import (
-    LF_report_is_short,
-    LF_consistency_in_report,
-    LF_negative_inflection_words_in_report,
-    LF_is_seen_or_noted_in_report,
-    LF_disease_in_report,
-    LF_abnormal_mesh_terms_in_report,
-    LF_recommend_in_report,
-    LF_mm_in_report,
-    LF_normal,
-    LF_positive_MeshTerm,
-    LF_fracture,
-    LF_calcinosis,
-    LF_degen_spine,
-    LF_lung_hypoinflation,
-    LF_lung_hyperdistention,
-    LF_catheters,
-    LF_surgical,
-    LF_granuloma,
-)
+# from labeling_functions import (
+#     LF_report_is_short,
+#     LF_consistency_in_report,
+#     LF_negative_inflection_words_in_report,
+#     LF_is_seen_or_noted_in_report,
+#     LF_disease_in_report,
+#     LF_abnormal_mesh_terms_in_report,
+#     LF_recommend_in_report,
+#     LF_mm_in_report,
+#     LF_normal,
+#     LF_positive_MeshTerm,
+#     LF_fracture,
+#     LF_calcinosis,
+#     LF_degen_spine,
+#     LF_lung_hypoinflation,
+#     LF_lung_hyperdistention,
+#     LF_catheters,
+#     LF_surgical,
+#     LF_granuloma,
+# )
 
-lfs = [
-    LF_report_is_short,
-    LF_consistency_in_report,
-    LF_negative_inflection_words_in_report,
-    LF_is_seen_or_noted_in_report,
-    LF_disease_in_report,
-    LF_abnormal_mesh_terms_in_report,
-    LF_recommend_in_report,
-    LF_mm_in_report,
-    LF_normal,
-    LF_positive_MeshTerm,
-    LF_fracture,
-    LF_calcinosis,
-    LF_degen_spine,
-    LF_lung_hypoinflation,
-    LF_lung_hyperdistention,
-    LF_catheters,
-    LF_surgical,
-    LF_granuloma,
-]
-
-# %% [markdown]
-# Now we define a few simple helper functions for running our labeling functions over all text reports.
-
-# %%
-import dask
-from dask.diagnostics import ProgressBar
-from scipy.sparse import csr_matrix
-
-
-def evaluate_lf_on_docs(docs, lf):
-    """
-    Evaluates lf on list of documents
-    """
-
-    lf_list = []
-    for doc in docs:
-        lf_list.append(lf(doc))
-    return lf_list
-
-
-def create_label_matrix(lfs, docs):
-    """
-    Creates label matrix from documents and lfs
-    """
-
-    delayed_lf_rows = []
-
-    for lf in lfs:
-        delayed_lf_rows.append(dask.delayed(evaluate_lf_on_docs)(docs, lf))
-
-    with ProgressBar():
-        L = csr_matrix(np.vstack(dask.compute(*delayed_lf_rows)).transpose())
-
-    return L
-
-
-# %% [markdown]
-# Now, we simply apply each of our LFs to each of our reports.
-
-# %%
-# Get lf names
-lf_names = [lf.__name__ for lf in lfs]
-
-# Allocating label matrix and ground truth label lists
-Ls = []
-Ys = []
-
-# Computing lfs
-print("Computing label matrices...")
-for i, docs in enumerate(
-    (
-        data["train"]["text"].tolist(),
-        data["dev"]["text"].tolist(),
-        data["test"]["text"].tolist(),
-    )
-):
-    Ls.append(create_label_matrix(lfs, docs))
-
-# Getting ground truth labels
-print("Creating label vectors...")
-Ys = [
-    data["train"]["label"].tolist(),
-    data["dev"]["label"].tolist(),
-    data["test"]["label"].tolist(),
-]
-
-# %% [markdown]
-# Now that we've done this, we can inspect our accuracy on the development set and other useful LF metrics using the simple MeTaL interface.
-
-# %%
-from snorkel.labeling.analysis import lf_summary
-
-# Analyzing LF stats
-lf_summary(Ls[1], Y=Y_dev, lf_names=lf_names)
-
-# %% [markdown]
-# Note that all of our labeling functions, while certainly imperfect, are better than random chance.  This fulfills the only theoretical requirement of the cross-modal data programming algorithm.
+# lfs = [
+#     LF_report_is_short,
+#     LF_consistency_in_report,
+#     LF_negative_inflection_words_in_report,
+#     LF_is_seen_or_noted_in_report,
+#     LF_disease_in_report,
+#     LF_abnormal_mesh_terms_in_report,
+#     LF_recommend_in_report,
+#     LF_mm_in_report,
+#     LF_normal,
+#     LF_positive_MeshTerm,
+#     LF_fracture,
+#     LF_calcinosis,
+#     LF_degen_spine,
+#     LF_lung_hypoinflation,
+#     LF_lung_hyperdistention,
+#     LF_catheters,
+#     LF_surgical,
+#     LF_granuloma,
+# ]
 
 # %% [markdown]
 # ## Step 4: Train a Label Model in Snorkel MeTaL
@@ -275,12 +283,28 @@ lf_summary(Ls[1], Y=Y_dev, lf_names=lf_names)
 # We perform a simple random hyperparameter search over learning rate and L2 regularization, using our small labeled development set to choose the best model.
 
 # %%
-from snorkel.labeling.model.label_model import LabelModel
+from snorkel.labeling.model import LabelModel
+from snorkel.analysis.utils import probs_to_preds
+from snorkel.analysis.metrics import metric_score
 
-label_model = LabelModel(cardinality=2, seed=1701, verbose=True)
+label_model = LabelModel(cardinality=2, verbose=True)
+label_model.train_model(L_train, log_train_every=10, lr=0.05, class_balance=[0.7, 0.3], n_epochs=100)
 
 # %%
-label_model.train_model(Ls[0])
+Y_probs_valid = label_model.predict_proba(L_valid)
+Y_preds_valid = probs_to_preds(Y_probs_valid)
+metric_score(Y_valid, Y_preds_valid, probs=None, metric="f1")
+
+# %% [markdown]
+# **Majority Vote**
+
+# %%
+from snorkel.labeling.model import MajorityLabelVoter
+
+mv_model = MajorityLabelVoter()
+Y_probs_valid = mv_model.predict_proba(L_valid)
+Y_preds_valid = probs_to_preds(Y_probs_valid)
+metric_score(Y_valid, Y_preds_valid, probs=None, metric="f1")
 
 # %%
 # from metal.tuners import RandomSearchTuner
