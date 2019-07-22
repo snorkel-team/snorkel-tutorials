@@ -9,9 +9,9 @@
 #       format_version: '1.2'
 #       jupytext_version: 1.2.0
 #   kernelspec:
-#     display_name: snorkel
+#     display_name: Python 3
 #     language: python
-#     name: snorkel
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -136,26 +136,27 @@ df_dev.sample(5, random_state=123)
 # ## 2. Write Labeling Functions (LFs)
 
 # %% [markdown]
-# * What's an LF
-#     * Why are they awesome
-# * Can be many types:
-#     * keyword
-#     * pattern-match
-#     * heuristic
-#     * third-party models
-#     * distant supervision
-#     * crowdworkers (non-expert)
-# * Typically an iterative process
-#     * Look at examples for ideas
-#     * Write an LF
-#     * Check performance on dev set
-#     * Balance accuracy/coverage
+# **Labeling functions (LFs) are a way for users to encode domain knowledge and other supervision sources programmatically**
+#
+#
+# LFs are heuristics that take as input a datapoint and either assign a label to it (in this case, `HAM` or `SPAM`) or abstain (don't assign any label). Labeling functions can be *noisy*: they don't have perfect accuracy and don't label every datapoint. 
+#
+# They can wrap several forms of supervision. The only requirement is that it is a function that takes as input a datapoint and outputs a label (or abstains) using any some deterministic logic. Example include, but are not limited to:
+# * Keyword searches: looking for specific words in a sentence 
+# * Pattern matching: looking for specific syntactical patterns 
+# * Third-party models: using an pre-trained model (usually a model for a different task than the one at hand)
+# * Distant supervision: using external knowledge base
+# * Crowdworker labels: treating each crowdworker as a black-box function that assigns labels to subsets of the data
+#
+# The process of **developing LFs** is iterative and usually consists of encoding domain knowledge programmatically, measuring its performance on the dev set, editing it accordingly, and repeating for different LFs. After writing a few LFs, users look at the coverage of their LFs overall, and repeat the process to try to write LFs that cover subsets of the data that have not received labels from any LFs. **It is not necessary for LFs to assign labels to every datpoint; in fact, this is often the case**
+#
+# Balancing accuracy and coverage for specific labeling functions as well as the overall set of LFs developed is often a trade-off, and depending on the use case, users may tend to prefer one over the other. Remember that the classifier that trains on labels from Snorkel has the power to _generalize_ and therefore can therefore learn a good representation of the data even if the entire training set does not receive labels from the LFs. 
 
 # %% [markdown]
 # ### a) Look at examples for ideas
 
 # %% [markdown]
-# * Look at 10 examples; got any ideas?
+# We begin the process of writing LFs by looking at some examples in the dev set.
 
 # %%
 # Display just the text and label
