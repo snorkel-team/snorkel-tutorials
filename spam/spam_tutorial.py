@@ -101,9 +101,16 @@ ABSTAIN = 0
 SPAM = 1
 HAM = 2
 
-for split_name, df in [("train", df_train), ("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
+for split_name, df in [
+    ("train", df_train),
+    ("dev", df_dev),
+    ("valid", df_valid),
+    ("test", df_test),
+]:
     counts = Counter(df["LABEL"].values)
-    print(f"{split_name.upper():<6} {counts[SPAM] * 100/sum(counts.values()):0.1f}% SPAM")
+    print(
+        f"{split_name.upper():<6} {counts[SPAM] * 100/sum(counts.values()):0.1f}% SPAM"
+    )
 
 # %% [markdown]
 # Taking a peek at our data, we see that for each `DataPoint`, we have the following fields:
@@ -120,7 +127,8 @@ for split_name, df in [("train", df_train), ("dev", df_dev), ("valid", df_valid)
 # %%
 # Don't truncate text fields in the display
 import pandas as pd
-pd.set_option('display.max_colwidth', 0)
+
+pd.set_option("display.max_colwidth", 0)
 
 df_dev.sample(5, random_state=123)
 
@@ -172,10 +180,12 @@ from snorkel.labeling.lf import labeling_function
 # We initialize an empty list that we'll add our LFs to as we create them
 lfs = []
 
+
 @labeling_function()
 def keyword_my(x):
     """Many spam comments talk about 'my channel', 'my video', etc."""
-    return SPAM if 'my' in x.CONTENT.lower() else ABSTAIN
+    return SPAM if "my" in x.CONTENT.lower() else ABSTAIN
+
 
 lfs.append(keyword_my)
 
@@ -219,7 +229,9 @@ L_dev_array = np.asarray(L_dev.todense()).squeeze()
 
 Y_dev = df_dev["LABEL"].values
 
-accuracy = ((L_dev_array == Y_dev)[L_dev_array != ABSTAIN]).sum() / (L_dev_array != ABSTAIN).sum()
+accuracy = ((L_dev_array == Y_dev)[L_dev_array != ABSTAIN]).sum() / (
+    L_dev_array != ABSTAIN
+).sum()
 print(f"Accuracy: {accuracy}")
 
 # %% [markdown]
@@ -230,7 +242,13 @@ from snorkel.analysis.metrics import metric_score
 
 # Calculate accuracy, ignore all examples for which the predicted label is ABSTAIN
 # TODO: drop probs=None
-accuracy = metric_score(golds=Y_dev, preds=L_dev_array, probs=None, metric="accuracy", filter_dict={"preds": [ABSTAIN]})
+accuracy = metric_score(
+    golds=Y_dev,
+    preds=L_dev_array,
+    probs=None,
+    metric="accuracy",
+    filter_dict={"preds": [ABSTAIN]},
+)
 print(f"Accuracy: {accuracy}")
 
 # %% [markdown]
@@ -246,7 +264,7 @@ print(f"Accuracy: {accuracy}")
 # %%
 from snorkel.labeling.analysis import lf_summary
 
-lf_names= [lf.name for lf in lfs]
+lf_names = [lf.name for lf in lfs]
 lf_summary(L=L_dev, Y=Y_dev, lf_names=lf_names)
 
 # %% [markdown]
@@ -276,12 +294,13 @@ df_dev[["CONTENT", "LABEL"]].iloc[buckets[(1, 1)]].head()
 # %%
 @labeling_function()
 def keywords_my_channel(x):
-    return SPAM if 'my channel' in x.CONTENT.lower() else ABSTAIN
+    return SPAM if "my channel" in x.CONTENT.lower() else ABSTAIN
+
 
 lfs = [keywords_my_channel]
 applier = PandasLFApplier(lfs)
 L_dev = applier.apply(df_dev)
-lf_names= [lf.name for lf in lfs]
+lf_names = [lf.name for lf in lfs]
 lf_summary(L=L_dev, Y=Y_dev)
 
 # %% [markdown]
@@ -304,34 +323,53 @@ lf_summary(L=L_dev, Y=Y_dev)
 # %%
 lfs = []
 
+
 @labeling_function()
 def keyword_my(x):
     """Spam comments talk about 'my channel', 'my video', etc."""
-    return SPAM if 'my' in x.CONTENT.lower() else ABSTAIN
+    return SPAM if "my" in x.CONTENT.lower() else ABSTAIN
+
+
 lfs.append(keyword_my)
+
 
 @labeling_function()
 def lf_subscribe(x):
     """Spam comments ask users to subscribe to their channels."""
     return SPAM if "subscribe" in x.CONTENT else 0
+
+
 lfs.append(lf_subscribe)
+
 
 @labeling_function()
 def lf_link(x):
     """Spam comments post links to other channels."""
     return SPAM if "http" in x.CONTENT.lower() else 0
+
+
 lfs.append(lf_link)
+
 
 @labeling_function()
 def lf_please(x):
     """Spam comments make requests rather than commenting."""
-    return SPAM if any([word in x.CONTENT.lower() for word in ["please", "plz"]]) else ABSTAIN
+    return (
+        SPAM
+        if any([word in x.CONTENT.lower() for word in ["please", "plz"]])
+        else ABSTAIN
+    )
+
+
 lfs.append(lf_please)
+
 
 @labeling_function()
 def lf_song(x):
     """Ham comments actually talk about the video's content."""
     return HAM if "song" in x.CONTENT.lower() else ABSTAIN
+
+
 lfs.append(lf_song)
 
 # %% [markdown]
@@ -343,10 +381,12 @@ lfs.append(lf_song)
 # %%
 import re
 
+
 @labeling_function()
 def regex_check_out(x):
     """Spam comments say 'check out my video', 'check it out', etc."""
     return SPAM if re.search(r"check.*out", x.CONTENT, flags=re.I) else ABSTAIN
+
 
 lfs.append(regex_check_out)
 
@@ -363,6 +403,8 @@ lfs.append(regex_check_out)
 def short_comment(x):
     """Ham comments are often short, such as 'cool video!'"""
     return HAM if len(x.CONTENT.split()) < 5 else ABSTAIN
+
+
 lfs.append(short_comment)
 
 
@@ -389,9 +431,11 @@ lfs.append(short_comment)
 
 # %%
 from snorkel.labeling.preprocess.nlp import SpacyPreprocessor
+
 # The SpacyPreprocessor parses the text in text_field and
 # stores the new enriched representation in doc_field
 spacy = SpacyPreprocessor(text_field="CONTENT", doc_field="doc", memoize=True)
+
 
 @labeling_function(preprocessors=[spacy])
 def has_person(x):
@@ -400,6 +444,8 @@ def has_person(x):
         return HAM
     else:
         return ABSTAIN
+
+
 lfs.append(has_person)
 
 # %% [markdown]
@@ -414,22 +460,36 @@ lfs.append(has_person)
 import matplotlib.pyplot as plt
 from textblob import TextBlob
 
-spam_polarities = [TextBlob(x.CONTENT).sentiment.polarity for i, x in df_dev.iterrows() if x.LABEL == SPAM]
-ham_polarities = [TextBlob(x.CONTENT).sentiment.polarity for i, x in df_dev.iterrows() if x.LABEL == HAM]
+spam_polarities = [
+    TextBlob(x.CONTENT).sentiment.polarity
+    for i, x in df_dev.iterrows()
+    if x.LABEL == SPAM
+]
+ham_polarities = [
+    TextBlob(x.CONTENT).sentiment.polarity
+    for i, x in df_dev.iterrows()
+    if x.LABEL == HAM
+]
 
 _ = plt.hist([spam_polarities, ham_polarities])
 
 # %%
 from textblob import TextBlob
 
+
 @labeling_function()
 def textblob_polarity(x):
     return 2 if TextBlob(x.CONTENT).sentiment.polarity > 0.3 else 0
+
+
 lfs.append(textblob_polarity)
+
 
 @labeling_function()
 def textblob_subjectivity(x):
     return 2 if TextBlob(x.CONTENT).sentiment.subjectivity > 0.9 else 0
+
+
 lfs.append(textblob_subjectivity)
 
 # %% [markdown]
@@ -462,7 +522,7 @@ applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
 
-lf_names= [lf.name for lf in lfs]
+lf_names = [lf.name for lf in lfs]
 lf_summary(L=L_dev, Y=Y_dev, lf_names=lf_names)
 
 # %% [markdown]
@@ -473,8 +533,10 @@ lf_summary(L=L_dev, Y=Y_dev, lf_names=lf_names)
 # TODO: Move plot_label_frequency() to core snorkel repo
 import matplotlib.pyplot as plt
 
+
 def plot_label_frequency(L):
     plt.hist(np.asarray((L != 0).sum(axis=1)), density=True, bins=range(L.shape[1]))
+
 
 plot_label_frequency(L_train)
 
@@ -515,7 +577,8 @@ label_model.train_model(L_train, n_epochs=300, log_train_every=25)
 
 # %%
 def plot_probabilities_histogram(Y_probs):
-    plt.hist(Y_probs[:,0])
+    plt.hist(Y_probs[:, 0])
+
 
 Y_probs_train = label_model.predict_proba(L_train)
 plot_probabilities_histogram(Y_probs_train)
@@ -544,9 +607,9 @@ from snorkel.analysis.utils import probs_to_preds, convert_labels
 
 # Y_train = df_train['LABEL'].map({1: 1, 2: 0}) # This will not be available
 Y_train = Y_probs_train
-Y_dev = convert_labels(df_dev['LABEL'].values, "categorical", "onezero")
-Y_valid = convert_labels(df_valid['LABEL'].values, "categorical", "onezero")
-Y_test = convert_labels(df_test['LABEL'].values, "categorical", "onezero")
+Y_dev = convert_labels(df_dev["LABEL"].values, "categorical", "onezero")
+Y_valid = convert_labels(df_valid["LABEL"].values, "categorical", "onezero")
+Y_test = convert_labels(df_test["LABEL"].values, "categorical", "onezero")
 
 # %% [markdown]
 # * Use bag-of-ngrams as features
@@ -559,7 +622,7 @@ words_dev = [row.CONTENT for i, row in df_dev.iterrows()]
 words_valid = [row.CONTENT for i, row in df_valid.iterrows()]
 words_test = [row.CONTENT for i, row in df_test.iterrows()]
 
-vectorizer = CountVectorizer(ngram_range=(1,2))
+vectorizer = CountVectorizer(ngram_range=(1, 2))
 X_train = vectorizer.fit_transform(words_train)
 X_dev = vectorizer.transform(words_dev)
 X_valid = vectorizer.transform(words_valid)

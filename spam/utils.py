@@ -21,17 +21,14 @@ def load_spam_dataset():
         df = df.rename(columns={"CLASS": "LABEL"})
         # Shuffle order
         df = df.sample(frac=1, random_state=123).reset_index(drop=True)
-        df['LABEL'] = df['LABEL'].map({0: 2, 1: 1})
+        df["LABEL"] = df["LABEL"].map({0: 2, 1: 1})
         dfs.append(df)
 
     df_train = pd.concat(dfs[:4])
     df_dev = df_train.sample(100, random_state=123)
     df_valid_test = dfs[4]
     df_valid, df_test = train_test_split(
-        df_valid_test,
-        test_size=0.5,
-        random_state=123,
-        stratify=df_valid_test.LABEL,
+        df_valid_test, test_size=0.5, random_state=123, stratify=df_valid_test.LABEL
     )
 
     # TODO: Drop the label column for train
