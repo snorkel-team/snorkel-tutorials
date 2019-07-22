@@ -11,8 +11,8 @@ def load_spam_dataset():
     # TODO:
     # Add reference to dataset
     # Send email to dataset owner: tuliocasagrande < AT > acm.org
-    subprocess.call("bash download_data.sh", shell=True)
-    filenames = sorted(glob.glob("raw_data/Youtube*.csv"))
+    subprocess.call("bash spam/download_data.sh", shell=True)
+    filenames = sorted(glob.glob("spam/data/Youtube*.csv"))
 
     dfs = []
     for i, filename in enumerate(filenames, start=1):

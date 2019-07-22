@@ -18,9 +18,9 @@
 # # Introductory Snorkel Tutorial: Spam Detection
 
 # %% [markdown]
-# In this tutorial, we will walk through the process of using `Snorkel` to classify YouTube comments as `SPAM` or `HAM` (not spam). For an overview of Snorkel, visit [snorkel.stanford.edu](http://snorkel.stanford.edu). 
+# In this tutorial, we will walk through the process of using `Snorkel` to classify YouTube comments as `SPAM` or `HAM` (not spam). For an overview of Snorkel, visit [snorkel.stanford.edu](http://snorkel.stanford.edu).
 #
-# For our task, we have access to a large amount of *unlabeled data*, which can be prohibitively expensive and slow to label manually. We therefore turn to weak supervision using *labeling functions*, or noisy, programmatic heuristics, to assign labels to unlabeled training data efficiently. We also have access to a small amount of labeled data, which we only use for evaluation purposes. 
+# For our task, we have access to a large amount of *unlabeled data*, which can be prohibitively expensive and slow to label manually. We therefore turn to weak supervision using *labeling functions*, or noisy, programmatic heuristics, to assign labels to unlabeled training data efficiently. We also have access to a small amount of labeled data, which we only use for evaluation purposes.
 #
 # The tutorial is divided into four parts:
 # 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
@@ -35,7 +35,7 @@
 # ### Task: Spam Detection
 
 # %% [markdown]
-# We use a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) that consists of YouTube comments from 5 videos. The task is to classify each comment as being `SPAM`, irrelevant or inappropriate messages, or `HAM`, comments relevant to the video. 
+# We use a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) that consists of YouTube comments from 5 videos. The task is to classify each comment as being `SPAM`, irrelevant or inappropriate messages, or `HAM`, comments relevant to the video.
 #
 # For example, the following comments are `SPAM`:
 #
@@ -58,12 +58,12 @@
 #
 # We split our data into 4 sets:
 # * **training set**: This is the largest split of the dataset with no labels
-# * **Validation (Valid) Set**: A labeled set used to tune hyperparameters for the end classifier. 
+# * **Validation (Valid) Set**: A labeled set used to tune hyperparameters for the end classifier.
 # * **Test Set**: A labeled set used to evaluate the classifier. Note that users should not be looking at the test set and use it only for the final evaluation step.
 #
 # While it is possible to write labeling functions without any labeled data and evaluate only with the classifier, it is often useful to have some labeled data to estimate how the labeling functions are doing. For example, we can calculate the accuracy and coverage of the labeling functions over this labeled set, which can help guide how to edit existing labeling functions and/or what type of labeling functions to add.
-# 
-# We refer to this as the **development (dev) set**. This can either be a small labeled subset of the training set (e.g. 100 data points) or we can use the valid set as the dev set. Note that in the latter case, the valid set will not be representative of the test set since the labeling functions are created to fit specifically to the validation set.  
+#
+# We refer to this as the **development (dev) set**. This can either be a small labeled subset of the training set (e.g. 100 data points) or we can use the valid set as the dev set. Note that in the latter case, the valid set will not be representative of the test set since the labeling functions are created to fit specifically to the validation set.
 
 # %% [markdown]
 # ## 1. Load data
@@ -77,7 +77,7 @@
 # * **LABEL**: Whether the comment is `SPAM` (1) or `HAM` (2)
 # * **VIDEO_ID**: The video the comment is associated with
 #
-# We start by loading our data. 
+# We start by loading our data.
 # The `load_spam_dataset()` method downloads the raw csv files from the internet, divides them into splits, converts them into dataframes, and shuffles them.
 # As mentioned above, the dataset contains comments from 5 of the most popular YouTube videos during a particular timeframe in 2014 and 2015.
 # * The first four videos' comments are combined to form the `train` set. This set has no gold labels.
@@ -85,7 +85,7 @@
 # * The fifth video is split 50/50 between a validation set (`valid`) and `test` set.
 
 # %%
-from utils import load_spam_dataset
+from spam.utils import load_spam_dataset
 
 df_train, df_dev, df_valid, df_test = load_spam_dataset()
 
@@ -107,11 +107,11 @@ for split_name, df in [("train", df_train), ("dev", df_dev), ("valid", df_valid)
 
 # %% [markdown]
 # Taking a peek at our data, we see that for each `DataPoint`, we have the following fields:
-# * `COMMENT_ID`: A unique identifier 
+# * `COMMENT_ID`: A unique identifier
 # * `AUTHOR`: The user who made the comment
 # * `DATE`: The date the comment was made
 # * `CONTENT`: The comment text
-# * `LABEL`: 
+# * `LABEL`:
 #     * 0 = UNKNOWN/ABSTAIN
 #     * 1 = SPAM
 #     * 2 = HAM (not spam)
@@ -119,7 +119,8 @@ for split_name, df in [("train", df_train), ("dev", df_dev), ("valid", df_valid)
 
 # %%
 # Don't truncate text fields in the display
-pd.set_option('display.max_colwidth', 0)  
+import pandas as pd
+pd.set_option('display.max_colwidth', 0)
 
 df_dev.sample(5, random_state=123)
 
@@ -211,6 +212,8 @@ print(f"Coverage: {coverage}")
 # Note that we don't want to penalize the LF for examples where it abstained, so we filter out both the predictions and the gold labels where the prediction is `ABSTAIN`.
 
 # %%
+import numpy as np
+
 L_dev = applier.apply(df_dev)
 L_dev_array = np.asarray(L_dev.todense()).squeeze()
 
@@ -386,7 +389,7 @@ lfs.append(short_comment)
 
 # %%
 from snorkel.labeling.preprocess.nlp import SpacyPreprocessor
-# The SpacyPreprocessor parses the text in text_field and 
+# The SpacyPreprocessor parses the text in text_field and
 # stores the new enriched representation in doc_field
 spacy = SpacyPreprocessor(text_field="CONTENT", doc_field="doc", memoize=True)
 
@@ -433,7 +436,7 @@ lfs.append(textblob_subjectivity)
 # ### v. Write your own LFs
 
 # %% [markdown]
-# This tutorial demonstrates just a handful of the types of LFs that one might write for this task. 
+# This tutorial demonstrates just a handful of the types of LFs that one might write for this task.
 # Many of these are no doubt suboptimal.
 # The strength of this approach, however, is that the LF abstraction provides a flexible interface for conveying a huge variety of supervision signals, and the `LabelModel` is able to denoise these signals, reducing the need for painstaking manual fine-tuning.
 #
@@ -471,12 +474,12 @@ lf_summary(L=L_dev, Y=Y_dev, lf_names=lf_names)
 import matplotlib.pyplot as plt
 
 def plot_label_frequency(L):
-    plt.hist(np.asarray((L != 0).sum(axis=1)), density=True, bins=range(L.shape[1]))    
+    plt.hist(np.asarray((L != 0).sum(axis=1)), density=True, bins=range(L.shape[1]))
 
 plot_label_frequency(L_train)
 
 # %% [markdown]
-# We see that over half of our training dataset `DataPoints` have 0 or 1 weak labels. 
+# We see that over half of our training dataset `DataPoints` have 0 or 1 weak labels.
 # Fortunately, the signal we do have can be used to train a classifier with a larger feature set than just these labeling functions that we've created, allowing it to generalize beyond what we've specified.
 
 # %% [markdown]
@@ -513,7 +516,7 @@ label_model.train_model(L_train, n_epochs=300, log_train_every=25)
 # %%
 def plot_probabilities_histogram(Y_probs):
     plt.hist(Y_probs[:,0])
-    
+
 Y_probs_train = label_model.predict_proba(L_train)
 plot_probabilities_histogram(Y_probs_train)
 
@@ -521,8 +524,8 @@ plot_probabilities_histogram(Y_probs_train)
 label_model.score(L_dev, Y_dev)
 
 # %% [markdown]
-# While our `LabelModel` does improve over the majority vote baseline, it is still somewhat limited as a classifier. 
-# For example, many of our `DataPoints` have few or no LFs voting on them. 
+# While our `LabelModel` does improve over the majority vote baseline, it is still somewhat limited as a classifier.
+# For example, many of our `DataPoints` have few or no LFs voting on them.
 # We will now train a discriminative classifier with this training set to see if we can improve performance further.
 
 # %% [markdown]
@@ -556,7 +559,7 @@ words_dev = [row.CONTENT for i, row in df_dev.iterrows()]
 words_valid = [row.CONTENT for i, row in df_valid.iterrows()]
 words_test = [row.CONTENT for i, row in df_test.iterrows()]
 
-vectorizer = CountVectorizer(ngram_range=(1,2))               
+vectorizer = CountVectorizer(ngram_range=(1,2))
 X_train = vectorizer.fit_transform(words_train)
 X_dev = vectorizer.transform(words_dev)
 X_valid = vectorizer.transform(words_valid)
@@ -577,7 +580,7 @@ Y_train = Y_train[mask]
 # * TBD
 
 # %%
-# TODO: 
+# TODO:
 # import simple logistic regression classifier in Keras
 # train on noise-aware loss
 # score

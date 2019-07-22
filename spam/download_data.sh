@@ -3,11 +3,11 @@
 
 DATA_URL="https://archive.ics.uci.edu/ml/machine-learning-databases/00380/YouTube-Spam-Collection-v1.zip"
 
-if [ ! -d "raw_data" ]; then
-    mkdir -p raw_data
+if [ ! -d "data" ]; then
+    mkdir -p data
     wget $DATA_URL -O data.zip
-    mv data.zip raw_data/
-    cd raw_data
+    mv data.zip data/
+    cd data
     unzip data.zip
     rm data.zip
     rm -rf __MACOSX
