@@ -12,30 +12,20 @@
 # We begin with some basic setup and data downloading.
 #
 # %%
-# %load_ext autoreload
-# %autoreload 2
 # %matplotlib inline
 
 import os
 import pickle
 import tensorflow as tf
 import numpy as np
-import subprocess
 
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("spouse")
 
-subprocess.run(["bash", "download_data.sh"], check=True)
-with open(os.path.join("data/dev_data.pkl"), "rb") as f:
-    dev_df = pickle.load(f)
-    dev_labels = pickle.load(f)
+from utils import load_data
 
-with open(os.path.join("data/train_data.pkl"), "rb") as f:
-    train_df = pickle.load(f)
+((dev_df, dev_labels), train_df, (test_df, test_labels)) = load_data("data")
 
-with open(os.path.join("data/test_data.pkl"), "rb") as f:
-    test_df = pickle.load(f)
-    test_labels = pickle.load(f)
 # %% [markdown]
 # **Input Data:** `dev_df` is a Pandas DataFrame object, where each row represents a particular __candidate__. The DataFrames contain the fields `sentence`, which refers to the sentence the candidate is in, `tokens`, the tokenized form of the sentence, `person1_word_idx` and `person2_word_idx`, which represent `[start, end]` indices in the tokens at which the first and second person's name appear, respectively.
 #
@@ -50,12 +40,12 @@ dev_df.head()
 # %%
 from preprocessors import get_person_text
 
-candidate = dev_df.loc[112]
+candidate = dev_df.loc[2]
 person_names = get_person_text(candidate).person_names
 
-print("Sentence:   \t", candidate["sentence"])
-print("Person 1:   \t", person_names[0])
-print("Person 2:   \t", person_names[1])
+print("Sentence: ", candidate["sentence"])
+print("Person 1: ", person_names[0])
+print("Person 2: ", person_names[1])
 
 # %% [markdown]
 # # Part 2: Writing  Labeling Functions
@@ -128,11 +118,11 @@ def get_text_between(cand):
 #
 #
 #     @labeling_function(resources=dict(spouses=spouses), preprocessors=[get_left_tokens])
-#     def LF_husband_wife_left_window(x, spouses):
+#     def lf_husband_wife_left_window(x, spouses):
 #         if len(set(spouses).intersection(set(x.person1_left_tokens))) > 0:
-#             return POS
+#             return POSITIVE
 #         elif len(set(spouses).intersection(set(x.person2_left_tokens))) > 0:
-#             return POS
+#             return POSITIVE
 #         else:
 #             return ABSTAIN
 #
@@ -151,16 +141,13 @@ def get_text_between(cand):
 # **Optimizations:** Allows caching behind-the-scenes
 
 # %%
-from typing import List
-
 from snorkel.labeling.apply import PandasLFApplier
 from snorkel.labeling.lf import labeling_function
-from snorkel.types import DataPoint
 
 from preprocessors import get_left_tokens, get_person_last_names
 
-POS = 1
-NEG = -1
+POSITIVE = 1
+NEGATIVE = -1
 ABSTAIN = 0
 
 # %%
@@ -169,18 +156,18 @@ spouses = {"spouse", "wife", "husband", "ex-wife", "ex-husband"}
 
 
 @labeling_function(resources=dict(spouses=spouses))
-def LF_husband_wife(x, spouses):
-    return POS if len(spouses.intersection(set(x.between_tokens))) > 0 else ABSTAIN
+def lf_husband_wife(x, spouses):
+    return POSITIVE if len(spouses.intersection(set(x.between_tokens))) > 0 else ABSTAIN
 
 
 # %%
 # Check for the `spouse` words appearing to the left of the person mentions
 @labeling_function(resources=dict(spouses=spouses), preprocessors=[get_left_tokens])
-def LF_husband_wife_left_window(x, spouses):
+def lf_husband_wife_left_window(x, spouses):
     if len(set(spouses).intersection(set(x.person1_left_tokens))) > 0:
-        return POS
+        return POSITIVE
     elif len(set(spouses).intersection(set(x.person2_left_tokens))) > 0:
-        return POS
+        return POSITIVE
     else:
         return ABSTAIN
 
@@ -188,20 +175,20 @@ def LF_husband_wife_left_window(x, spouses):
 # %%
 # Check for the person mentions having the same last name
 @labeling_function(preprocessors=[get_person_last_names])
-def LF_same_last_name(x):
+def lf_same_last_name(x):
     p1_ln, p2_ln = x.person_lastnames
 
     if p1_ln and p2_ln and p1_ln == p2_ln:
-        return POS
+        return POSITIVE
     return ABSTAIN
 
 
 # %%
 # Check for the words `and ... married` between person mentions
 @labeling_function()
-def LF_and_married(x):
+def lf_and_married(x):
     return (
-        POS
+        POSITIVE
         if "and" in x.between_tokens and "married" in x.person2_right_tokens
         else ABSTAIN
     )
@@ -226,28 +213,28 @@ family = set(family + [f + "-in-law" for f in family])
 
 
 @labeling_function(resources=dict(family=family))
-def LF_familial_relationship(x, family):
-    return NEG if len(family.intersection(set(x.between_tokens))) > 0 else ABSTAIN
+def lf_familial_relationship(x, family):
+    return NEGATIVE if len(family.intersection(set(x.between_tokens))) > 0 else ABSTAIN
 
 
 @labeling_function(resources=dict(family=family), preprocessors=[get_left_tokens])
-def LF_family_left_window(x, family):
+def lf_family_left_window(x, family):
     if len(set(family).intersection(set(x.person1_left_tokens))) > 0:
-        return NEG
+        return NEGATIVE
     elif len(set(family).intersection(set(x.person2_left_tokens))) > 0:
-        return NEG
+        return NEGATIVE
     else:
         return ABSTAIN
 
 
 # %%
 # Check for `other` relationship words between person mentions
-other = {"boyfriend", "girlfriend" "boss", "employee", "secretary", "co-worker"}
+other = {"boyfriend", "girlfriend", "boss", "employee", "secretary", "co-worker"}
 
 
 @labeling_function(resources=dict(other=other))
-def LF_other_relationship(x, other):
-    return NEG if len(other.intersection(set(x.between_tokens))) > 0 else ABSTAIN
+def lf_other_relationship(x, other):
+    return NEGATIVE if len(other.intersection(set(x.between_tokens))) > 0 else ABSTAIN
 
 
 # %% [markdown]
@@ -256,13 +243,13 @@ def LF_other_relationship(x, other):
 
 # %%
 lfs = [
-    LF_husband_wife,
-    LF_husband_wife_left_window,
-    LF_same_last_name,
-    LF_and_married,
-    LF_familial_relationship,
-    LF_family_left_window,
-    LF_other_relationship,
+    lf_husband_wife,
+    lf_husband_wife_left_window,
+    lf_same_last_name,
+    lf_and_married,
+    lf_familial_relationship,
+    lf_family_left_window,
+    lf_other_relationship,
 ]
 applier = PandasLFApplier(lfs)
 L = applier.apply(dev_df)
@@ -329,13 +316,15 @@ list(known_spouses)[0:5]
 @labeling_function(
     resources=dict(known_spouses=known_spouses), preprocessors=[get_person_text]
 )
-def LF_distant_supervision(x: DataPoint, known_spouses: List[str]) -> int:
+def lf_distant_supervision(x, known_spouses):
     p1, p2 = x.person_names
-    return POS if (p1, p2) in known_spouses or (p2, p1) in known_spouses else ABSTAIN
+    return (
+        POSITIVE if (p1, p2) in known_spouses or (p2, p1) in known_spouses else ABSTAIN
+    )
 
 
 # %%
-# Helper function to get last name
+# Helper function to get last name for dbpedia entries.
 def last_name(s):
     name_parts = s.split(" ")
     return name_parts[-1] if len(name_parts) > 1 else None
@@ -354,11 +343,11 @@ last_names = set(
 @labeling_function(
     resources=dict(last_names=last_names), preprocessors=[get_person_last_names]
 )
-def LF_distant_supervision_last_names(x: DataPoint, last_names: List[str]) -> int:
+def lf_distant_supervision_last_names(x, last_names):
     p1_ln, p2_ln = x.person_lastnames
 
     return (
-        POS
+        POSITIVE
         if (p1_ln != p2_ln)
         and ((p1_ln, p2_ln) in last_names or (p2_ln, p1_ln) in last_names)
         else ABSTAIN
@@ -370,15 +359,15 @@ def LF_distant_supervision_last_names(x: DataPoint, last_names: List[str]) -> in
 
 # %%
 lfs = [
-    LF_husband_wife,
-    LF_husband_wife_left_window,
-    LF_same_last_name,
-    LF_and_married,
-    LF_familial_relationship,
-    LF_family_left_window,
-    LF_other_relationship,
-    LF_distant_supervision,
-    LF_distant_supervision_last_names,
+    lf_husband_wife,
+    lf_husband_wife_left_window,
+    lf_same_last_name,
+    lf_and_married,
+    lf_familial_relationship,
+    lf_family_left_window,
+    lf_other_relationship,
+    lf_distant_supervision,
+    lf_distant_supervision_last_names,
 ]
 applier = PandasLFApplier(lfs)
 
@@ -392,23 +381,27 @@ train_L = applier.apply(train_df)
 #
 # The strength of LFs is that you can write any arbitrary function and use it to supervise a classification task. This approach can combine many of the same strategies discussed above or encode other information.
 #
-# For example, we observe that when mentions of person names occur far apart in a sentence, this is a good indicator that the candidate's label is False. You can write a labeling function that uses preprocessor `get_text_between` or the existing field `get_between_tokens` to write such an LF!
+# For example, we observe that when mentions of person names occur far apart in a sentence, this is a good indicator that the candidate's label is False. You can write a labeling function that uses preprocessor `get_text_between` or `get_between_tokens`!
 #
 # **IMPORTANT** Good labeling functions manage a trade-off between high coverage and high precision. When constructing your dictionaries, think about building larger, noiser sets of terms instead of relying on 1 or 2 keywords. Sometimes a single word can be very predictive (e.g., `ex-wife`) but it's almost always better to define something more general, such as a regular expression pattern capturing _any_ string with the `ex-` prefix.
 #
 # **Try editing and running the cells below!**
 
 # %%
+# from preprocessors import get_between_tokens
+#
 # @labeling_function()
-# def LF_new(x: DataPoint) -> int:
-#     return POS if x.person1_word_idx[0] > 3 else ABSTAIN #TODO: Change this!
+# def lf_new(x):
+#     return POSITIVE if x.person1_word_idx[0] > 3 else ABSTAIN #TODO: Change this!
 
-# applier = PandasLFApplier([LF_new])
+# applier = PandasLFApplier([lf_new])
 
 # %%
+# import scipy.sparse as sp
+#
 # new_dev_L = applier.apply(dev_df)
 # dev_L = sp.hstack((dev_L, new_dev_L), format='csr')
-
+#
 # new_train_L = applier.apply(train_df)
 # train_L = sp.hstack((train_L, new_train_L), format='csr')
 
@@ -519,6 +512,7 @@ from tf_model import get_features_and_labels, get_train_and_loss_op, get_predict
 # %%
 tf.reset_default_graph()
 sess = tf.InteractiveSession()
+batch_size = 64
 # Train ops
 tokens, idx1, idx2, label_probs = get_features_and_labels(
     train_df, train_proba, tf.float32
@@ -528,20 +522,24 @@ train_op, mean_loss = get_train_and_loss_op(tokens, idx1, idx2, label_probs)
 # Change label format for consistency with predict_proba.
 test_labels_flipped = 1 - convert_labels(test_labels, "plusminus", "onezero")
 tokens, idx1, idx2, test_labels_op = get_features_and_labels(
-    test_df, np.expand_dims(test_labels_flipped, 1), tf.int64
+    test_df,
+    np.expand_dims(test_labels_flipped, 1),
+    tf.int64,
+    batch_size=batch_size,
+    num_epochs=1,
 )
 predictions_op = get_predictions_op(tokens, idx1, idx2)
 
 # Initialize and train. Set num_train_steps to ~ 2000.
 # Note: Training ~2000 steps takes several minutes.
-num_train_steps = 5
+num_train_steps = 10
 sess.run(tf.global_variables_initializer())
 print(sess.run(mean_loss))
 for step in range(num_train_steps):
     sess.run(train_op)
     if step % 200 == 0:
-        print("step: %d loss: %f" % (step, sess.run(mean_loss)))
-print("Final loss: %f" % sess.run(mean_loss))
+        print(f"step: {step} loss: {sess.run(mean_loss)}")
+print(f"Final loss: {sess.run(mean_loss)}")
 
 # %% [markdown]
 # Finally, we can measure the trained model's prediction accuracy.
@@ -551,5 +549,8 @@ print("Final loss: %f" % sess.run(mean_loss))
 accuracy_op = tf.reduce_mean(
     tf.cast(tf.equal(test_labels_op, predictions_op), tf.float32)
 )
-mean_accuracy = sum([sess.run(accuracy_op) for _ in range(100)]) / 100.0
+num_batches = (1 + test_labels.shape[0]) // batch_size
+mean_accuracy = sum([sess.run(accuracy_op) for _ in range(num_batches)]) / float(
+    num_batches
+)
 print(mean_accuracy)
