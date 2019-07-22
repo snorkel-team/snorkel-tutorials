@@ -130,3 +130,6 @@ dask-worker-space/
 
 # MacOS
 .DS_Store
+
+# Generic data directories
+*/data/*
