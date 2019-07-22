@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.2'
-#       jupytext_version: 1.1.7
+#       jupytext_version: 1.2.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -31,7 +31,8 @@ import json
 
 objects = json.load(open("./data/VRD/objects.json"))
 predicates = json.load(open("./data/VRD/predicates.json"))
-semantic_predicates = ['carry', 'cover', 'fly', 'look', 'lying on', 'park on', 'sit on', 'stand on', 'ride']
+#semantic_predicates = ['carry', 'cover', 'fly', 'look', 'lying on', 'park on', 'sit on', 'stand on', 'ride']
+semantic_predicates = ['ride]
 
 
 relationships_train = json.load(open("./data/VRD/annotations_train.json"))
@@ -55,7 +56,15 @@ def flatten_vrd_relationship(img, relationship, objects, predicates):
     new_relationship_dict['subject_bbox'] = relationship['subject']['bbox']
     new_relationship_dict['object_bbox'] = relationship['object']['bbox']
 
-    new_relationship_dict['label'] = 1 if predicates[relationship['predicate']] == 'ride' else 2
+    if predicates[relationship['predicate']] == 'ride':
+        new_relationship_dict['label'] = 1 
+    elif predicates[relationship['predicate']] == 'ride':
+        new_relationship_dict['label'] = 1
+    predicates[relationship['predicate']] == 'ride':
+        new_relationship_dict['label'] = 1
+    else:
+        new_relationship_dict['label'] = 1
+        
     new_relationship_dict['source_img'] = img
     
     return new_relationship_dict
@@ -505,7 +514,7 @@ from snorkel.classification.snorkel_classifier import SnorkelClassifier
 
 model = SnorkelClassifier([pred_cls_task])
 trainer = Trainer(
-    n_epochs=20, optimizer_config={"lr":1e-3}, 
+    n_epochs=1, optimizer_config={"lr":1e-3}, 
     checkpointing=True, checkpointer_config={"checkpoint_dir": "checkpoint"}
 )
 trainer.train_model(model, [train_dl])
