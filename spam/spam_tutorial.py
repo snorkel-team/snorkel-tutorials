@@ -69,6 +69,12 @@
 # * The fifth video is split 50/50 between a validation set (`valid`) and `test` set.
 
 # %%
+import os
+
+if os.path.basename(os.getcwd()) == "spam":
+    os.chdir("..")
+
+# %%
 from spam.utils import load_spam_dataset
 
 df_train, df_dev, df_valid, df_test = load_spam_dataset()
@@ -78,12 +84,15 @@ df_train, df_dev, df_valid, df_test = load_spam_dataset()
 # The class distribution varies slightly from class to class, but all are approximately class-balanced.
 
 # %%
+df_train.head()
+
+# %%
 from collections import Counter
 
 # For clarity, we'll define constants to represent the class labels for spam, ham, and abstaining.
-ABSTAIN = 0
+ABSTAIN = -1
 SPAM = 1
-HAM = 2
+HAM = 0
 
 for split_name, df in [
     ("train", df_train),
@@ -164,7 +173,6 @@ from snorkel.labeling.lf import labeling_function
 # We initialize an empty list that we'll add our LFs to as we create them
 lfs = []
 
-
 @labeling_function()
 def keyword_my(x):
     """Many spam comments talk about 'my channel', 'my video', etc."""
@@ -185,7 +193,7 @@ applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
 
 # %% [markdown]
-# The output of the `apply()` method is a sparse label matrix which we generally refer to as `L`.
+# The output of the `apply()` method is a label matrix which we generally refer to as `L`.
 
 # %%
 L_train
@@ -197,7 +205,8 @@ L_train
 # We can easily calculate the coverage of this LF by hand (i.e., the percentage of the dataset that it labels) as follows:
 
 # %%
-coverage = L_train.nnz / L_train.shape[0]
+import numpy as np
+coverage = np.sum(L_train != -1) / L_train.shape[0]
 print(f"Coverage: {coverage}")
 
 # %% [markdown]
@@ -209,7 +218,7 @@ print(f"Coverage: {coverage}")
 import numpy as np
 
 L_dev = applier.apply(df_dev)
-L_dev_array = np.asarray(L_dev.todense()).squeeze()
+L_dev_array = L_dev.squeeze()
 
 Y_dev = df_dev["LABEL"].values
 
@@ -236,7 +245,7 @@ accuracy = metric_score(
 print(f"Accuracy: {accuracy}")
 
 # %% [markdown]
-# You can also use the helper method `lf_summary()` to report the following summary statistics for multiple LFs at once:
+# You can also use the helper class `LFAnalysis()` to report the following summary statistics for multiple LFs at once:
 # * Polarity: The set of labels this LF outputs
 # * Coverage: The fraction of the dataset the LF labels
 # * Overlaps: The fraction of the dataset where this LF and at least one other LF label
@@ -246,10 +255,10 @@ print(f"Accuracy: {accuracy}")
 # * Emp. Acc.: The empirical accuracy of this LF (if gold labels are provided)
 
 # %%
-from snorkel.labeling.analysis import lf_summary
+from snorkel.labeling.analysis import LFAnalysis
 
 lf_names = [lf.name for lf in lfs]
-lf_summary(L=L_dev, Y=Y_dev, lf_names=lf_names)
+LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
 
 # %% [markdown]
 # ### d) Balance accuracy/coverage
@@ -257,13 +266,13 @@ lf_summary(L=L_dev, Y=Y_dev, lf_names=lf_names)
 # %% [markdown]
 # Often, by looking at the examples that an LF does and doesn't label, we can get ideas for how to improve it.
 #
-# The helper method `error_buckets()` groups examples by their predicted label and true label, so `buckets[(1, 2)]` will contain the indices of examples that that the LF labeled 1 (SPAM) that were actually of class 2 (HAM).
+# The helper method `error_buckets()` groups examples by their predicted label and true label, so `buckets[(1, 0)]` will contain the indices of examples that that the LF labeled 1 (SPAM) that were actually of class 0 (HAM).
 
 # %%
 from snorkel.analysis.error_analysis import error_buckets
 
 buckets = error_buckets(Y_dev, L_dev_array)
-df_dev[["CONTENT", "LABEL"]].iloc[buckets[(1, 2)]].head()
+df_dev[["CONTENT", "LABEL"]].iloc[buckets[(1, 0)]].head()
 
 # %% [markdown]
 # On the other hand, `buckets[(1, 1)]` contains SPAM examples it labeled correctly.
@@ -284,8 +293,9 @@ def keywords_my_channel(x):
 lfs = [keywords_my_channel]
 applier = PandasLFApplier(lfs)
 L_dev = applier.apply(df_dev)
+
 lf_names = [lf.name for lf in lfs]
-lf_summary(L=L_dev, Y=Y_dev)
+LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
 
 # %% [markdown]
 # In this case, accuracy does improve a bit, but it was already fairly accurate to begin with, and "tightening" the LF like this causes the coverage drops significantly, so we'll stick with the original LF.
@@ -463,7 +473,7 @@ from textblob import TextBlob
 
 @labeling_function()
 def textblob_polarity(x):
-    return 2 if TextBlob(x.CONTENT).sentiment.polarity > 0.3 else 0
+    return HAM if TextBlob(x.CONTENT).sentiment.polarity > 0.3 else ABSTAIN
 
 
 lfs.append(textblob_polarity)
@@ -471,7 +481,7 @@ lfs.append(textblob_polarity)
 
 @labeling_function()
 def textblob_subjectivity(x):
-    return 2 if TextBlob(x.CONTENT).sentiment.subjectivity > 0.9 else 0
+    return HAM if TextBlob(x.CONTENT).sentiment.subjectivity > 0.9 else ABSTAIN
 
 
 lfs.append(textblob_subjectivity)
@@ -507,7 +517,7 @@ L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
 
 lf_names = [lf.name for lf in lfs]
-lf_summary(L=L_dev, Y=Y_dev, lf_names=lf_names)
+LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
 
 # %% [markdown]
 # We see that our labeling functions vary in coverage, accuracy, and how much they overlap/conflict with one another.
@@ -519,7 +529,7 @@ import matplotlib.pyplot as plt
 
 
 def plot_label_frequency(L):
-    plt.hist(np.asarray((L != 0).sum(axis=1)), density=True, bins=range(L.shape[1]))
+    plt.hist(np.asarray((L != -1).sum(axis=1)), density=True, bins=range(L.shape[1]))
 
 
 plot_label_frequency(L_train)
@@ -587,13 +597,13 @@ label_model.score(L_dev, Y_dev)
 # * Convert label convention
 
 # %%
-from snorkel.analysis.utils import probs_to_preds, convert_labels
+from snorkel.analysis.utils import probs_to_preds
 
 # Y_train = df_train['LABEL'].map({1: 1, 2: 0}) # This will not be available
 Y_train = Y_probs_train
-Y_dev = convert_labels(df_dev["LABEL"].values, "categorical", "onezero")
-Y_valid = convert_labels(df_valid["LABEL"].values, "categorical", "onezero")
-Y_test = convert_labels(df_test["LABEL"].values, "categorical", "onezero")
+Y_dev = df_dev["LABEL"].values
+Y_valid = df_valid["LABEL"].values
+Y_test = df_test["LABEL"].values
 
 # %% [markdown]
 # * Use bag-of-ngrams as features
@@ -613,10 +623,10 @@ X_valid = vectorizer.transform(words_valid)
 X_test = vectorizer.transform(words_test)
 
 # %% [markdown]
-# * Filter out examples with no labels
+# * Filter out examples with no labels (always abstains)
 
 # %%
-mask = np.asarray(L_train.sum(axis=1) > 0).squeeze()
+mask = L_train.sum(axis=1) != ABSTAIN * len(lfs)
 X_train = X_train[mask, :]
 Y_train = Y_train[mask]
 
@@ -641,7 +651,7 @@ Y_train = Y_train[mask]
 # * Rounding to hard labels
 
 # %%
-Y_train_rounded = convert_labels(probs_to_preds(Y_train), "categorical", "onezero")
+Y_train_rounded = probs_to_preds(Y_train)
 
 # %%
 from sklearn.linear_model import LogisticRegression

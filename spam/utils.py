@@ -19,7 +19,6 @@ def load_spam_dataset():
         df = df.rename(columns={"CLASS": "LABEL"})
         # Shuffle order
         df = df.sample(frac=1, random_state=123).reset_index(drop=True)
-        df["LABEL"] = df["LABEL"].map({0: 2, 1: 1})
         dfs.append(df)
 
     df_train = pd.concat(dfs[:4])
