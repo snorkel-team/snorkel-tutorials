@@ -494,63 +494,43 @@ train_proba = label_model.predict_proba(
 plt.hist(train_proba[:, 0], bins=20, range=(0.0, 1.0))
 plt.show()
 
-# # %% [markdown]
+# %% [markdown]
 # ## Part 4: Training our End Extraction Model
-# #
-# # In this final section of the tutorial, we'll use the noisy training labels we generated in the last tutorial part to train our end machine learning model.
-# #
-# # For this tutorial, we will be training a fairly effective deep learning model. More generally, however, Snorkel plugs in with many ML libraries, making it easy to use almost any state-of-the-art model as the end model!
 #
-# # %% [markdown]
+# In this final section of the tutorial, we'll use the noisy training labels we generated in the last tutorial part to train our end machine learning model.
+#
+# For this tutorial, we will be training a fairly effective deep learning model. More generally, however, Snorkel plugs in with many ML libraries, making it easy to use almost any state-of-the-art model as the end model!
+#
+# %% [markdown]
 # ## II. Training a _Long Short-term Memory_ (LSTM) Neural Network
 #
 # [LSTMs](https://en.wikipedia.org/wiki/Long_short-term_memory) can acheive state-of-the-art performance on many text classification tasks. We'll train a simple LSTM model below. tf_model contains functions for processing features and building the tensorflow graphs for training and evaliation.
 
 # %%
-from tf_model import get_features_and_labels, get_train_and_loss_op, get_predictions_op
+from tf_model import get_features_and_labels, get_model
 
-# %%
-tf.reset_default_graph()
-sess = tf.InteractiveSession()
-batch_size = 64
-# Train ops
+model = get_model()
 tokens, idx1, idx2, label_probs = get_features_and_labels(
     train_df, train_proba, tf.float32
 )
-train_op, mean_loss = get_train_and_loss_op(tokens, idx1, idx2, label_probs)
-# Evaluation ops
-# Change label format for consistency with predict_proba.
-test_labels_flipped = 1 - convert_labels(test_labels, "plusminus", "onezero")
-tokens, idx1, idx2, test_labels_op = get_features_and_labels(
-    test_df,
-    np.expand_dims(test_labels_flipped, 1),
-    tf.int64,
-    batch_size=batch_size,
-    num_epochs=1,
-)
-predictions_op = get_predictions_op(tokens, idx1, idx2)
+num_epochs = 1  # Change this to 10 when running.
+model.fit((tokens, idx1, idx2), label_probs, steps_per_epoch=100, epochs=num_epochs)
 
-# Initialize and train. Set num_train_steps to ~ 2000.
-# Note: Training ~2000 steps takes several minutes.
-num_train_steps = 10
-sess.run(tf.global_variables_initializer())
-print(sess.run(mean_loss))
-for step in range(num_train_steps):
-    sess.run(train_op)
-    if step % 200 == 0:
-        print(f"step: {step} loss: {sess.run(mean_loss)}")
-print(f"Final loss: {sess.run(mean_loss)}")
 
 # %% [markdown]
 # Finally, we can measure the trained model's prediction accuracy.
 
 # %%
-# Measure model accuracy on test set.
-accuracy_op = tf.reduce_mean(
-    tf.cast(tf.equal(test_labels_op, predictions_op), tf.float32)
-)
-num_batches = (1 + test_labels.shape[0]) // batch_size
-mean_accuracy = sum([sess.run(accuracy_op) for _ in range(num_batches)]) / float(
-    num_batches
-)
-print(mean_accuracy)
+# Truncate sentences to limit memory usage when padding.
+def pad_or_truncate(l, max_length=60):
+    return l[:max_length] + [""] * (max_length - len(l))
+
+
+test_tokens = np.array(list(map(pad_or_truncate, test_df.tokens)))
+test_idx1 = np.array(list(map(list, test_df.person1_word_idx)))
+test_idx2 = np.array(list(map(list, test_df.person2_word_idx)))
+predictions = model.predict((test_tokens, test_idx1, test_idx2), steps=1)
+mean_accuracy = (
+    (predictions[:, 0] > 0.5) == (convert_labels(test_labels, "plusminus", "onezero"))
+).mean()
+print(f"Final Accuracy: {mean_accuracy}")
