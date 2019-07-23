@@ -1,19 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: title,-all
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.2'
-#       jupytext_version: 1.2.0
-#   kernelspec:
-#     display_name: snorkel
-#     language: python
-#     name: snorkel
-# ---
-
 # %% [markdown]
 # # Introductory Snorkel Tutorial: Spam Detection
 
