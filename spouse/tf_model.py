@@ -1,18 +1,28 @@
+from typing import Tuple
+
+import numpy as np
 import tensorflow as tf
 
+import pandas as pd
 
-def get_model(rnn_state_size=64, num_hashes=3, num_buckets=40000, embed_dim=124):
+
+def get_model(
+    rnn_state_size: int = 64,
+    num_hashes: int = 3,
+    num_buckets: int = 40000,
+    embed_dim: int = 124,
+) -> tf.keras.Model:
     """
     Return LSTM model for predicting label probabilities.
 
     Args:
-        rnn_state_size: Integer. LSTM state size.
-        num_hashes: Integer. Number of distinct hash functions to use.
-        num_buckets: Integer. Number of buckets to hash strings to integers.
-        embed_dim: Integer. Size of token embeddings.
+        rnn_state_size: LSTM state size.
+        num_hashes: Number of distinct hash functions to use.
+        num_buckets: Number of buckets to hash strings to integers.
+        embed_dim: Size of token embeddings.
 
     Returns:
-        model: A compiled tf.keras.Model instance.
+        model: A compiled LSTM model.
     """
     tokens_ph = tf.keras.layers.Input((None,), dtype="string")
     idx1_ph = tf.keras.layers.Input((2,), dtype="int64")
@@ -39,8 +49,12 @@ def get_model(rnn_state_size=64, num_hashes=3, num_buckets=40000, embed_dim=124)
 
 
 def get_features_and_labels(
-    features_df, labels, label_dtype, batch_size=64, num_epochs=-1
-):
+    features_df: pd.DataFrame,
+    labels: np.ndarray,
+    label_dtype: tf.dtypes.DType,
+    batch_size: int = 64,
+    num_epochs: int = -1,
+) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
     """
     Converts features dataframe and labels np.ndarray into tensorflow Tensors.
 
@@ -49,15 +63,14 @@ def get_features_and_labels(
         labels: Either a [num_labels, 1] np.ndarray of integer labels or a
             [num_labels, 2] np.ndarray of float label probabilities.
         label_dtype: Tensorflow dtype for labels. e.g. tf.int64 or tf.float32.
-        batch_size: Integer.
-        num_epochs: Integer representing number of epochs over data. -1 means
-            keep looping over data indefinitely.
+        batch_size: Batch size.
+        num_epochs: Number of epochs over data. -1 means keep looping over data indefinitely.
 
     Returns:
         tokens: [batch_size, num_tokens] Tensor of tf.string type.
-        idx1: [batch_size, 2] int tensor representing person1_word_idx.
-        idx2: [batch_size, 2] int tensor representing person2_word_idx.
-        label: [batch_size, <1 or 2>] tensor of type label_dtype.
+        idx1: [batch_size, 2] int Tensor representing person1_word_idx.
+        idx2: [batch_size, 2] int Tensor representing person2_word_idx.
+        label: [batch_size, <1 or 2>] Tensor of type label_dtype.
     """
     features = {
         k: features_df[k].values

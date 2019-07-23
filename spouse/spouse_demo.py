@@ -24,7 +24,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 
 from utils import load_data
 
-((dev_df, dev_labels), train_df, (test_df, test_labels)) = load_data("data")
+((dev_df, dev_labels), train_df, (test_df, test_labels)) = load_data()
 
 # %% [markdown]
 # **Input Data:** `dev_df` is a Pandas DataFrame object, where each row represents a particular __candidate__. The DataFrames contain the fields `sentence`, which refers to the sentence the candidate is in, `tokens`, the tokenized form of the sentence, `person1_word_idx` and `person2_word_idx`, which represent `[start, end]` indices in the tokens at which the first and second person's name appear, respectively.
@@ -147,8 +147,8 @@ from snorkel.labeling.lf import labeling_function
 from preprocessors import get_left_tokens, get_person_last_names
 
 POSITIVE = 1
-NEGATIVE = -1
-ABSTAIN = 0
+NEGATIVE = 0
+ABSTAIN = -1
 
 # %%
 # Check for the `spouse` words appearing between the person mentions
@@ -318,9 +318,10 @@ list(known_spouses)[0:5]
 )
 def lf_distant_supervision(x, known_spouses):
     p1, p2 = x.person_names
-    return (
-        POSITIVE if (p1, p2) in known_spouses or (p2, p1) in known_spouses else ABSTAIN
-    )
+    if (p1, p2) in known_spouses or (p2, p1) in known_spouses:
+        return POSITIVE
+    else:
+        return ABSTAIN
 
 
 # %%
@@ -513,24 +514,59 @@ model = get_model()
 tokens, idx1, idx2, label_probs = get_features_and_labels(
     train_df, train_proba, tf.float32
 )
-num_epochs = 1  # Change this to 10 when running.
-model.fit((tokens, idx1, idx2), label_probs, steps_per_epoch=100, epochs=num_epochs)
+batch_size = 64
+num_epochs = 1
+model.fit(
+    (tokens, idx1, idx2),
+    label_probs,
+    batch_size=batch_size,
+    steps_per_epoch=(len(train_df) // batch_size),
+    epochs=num_epochs,
+)
 
 
 # %% [markdown]
-# Finally, we can measure the trained model's prediction accuracy.
+# Measure the trained model's prediction accuracy.
 
 # %%
 # Truncate sentences to limit memory usage when padding.
-def pad_or_truncate(l, max_length=60):
-    return l[:max_length] + [""] * (max_length - len(l))
+def get_feature_arrays(df):
+    def pad_or_truncate(l, max_length=25):
+        return l[:max_length] + [""] * (max_length - len(l))
+
+    tokens = np.array(list(map(pad_or_truncate, test_df.tokens)))
+    idx1 = np.array(list(map(list, test_df.person1_word_idx)))
+    idx2 = np.array(list(map(list, test_df.person2_word_idx)))
+    return tokens, idx1, idx2
 
 
-test_tokens = np.array(list(map(pad_or_truncate, test_df.tokens)))
-test_idx1 = np.array(list(map(list, test_df.person1_word_idx)))
-test_idx2 = np.array(list(map(list, test_df.person2_word_idx)))
+test_tokens, test_idx1, test_idx2 = get_feature_arrays(test_df)
 predictions = model.predict((test_tokens, test_idx1, test_idx2), steps=1)
 mean_accuracy = (
     (predictions[:, 0] > 0.5) == (convert_labels(test_labels, "plusminus", "onezero"))
 ).mean()
-print(f"Final Accuracy: {mean_accuracy}")
+print(f"Final Accuracy using soft training labels: {mean_accuracy}")
+
+# %% [markdown]
+# We compare this to an equivalent model that is only trained using the dev set labels.
+
+# %%
+from snorkel.analysis.utils import preds_to_probs
+
+dev_label_probs = preds_to_probs(convert_labels(dev_labels, "plusminus", "onezero"), 2)
+
+dev_model = get_model()
+dev_tokens, dev_idx1, dev_idx2 = get_feature_arrays(dev_df)
+num_epochs = 1  # Change to 10.
+dev_model.fit(
+    (dev_tokens, dev_idx1, dev_idx2),
+    dev_label_probs,
+    batch_size=batch_size,
+    epochs=num_epochs,
+)
+
+predictions = dev_model.predict((test_tokens, test_idx1, test_idx2), steps=1)
+mean_accuracy = (
+    (predictions[:, 0] > 0.5) == (convert_labels(test_labels, "plusminus", "onezero"))
+).mean()
+print(f"Final Accuracy using only dev labels: {mean_accuracy}")
