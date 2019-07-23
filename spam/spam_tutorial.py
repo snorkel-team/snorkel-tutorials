@@ -139,16 +139,16 @@ df_dev.sample(5, random_state=123)
 # **Labeling functions (LFs) help users encode domain knowledge and other supervision sources programmatically**
 #
 #
-# LFs are heuristics that take as input a datapoint and either assign a label to it (in this case, `HAM` or `SPAM`) or abstain (don't assign any label). Labeling functions can be *noisy*: they don't have perfect accuracy and don't g=have to label every datapoint. 
+# LFs are heuristics that take as input a datapoint and either assign a label to it (in this case, `HAM` or `SPAM`) or abstain (don't assign any label). Labeling functions can be *noisy*: they don't have perfect accuracy and don't have to label every datapoint. 
 #
-# They can wrap several forms of supervision since the only requirement is that it is a function that takes as input a datapoint and outputs a label (or abstains) using any some deterministic logic. Example include, but are not limited to:
+# They can wrap several forms of supervision since the only requirement is that they are functions that takes as input a datapoint and output a label (or abstain) using any some deterministic logic. Examples include, but are not limited to:
 # * Keyword searches: looking for specific words in a sentence 
 # * Pattern matching: looking for specific syntactical patterns 
 # * Third-party models: using an pre-trained model (usually a model for a different task than the one at hand)
 # * Distant supervision: using external knowledge base
 # * Crowdworker labels: treating each crowdworker as a black-box function that assigns labels to subsets of the data
 #
-# The process of **developing LFs** is iterative and usually consists of encoding domain knowledge programmatically, measuring its performance on the dev set, editing it accordingly, and repeating for different LFs. After writing a few LFs, users look at the coverage of their LFs overall, and repeat the process to try to write LFs that cover subsets of the data that have not received labels from any LFs. **It is not necessary for LFs to assign labels to every datpoint; in fact, this is often the case.**
+# The process of **developing LFs** is iterative and usually consists of encoding domain knowledge programmatically, measuring its performance on the dev set, editing it accordingly, and repeating for different LFs. After writing a few LFs, users look at the coverage of their LFs overall, and repeat the process to try to write LFs that cover subsets of the data that have not received labels from any LFs. **It is not necessary for LFs to assign labels to every datapoint; in fact, this is often the case.**
 #
 # Balancing accuracy and coverage for specific labeling functions as well as the overall set of LFs developed is often a trade-off, and depending on the use case, users may tend to prefer one over the other. Remember that the classifier that trains on labels from Snorkel has the power to _generalize_ and can therefore learn a good representation of the data even if the each datapoint in the training set does not receive a label from any LFs. 
 
