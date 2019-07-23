@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-def load_spam_dataset(load_train_labels: bool = False):
+def load_spam_dataset(load_train_labels: bool = False, include_dev: bool = True):
     if os.path.basename(os.getcwd()) == "snorkel-tutorials":
         os.chdir("spam")
     # TODO:
@@ -36,7 +36,10 @@ def load_spam_dataset(load_train_labels: bool = False):
         dfs.append(df)
 
     df_train = pd.concat(dfs[:4])
-    df_dev = df_train.sample(100, random_state=123)
+
+    if include_dev:
+        df_dev = df_train.sample(100, random_state=123)
+
     if not load_train_labels:
         df_train["label"] = np.ones(len(df_train["label"])) * -1
     df_valid_test = dfs[4]
@@ -44,4 +47,7 @@ def load_spam_dataset(load_train_labels: bool = False):
         df_valid_test, test_size=250, random_state=123, stratify=df_valid_test.label
     )
 
-    return df_train, df_dev, df_valid, df_test
+    if include_dev:
+        return df_train, df_dev, df_valid, df_test
+    else:
+        return df_train, df_valid, df_test

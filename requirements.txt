@@ -1,6 +1,6 @@
 #### ESSENTIAL LIBRARIES
 
-git+https://github.com/HazyResearch/snorkel.git@redux
+git+https://github.com/HazyResearch/snorkel.git@slicing_api
 
 
 #### DEV TOOLS
