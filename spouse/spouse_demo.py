@@ -282,15 +282,10 @@ L = applier.apply(dev_df)
 # The fraction of correctly labeled examples on the gold data.
 
 # %%
-from snorkel.analysis.utils import convert_labels
-from snorkel.labeling.analysis import lf_summary
-from scipy.sparse import csr_matrix
+from snorkel.labeling.analysis import LFAnalysis
 
-Y_cat = convert_labels(dev_labels, "plusminus", "categorical")
-L_cat = convert_labels(L.todense(), "plusminus", "categorical")
 lf_names = [lf.name for lf in lfs]
-
-lf_summary(csr_matrix(L_cat), Y_cat, lf_names=lf_names)
+LFAnalysis(L).lf_summary(dev_labels, lf_names=lf_names)
 
 # %% [markdown]
 # ## B. Distant Supervision Labeling Functions
@@ -398,13 +393,11 @@ train_L = applier.apply(train_df)
 # applier = PandasLFApplier([lf_new])
 
 # %%
-# import scipy.sparse as sp
-#
 # new_dev_L = applier.apply(dev_df)
-# dev_L = sp.hstack((dev_L, new_dev_L), format='csr')
+# dev_L = np.concatenate((dev_L, new_dev_L), axis=1)
 #
 # new_train_L = applier.apply(train_df)
-# train_L = sp.hstack((train_L, new_train_L), format='csr')
+# train_L = np.concatenate((train_L, new_train_L), axis=1)
 
 # %% [markdown]
 # ## Part 3: Training the Label Model
@@ -430,16 +423,10 @@ train_L = applier.apply(train_df)
 
 # %%
 from snorkel.labeling.model.label_model import LabelModel
-from snorkel.analysis.utils import convert_labels
-from scipy.sparse import csr_matrix
 
 label_model = LabelModel(cardinality=2, verbose=True, seed=123)
 label_model.train_model(
-    csr_matrix(convert_labels(train_L.toarray(), "plusminus", "categorical")),
-    lr=1e-1,
-    class_balance=[0.1, 0.9],
-    n_epochs=5000,
-    log_train_every=500,
+    train_L, lr=1e-1, class_balance=[0.9, 0.1], n_epochs=5000, log_train_every=500
 )
 
 # %% [markdown]
@@ -452,12 +439,7 @@ from snorkel.analysis.utils import probs_to_preds
 
 Y_probs_dev = label_model.predict_proba(dev_L)
 Y_preds_dev = probs_to_preds(Y_probs_dev)
-metric_score(
-    convert_labels(dev_labels, "plusminus", "categorical"),
-    Y_preds_dev,
-    probs=None,
-    metric="accuracy",
-)
+metric_score(dev_labels, Y_preds_dev, probs=None, metric="accuracy")
 
 # %% [markdown]
 # ### Majority Vote Comparison
@@ -469,12 +451,7 @@ from snorkel.labeling.model import MajorityLabelVoter
 mv_model = MajorityLabelVoter()
 Y_probs_dev = mv_model.predict_proba(dev_L)
 Y_preds_dev = probs_to_preds(Y_probs_dev)
-metric_score(
-    convert_labels(dev_labels, "plusminus", "categorical"),
-    Y_preds_dev,
-    probs=None,
-    metric="accuracy",
-)
+metric_score(dev_labels, Y_preds_dev, probs=None, metric="accuracy")
 
 # %% [markdown]
 # ### Plotting Probabilistic Labels
@@ -489,9 +466,7 @@ metric_score(
 # %%
 import matplotlib.pyplot as plt
 
-train_proba = label_model.predict_proba(
-    csr_matrix(convert_labels(train_L.todense(), "plusminus", "categorical"))
-)
+train_proba = label_model.predict_proba(train_L)
 plt.hist(train_proba[:, 0], bins=20, range=(0.0, 1.0))
 plt.show()
 
@@ -534,30 +509,33 @@ def get_feature_arrays(df):
     def pad_or_truncate(l, max_length=25):
         return l[:max_length] + [""] * (max_length - len(l))
 
-    tokens = np.array(list(map(pad_or_truncate, test_df.tokens)))
-    idx1 = np.array(list(map(list, test_df.person1_word_idx)))
-    idx2 = np.array(list(map(list, test_df.person2_word_idx)))
+    tokens = np.array(list(map(pad_or_truncate, df.tokens)))
+    idx1 = np.array(list(map(list, df.person1_word_idx)))
+    idx2 = np.array(list(map(list, df.person2_word_idx)))
     return tokens, idx1, idx2
 
 
 test_tokens, test_idx1, test_idx2 = get_feature_arrays(test_df)
-predictions = model.predict((test_tokens, test_idx1, test_idx2), steps=1)
-mean_accuracy = (
-    (predictions[:, 0] > 0.5) == (convert_labels(test_labels, "plusminus", "onezero"))
-).mean()
-print(f"Final Accuracy using soft training labels: {mean_accuracy}")
+probs = model.predict((test_tokens, test_idx1, test_idx2))
+preds = probs_to_preds(probs)
+print(
+    f"Test Accuracy when trained with soft labels: {metric_score(test_labels, preds=preds, metric='accuracy')}"
+)
+print(
+    f"Test ROC-AUC when trained with soft labels: {metric_score(test_labels, probs=probs, metric='roc_auc')}"
+)
 
 # %% [markdown]
-# We compare this to an equivalent model that is only trained using the dev set labels.
+# We compare this to an equivalent model that is only trained using the dev set labels. The accuracy is similar in other cases, because the dataset is very unbalanced. However, the ROC-AUC is lower when just training on the dev set, due to the much smaller number of examples.
 
 # %%
 from snorkel.analysis.utils import preds_to_probs
 
-dev_label_probs = preds_to_probs(convert_labels(dev_labels, "plusminus", "onezero"), 2)
+dev_label_probs = preds_to_probs(dev_labels, 2)
 
 dev_model = get_model()
 dev_tokens, dev_idx1, dev_idx2 = get_feature_arrays(dev_df)
-num_epochs = 1  # Change to 10.
+num_epochs = 10  # Change to 10.
 dev_model.fit(
     (dev_tokens, dev_idx1, dev_idx2),
     dev_label_probs,
@@ -565,8 +543,11 @@ dev_model.fit(
     epochs=num_epochs,
 )
 
-predictions = dev_model.predict((test_tokens, test_idx1, test_idx2), steps=1)
-mean_accuracy = (
-    (predictions[:, 0] > 0.5) == (convert_labels(test_labels, "plusminus", "onezero"))
-).mean()
-print(f"Final Accuracy using only dev labels: {mean_accuracy}")
+dev_probs = dev_model.predict((test_tokens, test_idx1, test_idx2))
+dev_preds = probs_to_preds(dev_probs)
+print(
+    f"Test Accuracy when trained with dev labels: {metric_score(test_labels, preds=dev_preds, metric='accuracy')}"
+)
+print(
+    f"Test ROC-AUC when trained with dev labels: {metric_score(test_labels, probs=dev_probs, metric='roc_auc')}"
+)

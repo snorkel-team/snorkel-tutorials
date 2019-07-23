@@ -28,4 +28,8 @@ def load_data() -> Tuple[
     with open(os.path.join("data", "test_data.pkl"), "rb") as f:
         test_df = pickle.load(f)
         test_labels = pickle.load(f)
+
+    # Convert labels to {0, 1} format from {-1, 1} format.
+    dev_labels = (1 + dev_labels) // 2
+    test_labels = (1 + test_labels) // 2
     return ((dev_df, dev_labels), train_df, (test_df, test_labels))
