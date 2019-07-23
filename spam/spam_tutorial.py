@@ -173,6 +173,7 @@ from snorkel.labeling.lf import labeling_function
 # We initialize an empty list that we'll add our LFs to as we create them
 lfs = []
 
+
 @labeling_function()
 def keyword_my(x):
     """Many spam comments talk about 'my channel', 'my video', etc."""
@@ -206,6 +207,7 @@ L_train
 
 # %%
 import numpy as np
+
 coverage = np.sum(L_train != -1) / L_train.shape[0]
 print(f"Coverage: {coverage}")
 
