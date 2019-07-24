@@ -52,11 +52,11 @@ def vrd_to_pandas(
 
 # %%
 def load_vrd_data():
-    relationships_train = json.load(open("./data/VRD/annotations_train.json"))
-    relationships_test = json.load(open("./data/VRD/annotations_test.json"))
+    relationships_train = json.load(open("scene_graph/data/VRD/annotations_train.json"))
+    relationships_test = json.load(open("scene_graph/data/VRD/annotations_test.json"))
 
-    objects = json.load(open("./data/VRD/objects.json"))
-    predicates = json.load(open("./data/VRD/predicates.json"))
+    objects = json.load(open("scene_graph/data/VRD/objects.json"))
+    predicates = json.load(open("scene_graph/data/VRD/predicates.json"))
     semantic_predicates = [
         "carry",
         "cover",
@@ -83,11 +83,11 @@ def load_vrd_data():
     }
 
     # TODO: hack to work with small sample of data for tox
-    if os.path.isdir("data/VRD/sg_dataset/samples"):
-        keys_list = os.listdir("data/VRD/sg_dataset/samples")
+    if os.path.isdir("scene_graph/data/VRD/sg_dataset/samples"):
+        keys_list = os.listdir("scene_graph/data/VRD/sg_dataset/samples")
         test_df = vrd_to_pandas(relationships_test, objects, predicates, list_of_predicates=semantic_predicates, keys_list=keys_list)
         return test_df, test_df, test_df
-    elif os.path.isdir("data/VRD/sg_dataset/sg_train_images"):
+    elif os.path.isdir("scene_graph/data/VRD/sg_dataset/sg_train_images"):
         train_df = vrd_to_pandas(relationships_train, objects, predicates, list_of_predicates=semantic_predicates)
         train_df["labels"] = -1 * np.ones(len(train_df))
         valid_df = vrd_to_pandas(relationships_val, objects, predicates, list_of_predicates=semantic_predicates)

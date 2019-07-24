@@ -122,7 +122,7 @@ class SceneGraphDataset(DictDataset):
 class WordEmb(nn.Module):
     """Extract and concat word embeddings for obj and sub categories."""
 
-    def __init__(self, glove_fn="data/glove/glove.6B.100d.txt"):
+    def __init__(self, glove_fn="scene_graph/data/glove/glove.6B.100d.txt"):
         super(WordEmb, self).__init__()
 
         self.word_embs = pandas.read_csv(
