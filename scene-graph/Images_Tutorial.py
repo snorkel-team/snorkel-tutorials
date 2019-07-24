@@ -31,9 +31,7 @@ import json
 
 objects = json.load(open("./data/VRD/objects.json"))
 predicates = json.load(open("./data/VRD/predicates.json"))
-#semantic_predicates = ['carry', 'cover', 'fly', 'look', 'lying on', 'park on', 'sit on', 'stand on', 'ride']
-semantic_predicates = ['ride]
-
+semantic_predicates = ['carry', 'cover', 'fly', 'look', 'lying on', 'park on', 'sit on', 'stand on', 'ride']
 
 relationships_train = json.load(open("./data/VRD/annotations_train.json"))
 relationships_test = json.load(open("./data/VRD/annotations_test.json"))
@@ -57,13 +55,11 @@ def flatten_vrd_relationship(img, relationship, objects, predicates):
     new_relationship_dict['object_bbox'] = relationship['object']['bbox']
 
     if predicates[relationship['predicate']] == 'ride':
-        new_relationship_dict['label'] = 1 
-    elif predicates[relationship['predicate']] == 'ride':
-        new_relationship_dict['label'] = 1
-    predicates[relationship['predicate']] == 'ride':
+        new_relationship_dict['label'] = 0 
+    elif predicates[relationship['predicate']] == 'carry':
         new_relationship_dict['label'] = 1
     else:
-        new_relationship_dict['label'] = 1
+        new_relationship_dict['label'] = 2
         
     new_relationship_dict['source_img'] = img
     
@@ -93,59 +89,57 @@ print("Train Relationships: ", len(train_df))
 print("Dev Relationships: ", len(valid_df))
 print("Test Relationships: ", len(test_df))
 
-valid_df.head()
-
-# %%
-# ride_keys = []
-# other_keys = []
-
-# for img in relationships_test:
-#     img_relationships = relationships_test[img]
-#     for relationship in img_relationships:
-#         predicate_idx = relationship['predicate']
-#         if predicates[predicate_idx] == 'ride':
-#             ride_keys.append(img)
-#         elif predicates[predicate_idx] in semantic_predicates:
-#             other_keys.append(img)
-            
-# print("Number of ride relationships: ", len(ride_keys))
-# print("Number of other relationships: ", len(other_keys))
-# print("Percentage of Riding Relationships: ", len(ride_keys)/(len(ride_keys) + len(other_keys)))
+valid_df.sample(n=35)
 
 # %%
 from snorkel.labeling.apply import PandasLFApplier
 from snorkel.labeling.lf import labeling_function
 
-POS = 1
-NEG = 2 
-ABSTAIN = 0
+RIDE = 0
+CARRY = 1 
+OTHER = 2
+ABSTAIN = -1
 
 # %%
 lfs = []
 
 #Category-based LFs
-ride_objects = ['bike', 'snowboard', 'motorcycle', 'horse']
-@labeling_function(resources=dict(ride_objects=ride_objects))
-def LF_ride_object(x, ride_objects):
+@labeling_function()
+def LF_ride_object(x):
     if x.subject_category == 'person':
-        if x.object_category in ride_objects:
-            return POS
+        if x.object_category in  ['bike', 'snowboard', 'motorcycle', 'horse']:
+            return RIDE
     return ABSTAIN
 lfs.append(LF_ride_object)
 
-rare_ride_objects = ['bus', 'truck', 'elephant']
-@labeling_function(resources=dict(rare_ride_objects=rare_ride_objects))
-def LF_ride_rare_object(x, rare_ride_objects):
+@labeling_function()
+def LF_ride_rare_object(x):
     if x.subject_category == 'person':
-        if x.object_category in rare_ride_objects:
-            return POS
+        if x.object_category in ['bus', 'truck', 'elephant']:
+            return RIDE
     return ABSTAIN
 lfs.append(LF_ride_rare_object)
 
 @labeling_function()
+def LF_carry_object(x):
+    if x.subject_category == 'person':
+        if x.object_category in ['bag', 'surfboard', 'skis']:
+            return CARRY
+    return ABSTAIN
+lfs.append(LF_carry_object)
+
+@labeling_function()
+def LF_carry_subject(x):
+    if x.object_category == 'person':
+        if x.subject_category in ['chair', 'bike', 'snowboard', 'motorcycle', 'horse']:
+            return CARRY
+    return ABSTAIN
+lfs.append(LF_carry_subject)
+
+@labeling_function()
 def LF_person(x):
     if x.subject_category != 'person':
-        return NEG
+        return OTHER
     return ABSTAIN
 lfs.append(LF_person)
 
@@ -155,14 +149,14 @@ lfs.append(LF_person)
 @labeling_function()
 def LF_ydist(x):
     if x.subject_bbox[3] < x.object_bbox[3]:
-        return NEG
+        return OTHER
     return ABSTAIN
 lfs.append(LF_ydist)
 
 @labeling_function()
 def LF_dist(x):
     if np.linalg.norm(np.array(x.subject_bbox)-np.array(x.object_bbox)) <= 1000:
-        return NEG
+        return OTHER
     return ABSTAIN
 lfs.append(LF_dist)
 
@@ -173,7 +167,7 @@ def LF_area(x):
     object_area = (x.object_bbox[1] - x.object_bbox[0])*(x.object_bbox[3] - x.object_bbox[2])
     
     if subject_area/object_area <= 0.5:
-        return NEG
+        return OTHER
     return ABSTAIN
 lfs.append(LF_area)
 
@@ -185,50 +179,35 @@ L_train = applier.apply(train_df)
 L_valid = applier.apply(valid_df)
 
 # %%
-from snorkel.analysis.utils import convert_labels
-from snorkel.labeling.analysis import lf_summary
+from snorkel.labeling.analysis import LFAnalysis
 
 Y_valid = valid_df.label.values
 lf_names= [lf.name for lf in lfs]
-lf_summary(L_valid, Y_valid, lf_names=lf_names)
 
-# %%
-from snorkel.labeling.model import RandomVoter
-from snorkel.analysis.metrics import metric_score
-from snorkel.analysis.utils import probs_to_preds
-
-rv_model = RandomVoter()
-Y_probs_valid = rv_model.predict_proba(L_valid)
-Y_preds_valid = probs_to_preds(Y_probs_valid)
-metric_score(Y_valid, Y_preds_valid, probs=None, metric="f1")
+lf_analysis = LFAnalysis(L_valid)
+lf_analysis.lf_summary(Y_valid, lf_names=lf_names)
 
 # %%
 from snorkel.labeling.model import MajorityClassVoter
+mc_voter = MajorityClassVoter(cardinality=3)
+mc_voter.train_model(balance=[np.mean(Y_valid == 0), np.mean(Y_valid == 1), np.mean(Y_valid == 2)])
 
-mc_model = MajorityClassVoter()
-mc_model.train_model(balance=[0.8, 0.2])
-Y_probs_valid = mc_model.predict_proba(L_valid)
-Y_preds_valid = probs_to_preds(Y_probs_valid)
-metric_score(Y_valid, Y_preds_valid, probs=None, metric="f1")
+mc_voter.score(L_valid, Y_valid, metrics=["accuracy"])
 
 # %%
 from snorkel.labeling.model import MajorityLabelVoter
 
-mv_model = MajorityLabelVoter()
-Y_probs_valid = mv_model.predict_proba(L_valid)
-Y_preds_valid = probs_to_preds(Y_probs_valid)
-metric_score(Y_valid, Y_preds_valid, probs=None, metric="f1")
+mv_model = MajorityLabelVoter(cardinality=3)
+mv_model.score(L_valid, Y_valid, metrics=["accuracy"])
 
 # %%
 from snorkel.labeling.model import LabelModel
 
-label_model = LabelModel(cardinality=2, verbose=True, seed=123)
-label_model.train_model(L_train, class_balance=[0.8, 0.2], seed=123, lr=0.005, log_train_every=10)
+label_model = LabelModel(cardinality=3, verbose=True)
+label_model.fit(L_train, seed=123, lr=0.01, log_freq=10, n_epochs=100)
 
 # %%
-Y_probs_valid = label_model.predict_proba(L_valid)
-Y_preds_valid = probs_to_preds(Y_probs_valid)
-metric_score(Y_valid, Y_preds_valid, probs=None, metric="f1")
+label_model.score(L_valid, Y_valid, metrics=["accuracy"])
 
 # %% [markdown]
 # ## Now, train a discriminative model with your weak labels! 
