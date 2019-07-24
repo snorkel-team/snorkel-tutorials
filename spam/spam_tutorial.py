@@ -170,7 +170,7 @@ def keyword_my(x):
     return SPAM if "my" in x.text.lower() else ABSTAIN
 
 
-lfs.append(keyword_my)
+lfs = [keyword_my]
 
 # %% [markdown]
 # To apply one or more LFs that we've written to a collection of data points, we use an `LFApplier`.
@@ -225,10 +225,7 @@ from snorkel.analysis.metrics import metric_score
 
 # Calculate accuracy, ignore all examples for which the predicted label is ABSTAIN
 accuracy = metric_score(
-    golds=Y_dev,
-    preds=L_dev_array,
-    metric="accuracy",
-    filter_dict={"preds": [ABSTAIN]},
+    golds=Y_dev, preds=L_dev_array, metric="accuracy", filter_dict={"preds": [ABSTAIN]}
 )
 print(f"Accuracy: {accuracy}")
 
@@ -312,25 +309,16 @@ def keyword_my(x):
     return SPAM if "my" in x.text.lower() else ABSTAIN
 
 
-lfs.append(keyword_my)
-
-
 @labeling_function()
 def lf_subscribe(x):
     """Spam comments ask users to subscribe to their channels."""
     return SPAM if "subscribe" in x.text else ABSTAIN
 
 
-lfs.append(lf_subscribe)
-
-
 @labeling_function()
 def lf_link(x):
     """Spam comments post links to other channels."""
     return SPAM if "http" in x.text.lower() else ABSTAIN
-
-
-lfs.append(lf_link)
 
 
 @labeling_function()
@@ -341,16 +329,11 @@ def lf_please(x):
     )
 
 
-lfs.append(lf_please)
-
-
 @labeling_function()
 def lf_song(x):
     """Ham comments actually talk about the video's content."""
     return HAM if "song" in x.text.lower() else ABSTAIN
 
-
-lfs.append(lf_song)
 
 # %% [markdown]
 # ### ii. Pattern-matching LFs (Regular Expressions)
@@ -368,9 +351,6 @@ def regex_check_out(x):
     return SPAM if re.search(r"check.*out", x.text, flags=re.I) else ABSTAIN
 
 
-lfs.append(regex_check_out)
-
-
 # %% [markdown]
 # ### iii.  Heuristic LFs
 
@@ -384,18 +364,6 @@ def short_comment(x):
     """Ham comments are often short, such as 'cool video!'"""
     return HAM if len(x.text.split()) < 5 else ABSTAIN
 
-
-lfs.append(short_comment)
-
-
-# @labeling_function()
-# def short_word_lengths(x):
-#     """Ham comments tend to have shorter words."""
-#     words = x.text.split()
-#     lengths = [len(word) for word in words]
-#     mean_word_length = sum(lengths) / len(lengths)
-#     return HAM if mean_word_length < 4 else ABSTAIN
-# lfs.append(short_word_lengths)
 
 # %% [markdown]
 # ### Adding Preprocessors
@@ -425,8 +393,6 @@ def has_person(x):
     else:
         return ABSTAIN
 
-
-lfs.append(has_person)
 
 # %% [markdown]
 # ### iv. Third-party Model LFs
@@ -458,15 +424,10 @@ def textblob_polarity(x):
     return HAM if TextBlob(x.text).sentiment.polarity > 0.3 else ABSTAIN
 
 
-lfs.append(textblob_polarity)
-
-
 @labeling_function()
 def textblob_subjectivity(x):
     return HAM if TextBlob(x.text).sentiment.subjectivity > 0.9 else ABSTAIN
 
-
-lfs.append(textblob_subjectivity)
 
 # %% [markdown]
 # ### v. Write your own LFs
@@ -484,6 +445,21 @@ lfs.append(textblob_subjectivity)
 # def my_lf(x):
 #     pass
 # lfs.append(my_lf)
+
+# %%
+lfs = [
+    keyword_my,
+    lf_subscribe,
+    lf_link,
+    lf_please,
+    lf_song,
+    regex_check_out,
+    short_comment,
+    has_person,
+    textblob_polarity,
+    textblob_subjectivity,
+    # Add your LFs here,
+]
 
 # %% [markdown]
 # ### Apply LFs
@@ -675,14 +651,16 @@ print(f"Test Accuracy: {metric_score(Y_test, Y_preds_test, metric='accuracy')}")
 keras_rounded_model = tf.keras.Sequential()
 keras_rounded_model.add(
     tf.keras.layers.Dense(
-        1, 
-        input_dim=X_train.shape[1], 
+        1,
+        input_dim=X_train.shape[1],
         activation=tf.nn.sigmoid,
         kernel_regularizer=tf.keras.regularizers.l2(0.01),
     )
 )
 optimizer = tf.keras.optimizers.Adam(lr=0.001)
-keras_rounded_model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+keras_rounded_model.compile(
+    optimizer=optimizer, loss="binary_crossentropy", metrics=["accuracy"]
+)
 
 keras_rounded_model.fit(
     X_dev,
@@ -690,7 +668,7 @@ keras_rounded_model.fit(
     validation_data=(X_valid, Y_valid),
     callbacks=[early_stopping],
     epochs=20,
-    verbose=0
+    verbose=0,
 )
 
 Y_probs_test = keras_rounded_model.predict(X_test)
