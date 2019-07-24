@@ -199,7 +199,7 @@ L_train
 import numpy as np
 
 coverage = np.sum(L_train != ABSTAIN) / L_train.shape[0]
-print(f"Coverage: {coverage}")
+print(f"Coverage: {coverage:.3f}")
 
 # %% [markdown]
 # To get an estimate of its accuracy, we can label the development set with it and compare that to the few gold labels we do have.
@@ -212,10 +212,10 @@ import numpy as np
 L_dev = applier.apply(df_dev)
 L_dev_array = L_dev.squeeze()
 
-accuracy = ((L_dev_array == Y_dev)[L_dev_array != ABSTAIN]).sum() / (
-    L_dev_array != ABSTAIN
-).sum()
-print(f"Accuracy: {accuracy}")
+correct = L_dev_array == Y_dev
+labeled = L_dev_array != ABSTAIN
+accuracy = (correct * labeled).sum() / labeled.sum()
+print(f"Accuracy: {accuracy:.3f}")
 
 # %% [markdown]
 # Alternatively, you can use the provided `metric_score()` helper method, which allows you to specify a metric to calculate and certain classes to ignore (such as ABSTAIN).
@@ -227,7 +227,7 @@ from snorkel.analysis.metrics import metric_score
 accuracy = metric_score(
     golds=Y_dev, preds=L_dev_array, metric="accuracy", filter_dict={"preds": [ABSTAIN]}
 )
-print(f"Accuracy: {accuracy}")
+print(f"Accuracy: {accuracy:.3f}")
 
 # %% [markdown]
 # You can also use the helper class `LFAnalysis()` to report the following summary statistics for multiple LFs at once:
