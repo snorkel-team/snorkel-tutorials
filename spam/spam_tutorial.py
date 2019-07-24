@@ -156,22 +156,17 @@ df_dev[["text", "label"]].sample(10, random_state=123)
 # ### b) Write an LF
 
 # %% [markdown]
-# The simplest way to create labeling functions in Snorkel is with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point` (in this case, a row of the dataframe).
+# The recommended way to create labeling functions in Snorkel is with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point` (in this case, a row of the dataframe).
 #
-# Looking at samples of our data, we see multiple messages where spammers are trying to get viewers to look at "my channel" or "my video," so we write a simple LF that labels an example as spam if it includes the word "my".
+# Looking at samples of our data, we see multiple messages where spammers are trying to get viewers to look at "my channel" or "my video," so we write a simple LF that labels an example as `SPAM` if it includes the word "my" and otherwise abstains.
 
 # %%
 from snorkel.labeling.lf import labeling_function
-
-# We initialize an empty list that we'll add our LFs to as we create them
-lfs = []
-
 
 @labeling_function()
 def keyword_my(x):
     """Many spam comments talk about 'my channel', 'my video', etc."""
     return SPAM if "my" in x.text.lower() else ABSTAIN
-
 
 lfs = [keyword_my]
 
@@ -187,7 +182,7 @@ applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
 
 # %% [markdown]
-# The output of the `apply()` method is a label matrix which we generally refer to as `L`.
+# The output of the `apply()` method is a label matrix which we generally refer to as `L` (or `L_[split name]`).
 
 # %%
 L_train
@@ -207,7 +202,7 @@ print(f"Coverage: {coverage:.3f}")
 # %% [markdown]
 # To get an estimate of its accuracy, we can label the development set with it and compare that to the few gold labels we do have.
 #
-# Note that we don't want to penalize the LF for examples where it abstained, so we filter out both the predictions and the gold labels where the prediction is `ABSTAIN`.
+# Note that we don't want to penalize the LF for examples where it abstained, so we calculate the accuracy only over those examples where the LF output a label.
 
 # %%
 import numpy as np
@@ -241,6 +236,8 @@ print(f"Accuracy: {accuracy:.3f}")
 # * Correct: The number of data points this LF labels correctly (if gold labels are provided)
 # * Incorrect: The number of data points this LF labels incorrectly (if gold labels are provided)
 # * Emp. Acc.: The empirical accuracy of this LF (if gold labels are provided)
+#
+# The overlaps percentage gives us a rough sense of what percentage of the dataset is only labeled by this LF (coverage minus overlaps).
 
 # %%
 from snorkel.labeling.analysis import LFAnalysis
@@ -254,23 +251,31 @@ LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
 # %% [markdown]
 # Often, by looking at the examples that an LF does and doesn't label, we can get ideas for how to improve it.
 #
-# The helper method `error_buckets()` groups examples by their predicted label and true label, so `buckets[(1, 0)]` will contain the indices of examples that that the LF labeled 1 (SPAM) that were actually of class 0 (HAM).
+# The helper method `error_buckets()` groups examples by their predicted label and true label. For example, `buckets[(SPAM, HAM)]` contains the indices of data points that the LF labeled `SPAM` that actually belong to class `HAM`. This may give ideas for where the LF could be made more specific.
 
 # %%
 from snorkel.analysis.error_analysis import error_buckets
 
 buckets = error_buckets(Y_dev, L_dev_array)
-df_dev[["text", "label"]].iloc[buckets[(1, 0)]].head()
+
+df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]].head()
 
 # %% [markdown]
-# On the other hand, `buckets[(1, 1)]` contains SPAM examples it labeled correctly.
+# On the other hand, `buckets[(SPAM, SPAM)]` points to `SPAM` data points that the LF labeled correctly.
 
 # %%
-df_dev[["text", "label"]].iloc[buckets[(1, 1)]].head()
+df_dev[["text", "label"]].iloc[buckets[(SPAM, SPAM)]].head()
+
+# %% [markdown]
+# And `buckets[(ABSTAIN, SPAM)]` points to data points that the LF abstained on that are actually `SPAM`. 
+# Many of these will be best captured by a separate LF, but browsing these examples can be a good check that your LF is capturing most of the examples that you intended it to.
+
+# %%
+df_dev[["text", "label"]].iloc[buckets[(ABSTAIN, SPAM)]].head()
 
 
 # %% [markdown]
-# Looking at these examples, we may notice that much of the time when "my" is used, it's referring to "my channel". We can update our LF to see how making this change affects accuracy and coverage.
+# Looking at all these examples, we notice that much of the time when "my" is used, it's referring to "my channel". We can update our LF to see how making this change affects accuracy and coverage.
 
 # %%
 @labeling_function()
