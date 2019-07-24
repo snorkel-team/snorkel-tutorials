@@ -161,7 +161,7 @@ df_dev[["text", "label"]].sample(10, random_state=123)
 # ### b) Write an LF
 
 # %% [markdown]
-# The recommended way to create labeling functions in Snorkel is with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point` (in this case, a row of the dataframe).
+# The recommended way to create labeling functions in Snorkel is with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point (in this case, a row of the dataframe).
 #
 # Looking at samples of our data, we see multiple messages where spammers are trying to get viewers to look at "my channel" or "my video," so we write a simple LF that labels an example as `SPAM` if it includes the word "my" and otherwise abstains.
 
