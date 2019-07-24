@@ -404,6 +404,21 @@ def has_person(x):
 
 
 # %% [markdown]
+# Because spaCy is such a common preprocessor for NLP (Natural Language Processing) applications, we also provide an alias for a labeling_function that uses spaCy
+
+# %%
+from snorkel.labeling.lf.nlp import nlp_labeling_function
+
+@nlp_labeling_function()
+def has_person(x):
+    """Ham comments mention specific people and are short."""
+    if len(x.doc) < 20 and any([ent.label_ == "PERSON" for ent in x.doc.ents]):
+        return HAM
+    else:
+        return ABSTAIN
+
+
+# %% [markdown]
 # ### iv. Third-party Model LFs
 
 # %% [markdown]
@@ -422,7 +437,7 @@ ham_polarities = [
     TextBlob(x.text).sentiment.polarity for i, x in df_dev.iterrows() if x.label == HAM
 ]
 
-_ = plt.hist([spam_polarities, ham_polarities])
+plt.hist([spam_polarities, ham_polarities])
 
 # %%
 from textblob import TextBlob
