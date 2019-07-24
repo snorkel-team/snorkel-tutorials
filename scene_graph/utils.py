@@ -1,39 +1,9 @@
 # %%
 import json
+import os
 
 import numpy as np
 import pandas as pd
-
-relationships_train = json.load(open("./data/VRD/annotations_train.json"))
-relationships_test = json.load(open("./data/VRD/annotations_test.json"))
-
-objects = json.load(open("./data/VRD/objects.json"))
-predicates = json.load(open("./data/VRD/predicates.json"))
-semantic_predicates = [
-    "carry",
-    "cover",
-    "fly",
-    "look",
-    "lying on",
-    "park on",
-    "sit on",
-    "stand on",
-    "ride",
-]
-
-np.random.seed(123)
-val_idx = list(np.random.choice(len(relationships_train), 1000, replace=False))
-relationships_val = {
-    key: value
-    for i, (key, value) in enumerate(relationships_train.items())
-    if i in val_idx
-}
-relationships_train = {
-    key: value
-    for i, (key, value) in enumerate(relationships_train.items())
-    if i not in val_idx
-}
-
 
 # %%
 def flatten_vrd_relationship(img, relationship, objects, predicates):
@@ -61,12 +31,15 @@ def flatten_vrd_relationship(img, relationship, objects, predicates):
 
 # %%
 def vrd_to_pandas(
-    relationships_set, objects, predicates, list_of_predicates=semantic_predicates
+    relationships_set, objects, predicates, list_of_predicates, keys_list=None
 ):
     relationships = []
 
     for img in relationships_set:
-        img_relationships = relationships_set[img]
+        if (keys_list is None) or (img in keys_list):
+            img_relationships = relationships_set[img]
+        else:
+            continue
         for relationship in img_relationships:
             predicate_idx = relationship["predicate"]
             if predicates[predicate_idx] in list_of_predicates:
@@ -79,14 +52,44 @@ def vrd_to_pandas(
 
 # %%
 def load_vrd_data():
-    train_df = vrd_to_pandas(relationships_train, objects, predicates)
-    valid_df = vrd_to_pandas(relationships_val, objects, predicates)
-    test_df = vrd_to_pandas(relationships_test, objects, predicates)
-    train_df["labels"] = -1 * np.ones(len(train_df))
+    relationships_train = json.load(open("./data/VRD/annotations_train.json"))
+    relationships_test = json.load(open("./data/VRD/annotations_test.json"))
 
-    return train_df, valid_df, test_df
+    objects = json.load(open("./data/VRD/objects.json"))
+    predicates = json.load(open("./data/VRD/predicates.json"))
+    semantic_predicates = [
+        "carry",
+        "cover",
+        "fly",
+        "look",
+        "lying on",
+        "park on",
+        "sit on",
+        "stand on",
+        "ride",
+    ]
 
+    np.random.seed(123)
+    val_idx = list(np.random.choice(len(relationships_train), 1000, replace=False))
+    relationships_val = {
+        key: value
+        for i, (key, value) in enumerate(relationships_train.items())
+        if i in val_idx
+    }
+    relationships_train = {
+        key: value
+        for i, (key, value) in enumerate(relationships_train.items())
+        if i not in val_idx
+    }
 
-# %%
-if __name__ == "__main__":
-    load_vrd_data()
+    # TODO: hack to work with small sample of data for tox
+    if os.path.isdir("data/VRD/sg_dataset/samples"):
+        keys_list = os.listdir("data/VRD/sg_dataset/samples")
+        test_df = vrd_to_pandas(relationships_test, objects, predicates, list_of_predicates=semantic_predicates, keys_list=keys_list)
+        return test_df, test_df, test_df
+    elif os.path.isdir("data/VRD/sg_dataset/sg_train_images"):
+        train_df = vrd_to_pandas(relationships_train, objects, predicates, list_of_predicates=semantic_predicates)
+        train_df["labels"] = -1 * np.ones(len(train_df))
+        valid_df = vrd_to_pandas(relationships_val, objects, predicates, list_of_predicates=semantic_predicates)
+        test_df = vrd_to_pandas(relationships_test, objects, predicates, list_of_predicates=semantic_predicates)
+        return train_df, valid_df, test_df

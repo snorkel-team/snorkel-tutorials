@@ -45,13 +45,12 @@ import numpy as np
 
 # %%
 from utils import load_vrd_data
+
 train_df, valid_df, test_df = load_vrd_data()
 
 print("Train Relationships: ", len(train_df))
 print("Dev Relationships: ", len(valid_df))
 print("Test Relationships: ", len(test_df))
-
-valid_df.sample(n=5)
 
 # %% [markdown]
 # ## 2. Writing Labeling Functions
@@ -188,7 +187,8 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 from snorkel.classification.data import DictDataLoader
 from model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
 
-TRAIN_DIR = "data/VRD/sg_dataset/sg_train_images"
+#TRAIN_DIR = "data/VRD/sg_dataset/sg_train_images"
+TRAIN_DIR = "data/VRD/sg_dataset/samples"
 train_df["labels"] = label_model.predict(L_train)
 
 train_dl = DictDataLoader(
@@ -208,6 +208,8 @@ valid_dl = DictDataLoader(
 
 
 # %%
+import torch.nn.functional as F
+
 def ce_loss(module_name, outputs, Y, active):
     return F.cross_entropy(outputs[module_name][0][active], (Y.view(-1))[active])
 
@@ -312,6 +314,9 @@ pred_cls_task = Task(
 # ### Train and Evaluate Model
 
 # %%
+from snorkel.classification.snorkel_classifier import SnorkelClassifier
+from snorkel.classification.training import Trainer
+
 model = SnorkelClassifier([pred_cls_task])
 trainer = Trainer(
     n_epochs=1,
