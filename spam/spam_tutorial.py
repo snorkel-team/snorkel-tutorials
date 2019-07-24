@@ -408,7 +408,7 @@ def has_person(x):
 # %% [markdown]
 # We can also utilize other models, including ones trained for other tasks that are related to, but not the same as, the one we care about.
 #
-# For example, the [TextBlob](https://textblob.readthedocs.io/en/dev/index.html) tool provides a pretrained sentiment analyzer. Our spam classification task is not the same as sentiment classification, but it turns out that SPAM and HAM comments have different distributions of sentiment scores, with HAM having more positive/subjective sentiments.
+# For example, the [TextBlob](https://textblob.readthedocs.io/en/dev/index.html) tool provides a pretrained sentiment analyzer. Our spam classification task is not the same as sentiment classification, but it turns out that `SPAM` and `HAM` comments have different distributions of sentiment scores, with `HAM` having more positive/subjective sentiments.
 
 # %%
 import matplotlib.pyplot as plt
@@ -488,7 +488,8 @@ lf_names = [lf.name for lf in lfs]
 LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
 
 # %% [markdown]
-# We see that our labeling functions vary in coverage, accuracy, and how much they overlap/conflict with one another.
+# We see that our labeling functions vary in coverage, accuracy, and how much they overlap/conflict with one another. The conflicts and overlaps among the labeling functions will help the `LabelModel` learn their accuracies and model them accurately. While it feels counter-intuitive, conflicts are key for the `LabelModel` to accurately model the labeling functions!
+#
 # We can view a histogram of how many weak labels the data points in our dev set have to get an idea of our total coverage.
 
 # %%
@@ -513,8 +514,8 @@ plot_label_frequency(L_train)
 # ## 3. Combining Weak Labels with the Label Model
 
 # %% [markdown]
-# Our goal is now to convert these many weak labels into a single _noise-aware_ probabilistic (or confidence-weighted) label per data point.
-# A simple baseline for doing this is to take the majority vote on a per-data point basis: if more LFs voted SPAM than HAM, label it SPAM (and vice versa).
+# Our goal is now to combine the weak labels assigned by the labeling functions to a single label per data point.
+# A simple way of doing this is to take the majority vote on a per-data point basis: if more LFs voted `SPAM` than `HAM`, label it `SPAM` (and vice versa).
 
 # %%
 from snorkel.labeling.model import MajorityLabelVoter
@@ -524,11 +525,11 @@ Y_pred_train = majority_model.predict(L_train)
 Y_pred_train
 
 # %% [markdown]
-# However, as we can clearly see by looking the summary statistics of our LFs in the previous section, they are not all equally accurate, and should ideally not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine our weak labels.
+# However, as we can clearly see by looking the summary statistics of our LFs in the previous section, they are not all equally accurate, and should ideally not be weighted identically. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine our weak labels.
 #
 # This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers.
 #
-# Note that no gold labels are used during the training process; the `LabelModel` is able to learn weights for the labeling functions using only the weak label matrix as input.
+# Note that no gold labels are used during the training process; the `LabelModel` is able to learn weights for the labeling functions using only the label matrix of noisy labels assingned by the labeling functions as input.
 
 # %%
 from snorkel.labeling.model import LabelModel
@@ -536,22 +537,11 @@ from snorkel.labeling.model import LabelModel
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=500, log_freq=50, seed=123)
 
-# %%
-print(
-    f"{'Majority Vote:':<14} {majority_model.score(L_valid, Y_valid)['accuracy']:0.3f}"
-)
-print(f"{'Label Model:':<14} {label_model.score(L_valid, Y_valid)['accuracy']:0.3f}")
-
 
 # %% [markdown]
-# While our `LabelModel` does improve over the majority vote baseline, it is still somewhat **limited as a classifier** for the reasons outlined in the Snorkel 101 guide (TODO: Link).
-#
-# In the next section, we will use these training labels to train a discriminative classifier to see if we can improve performance further.
-
-# %% [markdown]
-# Before we do, we briefly confirm that the labels the `LabelModel` produces are probabilistic in nature.
+# We first confirm that the labels the `LabelModel` produces are probabilistic in nature.
 # The following histogram shows the confidences we have that each data point has the label SPAM.
-# The points we are least certain about will have labels close to 0.5.
+# The points we are least certain about will have labels close to 0.5, which represents random chance in the binary classification setting. This can be a result of none of labeling functions assigning a label to that data point, multiple labeling functions with similar learned weights assigning conflicting labels to the data point, or only one labeling functions with a low learned weight assigning a label to the data point. 
 
 # %%
 def plot_probabilities_histogram(Y):
@@ -564,12 +554,24 @@ Y_probs_train = label_model.predict_proba(L_train)
 plot_probabilities_histogram(Y_probs_train[:, SPAM])
 
 # %% [markdown]
+# The `LabelModel` improves over the majority vote baseline since it learns to trust labeling functions according to how much they should be weighted to take advantage of the singal in all the labeling functions. 
+
+# %%
+print(
+    f"{'Majority Vote:':<14} {majority_model.score(L_valid, Y_valid)['accuracy']:0.3f}"
+)
+print(f"{'Label Model:':<14} {label_model.score(L_valid, Y_valid)['accuracy']:0.3f}")
+
+# %% [markdown]
+# However, from the histogram, we know that the `LabelModel` is still somewhat **limited as a classifier** since it only relies on the knowledge encoded in the labeling functions to assign labels. For more details, take a look at the Snorkel 101 guide (TODO: Link).
+#
+# In the next section, we will use these training labels to train a discriminative classifier that can generalize beyond the labeling functions.
+
+# %% [markdown]
 # ## 4. Training a Classifier
 
 # %% [markdown]
-# In this final section of the tutorial, we'll use the noisy training labels we generated in the last section to train a classifier for our task.
-#
-# Note that because the output of the Snorkel `LabelModel` is just a set of labels, Snorkel easily integrates with most popular libraries for performing supervised learning: TensorFlow, Keras, PyTorch, Scikit-Learn, Ludwig, XGBoost, etc.
+# In this final section of the tutorial, we'll use the noisy training labels we generated in the last section to train a classifier for our task. Note that because the output of the Snorkel `LabelModel` is a set of labels, Snorkel easily integrates with most popular libraries for performing supervised learning: TensorFlow, Keras, PyTorch, Scikit-Learn, Ludwig, XGBoost, etc.
 #
 # In this tutorial we demonstrate using classifiers from Keras and Scikit-Learn.
 
