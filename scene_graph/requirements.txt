@@ -1,0 +1,4 @@
+numpy>=1.16.0
+pandas>=0.24.0,<0.25.0
+torchvision==0.25.0
+PIL==6.1.0
