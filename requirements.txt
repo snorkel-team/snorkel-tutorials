@@ -7,8 +7,6 @@ git+https://github.com/HazyResearch/snorkel.git@redux
 
 black==19.3b0
 flake8==3.7.8
-ipykernel==5.1.1
 jupyter==1.0.0
 jupytext==1.2.0
 nbconvert==5.5.0
-virtualenv==16.6.2

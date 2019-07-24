@@ -18,14 +18,22 @@ All other tutorials assume that you have already completed that tutorial and are
 To run a tutorial in a jupyter notebook, run the following commands, which create a virtual environment, install requirements, create an ipython kernel, and launch Jupyter:
 ```
 TUTORIAL="spam"  # Change this to the name of the directory for the tutorial you want
+
+# Create virtual env
 VIRTUALENV=".env_${TUTORIAL}"
+pip install virtualenv==16.6.2
 virtualenv $VIRTUALENV
-source $VIRTUALENV/bin/activate
+source $VIRTUALENV/bin/activate  # Activate the created virtual environment
 pip install -r requirements.txt  # Requirements shared among all tutorials
 cd $TUTORIAL
 pip install -r requirements.txt  # Requirements specific to this tutorial
+
+# Launch Jupyter
+pip install ipykernel==5.1.1
 ipython kernel install --user --name=$VIRTUALENV
 jupyter notebook
+
+# To deactivate the virtual environment when you are done, run `deactivate`.
 ```
 Then, in the browser tab that opens, select the notebook you would like to run and confirm that the appropriately named ipython kernel (e.g., `.env_spam`) is displayed in the upper right corner. If not, go to `Kernel` > `Change Kernel` > and select the appropriate environment.
 
