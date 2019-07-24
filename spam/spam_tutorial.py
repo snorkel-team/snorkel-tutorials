@@ -11,7 +11,7 @@
 #
 # 2. **Writing Labeling Functions**: We write Python programs that take as input a data point and assign labels (or abstain) using heuristics, pattern matching, and third-party models.
 #
-# 3. **Combining Labels with the Label Model**: We use the outputs of the labeling functions over the training set as input to the label model, which assings probabilistic labels to the training set.
+# 3. **Combining Weak Labels with the Label Model**: We use the outputs of the labeling functions over the training set as input to the label model, which assings probabilistic labels to the training set.
 #
 # 4. **Training a Classifier**: We train a classifier that can predict labels for *any* YouTube comment (not just the ones labeled by the labeling functions) using the probabilistic training labels from step 3.
 
@@ -41,23 +41,23 @@
 # ### Data Splits in Snorkel
 #
 # We split our data into 4 sets:
-# * **Training Set**: This is the largest split of the dataset with no labels
-# * **Validation (Valid) Set**: A labeled set used to tune hyperparameters for the end classifier.
+# * **Training Set**: This is the largest split of the dataset. We do not have ground truth or "gold" labels for these data points; we will be generating their labels with weak supervision.
+# * **Validation Set**: A labeled set used to tune hyperparameters for the end classifier.
 # * **Test Set**: A labeled set used to evaluate the classifier. Note that users should not be looking at the test set and use it only for the final evaluation step.
 #
 # While it is possible to write labeling functions without any labeled data and evaluate only with the classifier, it is often useful to have some labeled data to estimate how the labeling functions are doing. For example, we can calculate the accuracy and coverage of the labeling functions over this labeled set, which can help guide how to edit existing labeling functions and/or what type of labeling functions to add.
 #
-# We refer to this as the **development (dev) set**. This can either be a small labeled subset of the training set (e.g. 100 data points) or we can use the valid set as the dev set. Note that in the latter case, the valid set will not be representative of the test set since the labeling functions are created to fit specifically to the validation set.
+# We refer to this as the **Development (Dev) Set**. This can either be a small labeled subset of the training set (e.g. 100 data points) or we can use the valid set as the dev set. Note that in the latter case, the valid set will not be representative of the test set since the labeling functions are created to fit specifically to the validation set.
 
 # %% [markdown]
-# ## 1. Load data
+# ## 1. Loading Data
 
 # %% [markdown]
 # We load the Kaggle dataset and create Pandas dataframe objects for each of the sets described above. Each dataframe consists of the following fields:
 # * **author_id**: Username of the comment author
 # * **data**: Date and time the comment was posted
 # * **text**: Raw text content of the comment
-# * **label**: Whether the comment is `SPAM` (1) or `HAM` (2)
+# * **label**: Whether the comment is `SPAM` (1), `HAM` (0), or `UNKNOWN/ABSTAIN` (-1)
 # * **video_id**: Video the comment is associated with
 #
 # We start by loading our data.
@@ -78,17 +78,27 @@ from spam.utils import load_spam_dataset
 
 df_train, df_dev, df_valid, df_test = load_spam_dataset()
 
+# We pull out the label vectors for ease of use later
+Y_dev = df_dev["label"].values
+Y_valid = df_valid["label"].values
+Y_test = df_test["label"].values
+
+
+# %%
+# Don't truncate text fields in the display
+import pandas as pd
+
+pd.set_option("display.max_colwidth", 0)
+
+df_dev.sample(5, random_state=123)
 
 # %% [markdown]
 # The class distribution varies slightly from class to class, but all are approximately class-balanced.
 
 # %%
-df_train.head()
-
-# %%
 from collections import Counter
 
-# For clarity, we'll define constants to represent the class labels for spam, ham, and abstaining.
+# For clarity, we define constants to represent the class labels for spam, ham, and abstaining.
 ABSTAIN = -1
 HAM = 0
 SPAM = 1
@@ -105,26 +115,7 @@ for split_name, df in [
     )
 
 # %% [markdown]
-# Taking a peek at our data, we see that for each data point, we have the following fields:
-# * `author_id`: The user who made the comment
-# * `data`: The date the comment was made
-# * `text`: The comment text
-# * `label`:
-#     * 0 = UNKNOWN/ABSTAIN
-#     * 1 = SPAM
-#     * 2 = HAM (not spam)
-# * `video_id`: Which of the five videos in the dataset the comment came from
-
-# %%
-# Don't truncate text fields in the display
-import pandas as pd
-
-pd.set_option("display.max_colwidth", 0)
-
-df_dev.sample(5, random_state=123)
-
-# %% [markdown]
-# ## 2. Write Labeling Functions (LFs)
+# ## 2. Writing Labeling Functions (LFs)
 
 # %% [markdown]
 # **Labeling functions (LFs) help users encode domain knowledge and other supervision sources programmatically**
@@ -221,8 +212,6 @@ import numpy as np
 L_dev = applier.apply(df_dev)
 L_dev_array = L_dev.squeeze()
 
-Y_dev = df_dev["label"].values
-
 accuracy = ((L_dev_array == Y_dev)[L_dev_array != ABSTAIN]).sum() / (
     L_dev_array != ABSTAIN
 ).sum()
@@ -235,11 +224,9 @@ print(f"Accuracy: {accuracy}")
 from snorkel.analysis.metrics import metric_score
 
 # Calculate accuracy, ignore all examples for which the predicted label is ABSTAIN
-# TODO: drop probs=None
 accuracy = metric_score(
     golds=Y_dev,
     preds=L_dev_array,
-    probs=None,
     metric="accuracy",
     filter_dict={"preds": [ABSTAIN]},
 )
@@ -350,9 +337,7 @@ lfs.append(lf_link)
 def lf_please(x):
     """Spam comments make requests rather than commenting."""
     return (
-        SPAM
-        if any([word in x.text.lower() for word in ["please", "plz"]])
-        else ABSTAIN
+        SPAM if any([word in x.text.lower() for word in ["please", "plz"]]) else ABSTAIN
     )
 
 
@@ -456,14 +441,10 @@ import matplotlib.pyplot as plt
 from textblob import TextBlob
 
 spam_polarities = [
-    TextBlob(x.text).sentiment.polarity
-    for i, x in df_dev.iterrows()
-    if x.label == SPAM
+    TextBlob(x.text).sentiment.polarity for i, x in df_dev.iterrows() if x.label == SPAM
 ]
 ham_polarities = [
-    TextBlob(x.text).sentiment.polarity
-    for i, x in df_dev.iterrows()
-    if x.label == HAM
+    TextBlob(x.text).sentiment.polarity for i, x in df_dev.iterrows() if x.label == HAM
 ]
 
 _ = plt.hist([spam_polarities, ham_polarities])
@@ -516,6 +497,8 @@ lfs.append(textblob_subjectivity)
 applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
+L_valid = applier.apply(df_valid)
+L_test = applier.apply(df_test)
 
 lf_names = [lf.name for lf in lfs]
 LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
@@ -525,12 +508,15 @@ LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
 # We can view a histogram of how many weak labels the data points in our dev set have to get an idea of our total coverage.
 
 # %%
-# TODO: Move plot_label_frequency() to core snorkel repo
 import matplotlib.pyplot as plt
 
 
 def plot_label_frequency(L):
-    plt.hist(np.asarray((L != -1).sum(axis=1)), density=True, bins=range(L.shape[1]))
+    plt.hist(
+        np.asarray((L != ABSTAIN).sum(axis=1)), density=True, bins=range(L.shape[1])
+    )
+    plt.xlabel("Number of labels")
+    plt.ylabel("Fraction of dataset")
 
 
 plot_label_frequency(L_train)
@@ -540,20 +526,21 @@ plot_label_frequency(L_train)
 # Fortunately, the signal we do have can be used to train a classifier with a larger feature set than just these labeling functions that we've created, allowing it to generalize beyond what we've specified.
 
 # %% [markdown]
-# ## 3. Combine with Label Model
+# ## 3. Combining Weak Labels with the Label Model
 
 # %% [markdown]
 # Our goal is now to convert these many weak labels into a single _noise-aware_ probabilistic (or confidence-weighted) label per data point.
-# A simple baseline for doing this is to take the majority vote on a per-data pointt` basis: if more LFs voted SPAM than HAM, label it SPAM (and vice versa).
+# A simple baseline for doing this is to take the majority vote on a per-data point basis: if more LFs voted SPAM than HAM, label it SPAM (and vice versa).
 
 # %%
 from snorkel.labeling.model import MajorityLabelVoter
 
-mv_model = MajorityLabelVoter()
-mv_model.score(L_dev, Y_dev)
+majority_model = MajorityLabelVoter()
+Y_pred_train = majority_model.predict(L_train)
+Y_pred_train
 
 # %% [markdown]
-# However, as we can clearly see by looking the summary statistics of our LFs, they are not all equally accurate, and should ideally not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine our weak labels.
+# However, as we can clearly see by looking the summary statistics of our LFs in the previous section, they are not all equally accurate, and should ideally not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine our weak labels.
 #
 # This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers.
 #
@@ -565,48 +552,48 @@ from snorkel.labeling.model import LabelModel
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=500, log_freq=50, seed=123)
 
+# %%
+print(
+    f"{'Majority Vote:':<14} {majority_model.score(L_valid, Y_valid)['accuracy']:0.3f}"
+)
+print(f"{'Label Model:':<14} {label_model.score(L_valid, Y_valid)['accuracy']:0.3f}")
+
 
 # %% [markdown]
-# We can confirm that our resulting predicted labels are probabilistic, with the points we are least certain about having labels close to 0.5. The following histogram shows the confidences we have that each data point` has the label SPAM.
+# While our `LabelModel` does improve over the majority vote baseline, it is still somewhat **limited as a classifier** for the reasons outlined in the Snorkel 101 guide (TODO: Link).
+#
+# In the next section, we will use these training labels to train a discriminative classifier to see if we can improve performance further.
+
+# %% [markdown]
+# Before we do, we briefly confirm that the labels the `LabelModel` produces are probabilistic in nature.
+# The following histogram shows the confidences we have that each data point has the label SPAM.
+# The points we are least certain about will have labels close to 0.5.
 
 # %%
-def plot_probabilities_histogram(Y_probs):
-    plt.hist(Y_probs[:, 0])
+def plot_probabilities_histogram(Y):
+    plt.hist(Y, bins=10)
+    plt.xlabel("Probability of SPAM")
+    plt.ylabel("Number of Data Points")
 
 
 Y_probs_train = label_model.predict_proba(L_train)
-plot_probabilities_histogram(Y_probs_train)
-
-# %%
-label_model.score(L_dev, Y_dev)
+plot_probabilities_histogram(Y_probs_train[:, SPAM])
 
 # %% [markdown]
-# While our `LabelModel` does improve over the majority vote baseline, it is still somewhat limited as a classifier.
-# For example, many of our data points have few or no LFs voting on them.
-# We will now train a discriminative classifier with this training set to see if we can improve performance further.
+# ## 4. Training a Classifier
 
 # %% [markdown]
-# ## 4. Predict with Classifier
+# In this final section of the tutorial, we'll use the noisy training labels we generated in the last section to train a classifier for our task.
+#
+# Note that because the output of the Snorkel `LabelModel` is just a set of labels, Snorkel easily integrates with most popular libraries for performing supervised learning: TensorFlow, Keras, PyTorch, Scikit-Learn, Ludwig, XGBoost, etc.
+#
+# In this tutorial we demonstrate using classifiers from Keras and Scikit-Learn.
 
 # %% [markdown]
-# * Now train classifier
-#     * Can use any third-party classifier (plug into your existing pipelines!)
-#     * Some libraries natively support probabilistic labels (us, TF); for others, can round.
+# For simlicity and speed, we use a simple "bag of n-grams" feature representation: each data point is represented by a one-hot vector marking which words or 2-word combinations are present in the comment text.
 
 # %% [markdown]
-# * Convert label convention
-
-# %%
-from snorkel.analysis.utils import probs_to_preds
-
-# Y_train = df_train['label'].map({1: 1, 2: 0}) # This will not be available
-Y_train = Y_probs_train
-Y_dev = df_dev["label"].values
-Y_valid = df_valid["label"].values
-Y_test = df_test["label"].values
-
-# %% [markdown]
-# * Use bag-of-ngrams as features
+# ### Featurization
 
 # %%
 from sklearn.feature_extraction.text import CountVectorizer
@@ -623,61 +610,125 @@ X_valid = vectorizer.transform(words_valid)
 X_test = vectorizer.transform(words_test)
 
 # %% [markdown]
-# * Filter out examples with no labels (always abstains)
+# ### Filtering Unlabeled Data Points
+
+# %% [markdown]
+# As we saw earlier, some of the data points in our training set received no weak labels from our LFs.
+# These examples are not helpful for training our classifier, so we filter them out before training.
 
 # %%
 mask = L_train.sum(axis=1) != ABSTAIN * len(lfs)
 X_train = X_train[mask, :]
-Y_train = Y_train[mask]
+Y_probs_train = Y_probs_train[mask]
 
 # %% [markdown]
-# ### Keras Classifier
+# ### Keras Classifier with Probabilistic Labels
 
 # %% [markdown]
-# * TBD
+# Our Keras classifier is a simple logistic regression classifier.
+# We compile it with a `categorical_crossentropy` loss so that it can handle probabilistic labels instead of integer labels.
+# We use the common settings of an `Adam` optimizer and early stopping (evaluating the model on the validation set after each epoch and reloading the weights from when it achived the best score).
 
 # %%
-# TODO:
-# import simple logistic regression classifier in Keras
-# train on noise-aware loss
-# score
-# bonus: peek at performance w/r/t using hard (int) labels i/o soft (float) labels
+from snorkel.analysis.utils import probs_to_preds, preds_to_probs
+from snorkel.analysis.metrics import metric_score
+import tensorflow as tf
+
+keras_model = tf.keras.Sequential()
+keras_model.add(
+    tf.keras.layers.Dense(
+        2,
+        input_dim=X_train.shape[1],
+        activation=tf.nn.softmax,
+        kernel_regularizer=tf.keras.regularizers.l2(0.01),
+    )
+)
+optimizer = tf.keras.optimizers.Adam(lr=0.001)
+keras_model.compile(
+    optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
+)
+
+early_stopping = tf.keras.callbacks.EarlyStopping(
+    monitor="val_acc", patience=10, verbose=1, restore_best_weights=True
+)
+
+keras_model.fit(
+    X_train,
+    Y_probs_train,
+    validation_data=(X_valid, preds_to_probs(Y_valid, 2)),
+    callbacks=[early_stopping],
+    epochs=20,
+    verbose=0,
+)
+
+Y_probs_test = keras_model.predict(X_test)
+Y_preds_test = probs_to_preds(Y_probs_test)
+print(f"Test Accuracy: {metric_score(Y_test, Y_preds_test, metric='accuracy')}")
 
 # %% [markdown]
-# ### Scikit-learn Classifier
+# Doing this, we observe an additional boost in accuracy over the `LabelModel` by multiple points---**the training set produced by the `LabelModel` successfully transferred our domain knowledge to the classifier, which was able to generalize beyond the noisy heuristics we provided in our LFs!**
 
 # %% [markdown]
-# * TBD
-# * Rounding to hard labels
+# We can compare this to the score we could have gotten if we had used our small labeled dev set directly as training data instead of using it to guide the creation of LFs.
 
 # %%
-Y_train_rounded = probs_to_preds(Y_train)
+keras_rounded_model = tf.keras.Sequential()
+keras_rounded_model.add(
+    tf.keras.layers.Dense(
+        1, 
+        input_dim=X_train.shape[1], 
+        activation=tf.nn.sigmoid,
+        kernel_regularizer=tf.keras.regularizers.l2(0.01),
+    )
+)
+optimizer = tf.keras.optimizers.Adam(lr=0.001)
+keras_rounded_model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+
+keras_rounded_model.fit(
+    X_dev,
+    Y_dev,
+    validation_data=(X_valid, Y_valid),
+    callbacks=[early_stopping],
+    epochs=20,
+    verbose=0
+)
+
+Y_probs_test = keras_rounded_model.predict(X_test)
+Y_preds_test = np.round(Y_probs_test)
+print(f"Test Accuracy: {metric_score(Y_test, Y_preds_test, metric='accuracy')}")
+
+# %% [markdown]
+# ### Scikit-Learn with Rounded Labels
+
+# %% [markdown]
+# If we want to use a library or model that doesn't accept probabilistic labels, we can replace each label distribution with the label of the class that has the maximum probability.
+# This can easily be done using the helper method `probs_to_preds` (note, however, that this transformation is lossy, as we no longer have values for our confidence in each label).
+
+# %%
+Y_preds_train = probs_to_preds(Y_probs_train)
+
+# %% [markdown]
+# For example, this allows us to use standard models from Scikit-Learn.
 
 # %%
 from sklearn.linear_model import LogisticRegression
 
 sklearn_model = LogisticRegression()
-sklearn_model.fit(X_train, Y_train_rounded)
+sklearn_model.fit(X_train, Y_preds_train)
 
-sklearn_model.score(X_valid, Y_valid)
-
-# %% [markdown]
-# * Compare with training on dev directly (see, we did better)
-#     * And we could do even better with more raw unlabeled data
-
-# %%
-X_dev = vectorizer.fit_transform(words_dev)
-X_valid = vectorizer.transform(words_valid)
-X_test = vectorizer.transform(words_test)
-
-sklearn_model.fit(X_dev, Y_dev)
-sklearn_model.score(X_valid, Y_valid)
+sklearn_model.score(X_test, Y_test)
 
 # %% [markdown]
-# ### Evaluate on Test Set
+# ## Summary
 
 # %% [markdown]
-# * With all ablations done, now evaluate on test
+# In this tutorial, we accomplished the following:
+# * We introduced the concept of Labeling Functions (LFs) and demonstrated some of the forms they can take.
+# * We used the Snorkel `LabelModel` to automatically learn how to combine many weak labels into strong probabilistic labels.
+# * We showed that a classifier trained on a weakly supervised dataset can outperform an approach based on the LFs alone as it learns to generalize beyond the noisy heuristics we provide.
 
-# %%
-# TBD
+# %% [markdown]
+# ### Next Steps
+
+# %% [markdown]
+# If you enjoyed this tutorial and you've already checked out the Snorkel 101 Guide, check out the `snorkel-tutorials` table of contents for other tutorials that you may find interesting, including demonstrations of how to use Snorkel for scene-graph detection (images), crowdsourcing, information extraction, data augmentation, and more. (TODO: Many links)

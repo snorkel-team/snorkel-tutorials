@@ -1,6 +1,7 @@
 import glob
 import subprocess
 
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
@@ -29,6 +30,7 @@ def load_spam_dataset():
 
     df_train = pd.concat(dfs[:4])
     df_dev = df_train.sample(100, random_state=123)
+    df_train["label"] = np.ones(len(df_train["label"])) * -1
     df_valid_test = dfs[4]
     df_valid, df_test = train_test_split(
         df_valid_test, test_size=250, random_state=123, stratify=df_valid_test.label
