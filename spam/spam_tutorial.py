@@ -76,7 +76,7 @@ if os.path.basename(os.getcwd()) == "spam":
     os.chdir("..")
 
 # %%
-from spam.utils import load_spam_dataset
+from utils import load_spam_dataset
 
 df_train, df_dev, df_valid, df_test = load_spam_dataset()
 
