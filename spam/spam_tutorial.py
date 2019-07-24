@@ -72,8 +72,8 @@
 # %%
 import os
 
-if os.path.basename(os.getcwd()) == "spam":
-    os.chdir("..")
+if os.path.basename(os.getcwd()) == "snorkel-tutorials":
+    os.chdir("spam")
 
 # %%
 from utils import load_spam_dataset
@@ -108,16 +108,10 @@ ABSTAIN = -1
 HAM = 0
 SPAM = 1
 
-for split_name, df in [
-    ("train", df_train),
-    ("dev", df_dev),
-    ("valid", df_valid),
-    ("test", df_test),
-]:
+for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
     counts = Counter(df["label"].values)
-    print(
-        f"{split_name.upper():<6} {counts[SPAM] * 100/sum(counts.values()):0.1f}% SPAM"
-    )
+    num_points = sum(counts.values())
+    print(f"{split_name.upper():<6} {counts[SPAM] * 100 / num_points:0.1f}% SPAM")
 
 # %% [markdown]
 # ## 2. Write Labeling Functions (LFs)
@@ -451,15 +445,6 @@ def textblob_subjectivity(x):
 # This tutorial demonstrates just a handful of the types of LFs that one might write for this task.
 # Many of these are no doubt suboptimal.
 # The strength of this approach, however, is that the LF abstraction provides a flexible interface for conveying a huge variety of supervision signals, and the `LabelModel` is able to denoise these signals, reducing the need for painstaking manual fine-tuning.
-#
-# You can uncomment the cell below to write one or more of your own LFs.
-# Don't forget to add them to the list of `lfs` so that they are included by the `LFApplier` in the next section.
-
-# %%
-# @labeling_function()
-# def my_lf(x):
-#     pass
-# lfs.append(my_lf)
 
 # %%
 lfs = [
@@ -473,7 +458,6 @@ lfs = [
     has_person,
     textblob_polarity,
     textblob_subjectivity,
-    # Add your LFs here,
 ]
 
 # %% [markdown]

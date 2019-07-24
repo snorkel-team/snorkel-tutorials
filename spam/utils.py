@@ -1,4 +1,5 @@
 import glob
+import os
 import subprocess
 
 import numpy as np
@@ -7,11 +8,13 @@ from sklearn.model_selection import train_test_split
 
 
 def load_spam_dataset():
+    if os.path.basename(os.getcwd()) == "snorkel-tutorials":
+        os.chdir("spam")
     # TODO:
     # Add reference to dataset
     # Send email to dataset owner: tuliocasagrande < AT > acm.org
-    subprocess.call("bash spam/download_data.sh", shell=True)
-    filenames = sorted(glob.glob("spam/data/Youtube*.csv"))
+    subprocess.call("bash download_data.sh", shell=True)
+    filenames = sorted(glob.glob("data/Youtube*.csv"))
 
     dfs = []
     for i, filename in enumerate(filenames, start=1):
