@@ -29,6 +29,8 @@ jupyter notebook
 ```
 Then, in the browser tab that opens, select the notebook you would like to run and confirm that the appropriately named ipython kernel (e.g., `.env_spam`) is displayed in the upper right corner. If not, go to `Kernel` > `Change Kernel` > and select the appropriate environment.
 
+Alternatively, to run the tutorial as a script, skip the last two steps of the setup instructions above (`ipython kernel` and `jupyter notebook`) and run the tutorial's `.py` file directly (e.g. `python spam_tutorial.py`).
+
 
 ## <a name="tutorials-index"> Tutorials Index </a>
 Here we provide an index pointing to different available tutorials by their task type, domain type, integrations, ... TBD.
