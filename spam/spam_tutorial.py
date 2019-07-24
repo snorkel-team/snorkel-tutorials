@@ -168,10 +168,12 @@ df_dev[["text", "label"]].sample(10, random_state=123)
 # %%
 from snorkel.labeling.lf import labeling_function
 
+
 @labeling_function()
 def keyword_my(x):
     """Many spam comments talk about 'my channel', 'my video', etc."""
     return SPAM if "my" in x.text.lower() else ABSTAIN
+
 
 lfs = [keyword_my]
 
