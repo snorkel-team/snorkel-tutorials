@@ -404,10 +404,11 @@ def has_person(x):
 
 
 # %% [markdown]
-# Because spaCy is such a common preprocessor for NLP (Natural Language Processing) applications, we also provide an alias for a labeling_function that uses spaCy
+# Because spaCy is such a common preprocessor for NLP (Natural Language Processing) applications, we also provide an alias for a labeling_function that uses spaCy. This resulting LF is identical to the one defined manually above.
 
 # %%
 from snorkel.labeling.lf.nlp import nlp_labeling_function
+
 
 @nlp_labeling_function()
 def has_person(x):
