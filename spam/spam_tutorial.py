@@ -489,7 +489,6 @@ applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
 L_valid = applier.apply(df_valid)
-L_test = applier.apply(df_test)
 
 lf_names = [lf.name for lf in lfs]
 LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
