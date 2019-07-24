@@ -184,14 +184,10 @@ def lf_same_last_name(x):
 
 
 # %%
-# Check for the words `and ... married` between person mentions
+# Check for the word `married` between person mentions
 @labeling_function()
-def lf_and_married(x):
-    return (
-        POSITIVE
-        if "and" in x.between_tokens and "married" in x.person2_right_tokens
-        else ABSTAIN
-    )
+def lf_married(x):
+    return POSITIVE if "married" in x.between_tokens else ABSTAIN
 
 
 # %%
@@ -246,7 +242,7 @@ lfs = [
     lf_husband_wife,
     lf_husband_wife_left_window,
     lf_same_last_name,
-    lf_and_married,
+    lf_married,
     lf_familial_relationship,
     lf_family_left_window,
     lf_other_relationship,
@@ -358,7 +354,7 @@ lfs = [
     lf_husband_wife,
     lf_husband_wife_left_window,
     lf_same_last_name,
-    lf_and_married,
+    lf_married,
     lf_familial_relationship,
     lf_family_left_window,
     lf_other_relationship,
@@ -384,12 +380,10 @@ train_L = applier.apply(train_df)
 # **Try editing and running the cells below!**
 
 # %%
-# from preprocessors import get_between_tokens
-#
 # @labeling_function()
 # def lf_new(x):
-#     return POSITIVE if x.person1_word_idx[0] > 3 else ABSTAIN #TODO: Change this!
-
+#     return POSITIVE if x.person1_word_idx[0] > 3 else ABSTAIN
+#
 # applier = PandasLFApplier([lf_new])
 
 # %%
@@ -424,9 +418,9 @@ train_L = applier.apply(train_df)
 # %%
 from snorkel.labeling.model.label_model import LabelModel
 
-label_model = LabelModel(cardinality=2, verbose=True, seed=123)
-label_model.train_model(
-    train_L, lr=1e-1, class_balance=[0.9, 0.1], n_epochs=5000, log_train_every=500
+label_model = LabelModel(cardinality=2, verbose=True)
+label_model.fit(
+    train_L, dev_labels, l2=0.0, n_epochs=5000, log_freq=500, seed=123,
 )
 
 # %% [markdown]
@@ -439,7 +433,7 @@ from snorkel.analysis.utils import probs_to_preds
 
 Y_probs_dev = label_model.predict_proba(dev_L)
 Y_preds_dev = probs_to_preds(Y_probs_dev)
-metric_score(dev_labels, Y_preds_dev, probs=None, metric="accuracy")
+metric_score(dev_labels, Y_preds_dev, probs=Y_probs_dev, metric="accuracy")
 
 # %% [markdown]
 # ### Majority Vote Comparison
@@ -467,30 +461,39 @@ metric_score(dev_labels, Y_preds_dev, probs=None, metric="accuracy")
 import matplotlib.pyplot as plt
 
 train_proba = label_model.predict_proba(train_L)
-plt.hist(train_proba[:, 0], bins=20, range=(0.0, 1.0))
+plt.hist(train_proba[:, 1], bins=20, range=(0.0, 1.0))
 plt.show()
 
 # %% [markdown]
 # ## Part 4: Training our End Extraction Model
 #
-# In this final section of the tutorial, we'll use the noisy training labels we generated in the last tutorial part to train our end machine learning model.
+# In this final section of the tutorial, we'll use our noisy training labels alongside the development set labels to train our end machine learning model. We start by filtering out training examples which did not recieve a label from any LF, as these examples contain no signal. Then we concatenate them with dev set examples.
 #
-# For this tutorial, we will be training a fairly effective deep learning model. More generally, however, Snorkel plugs in with many ML libraries, making it easy to use almost any state-of-the-art model as the end model!
-#
+# %%
+import pandas as pd
+from snorkel.analysis.utils import preds_to_probs
+
+dev_label_probs = preds_to_probs(dev_labels, 2)
+mask = (train_L.max(1) != -1)
+combined_df = pd.concat([dev_df, train_df.iloc[mask]])
+combined_proba = np.concatenate([dev_label_probs, train_proba[mask, :]], 0)
+
 # %% [markdown]
 # ## II. Training a _Long Short-term Memory_ (LSTM) Neural Network
 #
-# [LSTMs](https://en.wikipedia.org/wiki/Long_short-term_memory) can acheive state-of-the-art performance on many text classification tasks. We'll train a simple LSTM model below. tf_model contains functions for processing features and building the tensorflow graphs for training and evaliation.
+# [LSTMs](https://en.wikipedia.org/wiki/Long_short-term_memory) can acheive state-of-the-art performance on many text classification tasks. We'll train a simple LSTM model below. tf_model contains functions for processing features and building the tensorflow graphs for training and evaluation.
+#
+# For this tutorial, we will be training a fairly effective deep learning model. More generally, however, Snorkel plugs in with many ML libraries, making it easy to use almost any state-of-the-art model as the end model!
 
 # %%
 from tf_model import get_features_and_labels, get_model
 
 model = get_model()
 tokens, idx1, idx2, label_probs = get_features_and_labels(
-    train_df, train_proba, tf.float32
+    combined_df, combined_proba, tf.float32
 )
 batch_size = 64
-num_epochs = 1
+num_epochs = 2  # TODO: Change this to ~10. Warning: Training takes tens of minutes!
 model.fit(
     (tokens, idx1, idx2),
     label_probs,
@@ -506,7 +509,7 @@ model.fit(
 # %%
 # Truncate sentences to limit memory usage when padding.
 def get_feature_arrays(df):
-    def pad_or_truncate(l, max_length=25):
+    def pad_or_truncate(l, max_length=60):
         return l[:max_length] + [""] * (max_length - len(l))
 
     tokens = np.array(list(map(pad_or_truncate, df.tokens)))
@@ -529,13 +532,11 @@ print(
 # We compare this to an equivalent model that is only trained using the dev set labels. The accuracy is similar in other cases, because the dataset is very unbalanced. However, the ROC-AUC is lower when just training on the dev set, due to the much smaller number of examples.
 
 # %%
-from snorkel.analysis.utils import preds_to_probs
-
 dev_label_probs = preds_to_probs(dev_labels, 2)
 
 dev_model = get_model()
 dev_tokens, dev_idx1, dev_idx2 = get_feature_arrays(dev_df)
-num_epochs = 10  # Change to 10.
+num_epochs = 10  # TODO: Change this to 100.
 dev_model.fit(
     (dev_tokens, dev_idx1, dev_idx2),
     dev_label_probs,

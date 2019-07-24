@@ -10,7 +10,7 @@ def get_model(
     rnn_state_size: int = 64,
     num_hashes: int = 3,
     num_buckets: int = 40000,
-    embed_dim: int = 124,
+    embed_dim: int = 12,
 ) -> tf.keras.Model:
     """
     Return LSTM model for predicting label probabilities.
