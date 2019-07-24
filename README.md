@@ -1,15 +1,48 @@
 # Snorkel Tutorials
-A collection of tutorials for Snorkel
+A collection of tutorials for [Snorkel](http://snorkel.org).
 
-## Adding a new tutorial
+## Tutorials
+The Snorkel tutorials are grouped by application, with some applications having multiple associated notebooks in their directory.
+* `Spam`: Is this YouTube comment spam?
+* `Spouse`: Are these two people mentioned in a sentence married?
+* `VRD` (Visual Relationship Detection): Is object A riding object B, carrying it, or neither?
+* `Weather`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
+* `MTL` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
 
-See the `example` directory for an example.
+See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
 
-1. Create a new top-level directory (e.g. `my_tutorial_dir`)
-1. Add a file called `.notebooks` to your tutorial directory and add the base name of each tutorial script/notebook pair (e.g. `my_tutorial`) as a separate line in `.notebooks`
-1. Add a `requirements.txt` to your directory if additional ones are needed
-1. Add a command to `[testenv]` in `tox.ini` by copying `example` and add the `requirements.txt` file if necessary. Also add the command name to `envlist`.
-1. Write your tutorial either as a Python script (e.g. `my_tutorial_dir/my_tutorial.py`) in [Jupytext percent format](https://gist.github.com/mwouts/91f3e1262871cdaa6d35394cd14f9bdc) or a Jupyter notebook
-    * Run `tox -e my_tutorial_dir -- sync` to generate a notebook version from the Python script version. Run this command to update when changes are made to the tutorial script.
-    * Run `tox -e my_tutorial_dir -- sync --py` to generate a Python script version from the notebook version. Run this command to update when changes are made to the tutorial notebook.
-1. Run `tox -e my_tutorial_dir` to test out your tutorial
+## Getting Started
+Start with the `Spam` tutorial for a gentle introduction to the concepts and classes of Snorkel.
+All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
+
+To run a tutorial in a jupyter notebook, run the following commands, which create a virtual environment, install requirements, create an ipython kernel, and launch Jupyter:
+```
+TUTORIAL="spam"  # Change this to the name of the directory for the tutorial you want
+VIRTUALENV=".env_${TUTORIAL}"
+virtualenv $VIRTUALENV
+source $VIRTUALENV/bin/activate
+pip install -r requirements.txt  # Requirements shared among all tutorials
+cd $TUTORIAL
+pip install -r requirements.txt  # Requirements specific to this tutorial
+ipython kernel install --user --name=$VIRTUALENV
+jupyter notebook
+```
+Then, in the browser tab that opens, select the notebook you would like to run and confirm that the appropriately named ipython kernel (e.g., `.env_spam`) is displayed in the upper right corner. If not, go to `Kernel` > `Change Kernel` > and select the appropriate environment.
+
+
+## <a name="tutorials-index"> Tutorials Index </a>
+Here we provide an index pointing to different available tutorials by their task type, domain type, integrations, ... TBD.
+* Task
+    * Text Classification (Text): `Spam`, `Weather`
+    * Relation Extraction (Text): `Spouse`
+    * Visual Relationship Detection (Image): `VRD`
+* Techniques
+    * Labeling with Labeling Functions (LFs): `Spam`, `Spouse`, `VRD`, `Weather`
+    * Augmentation with Transformation Functions (TFs): `Spam`
+    * Monitoring with Slicing Functions (SFs): `Spam`
+    * Using Crowdworker Labels: `Weather`
+    * Multi-Task Learning (MTL): `MTL`
+* Classifiers
+    * TensorFlow/Keras: `Spam`
+    * Scikit-Learn: `Spam`
+    * PyTorch: `Spam`
