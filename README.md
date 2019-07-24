@@ -44,7 +44,7 @@ Here we provide an index pointing to different available tutorials by their task
     * Monitoring with Slicing Functions (SFs): `Spam`
     * Using Crowdworker Labels: `Weather`
     * Multi-Task Learning (MTL): `MTL`
-* Classifiers
+* Integrations
     * TensorFlow/Keras: `Spam`
     * Scikit-Learn: `Spam`
     * PyTorch: `Spam`
