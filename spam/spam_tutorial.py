@@ -2,7 +2,7 @@
 # # Introductory Snorkel Tutorial: Spam Detection
 
 # %% [markdown]
-# In this tutorial, we will walk through the process of using `Snorkel` to classify YouTube comments as `SPAM` or `HAM` (not spam). For an overview of Snorkel, visit [snorkel.stanford.edu](http://snorkel.stanford.edu).
+# In this tutorial, we will walk through the process of using `Snorkel` to classify YouTube comments as `SPAM` or `HAM` (not spam). For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
 #
 # For our task, we have access to a large amount of *unlabeled data*, which can be prohibitively expensive and slow to label manually. We therefore turn to weak supervision using *labeling functions*, or noisy, programmatic heuristics, to assign labels to unlabeled training data efficiently. We also have access to a small amount of labeled data, which we only use for evaluation purposes.
 #
@@ -41,7 +41,7 @@
 # ### Data Splits in Snorkel
 #
 # We split our data into 4 sets:
-# * **training set**: This is the largest split of the dataset with no labels
+# * **Training Set**: This is the largest split of the dataset with no labels
 # * **Validation (Valid) Set**: A labeled set used to tune hyperparameters for the end classifier.
 # * **Test Set**: A labeled set used to evaluate the classifier. Note that users should not be looking at the test set and use it only for the final evaluation step.
 #
@@ -54,18 +54,17 @@
 
 # %% [markdown]
 # We load the Kaggle dataset and create Pandas dataframe objects for each of the sets described above. Each dataframe consists of the following fields:
-# * **COMMENT_ID**: Comment ID
-# * **AUTHOR_ID**: Author ID
-# * **DATE**: Date and time the comment was posted
-# * **CONTENT**: The raw text content of the comment
-# * **LABEL**: Whether the comment is `SPAM` (1) or `HAM` (2)
-# * **VIDEO_ID**: The video the comment is associated with
+# * **author_id**: Username of the comment author
+# * **data**: Date and time the comment was posted
+# * **text**: Raw text content of the comment
+# * **label**: Whether the comment is `SPAM` (1) or `HAM` (2)
+# * **video_id**: Video the comment is associated with
 #
 # We start by loading our data.
 # The `load_spam_dataset()` method downloads the raw csv files from the internet, divides them into splits, converts them into dataframes, and shuffles them.
 # As mentioned above, the dataset contains comments from 5 of the most popular YouTube videos during a particular timeframe in 2014 and 2015.
 # * The first four videos' comments are combined to form the `train` set. This set has no gold labels.
-# * The `dev` set is a random sample of 200 `DataPoints` from the `train` set with gold labels added.
+# * The `dev` set is a random sample of 200 data points from the `train` set with gold labels added.
 # * The fifth video is split 50/50 between a validation set (`valid`) and `test` set.
 
 # %%
@@ -91,8 +90,8 @@ from collections import Counter
 
 # For clarity, we'll define constants to represent the class labels for spam, ham, and abstaining.
 ABSTAIN = -1
-SPAM = 1
 HAM = 0
+SPAM = 1
 
 for split_name, df in [
     ("train", df_train),
@@ -100,22 +99,21 @@ for split_name, df in [
     ("valid", df_valid),
     ("test", df_test),
 ]:
-    counts = Counter(df["LABEL"].values)
+    counts = Counter(df["label"].values)
     print(
         f"{split_name.upper():<6} {counts[SPAM] * 100/sum(counts.values()):0.1f}% SPAM"
     )
 
 # %% [markdown]
-# Taking a peek at our data, we see that for each `DataPoint`, we have the following fields:
-# * `COMMENT_ID`: A unique identifier
-# * `AUTHOR`: The user who made the comment
-# * `DATE`: The date the comment was made
-# * `CONTENT`: The comment text
-# * `LABEL`:
+# Taking a peek at our data, we see that for each data point, we have the following fields:
+# * `author_id`: The user who made the comment
+# * `data`: The date the comment was made
+# * `text`: The comment text
+# * `label`:
 #     * 0 = UNKNOWN/ABSTAIN
 #     * 1 = SPAM
 #     * 2 = HAM (not spam)
-# * `VIDEO_ID`: Which of the five videos in the dataset the comment came from
+# * `video_id`: Which of the five videos in the dataset the comment came from
 
 # %%
 # Don't truncate text fields in the display
@@ -153,18 +151,18 @@ df_dev.sample(5, random_state=123)
 
 # %%
 # Display just the text and label
-df_dev[["CONTENT", "LABEL"]].sample(10, random_state=123)
+df_dev[["text", "label"]].sample(10, random_state=123)
 
 # %%
 # for i, x in df_dev.iterrows():
-#     if "please" in x.CONTENT:
-#         print(x.CONTENT)
+#     if "please" in x.text:
+#         print(x.text)
 
 # %% [markdown]
 # ### b) Write an LF
 
 # %% [markdown]
-# The simplest way to create labeling functions in Snorkel is with the `@labeling_function()` decorator, which wraps a function for evaluating on a single `DataPoint` (in this case, a row of the dataframe).
+# The simplest way to create labeling functions in Snorkel is with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point` (in this case, a row of the dataframe).
 #
 # Looking at samples of our data, we see multiple messages where spammers are trying to get viewers to look at "my channel" or "my video," so we write a simple LF that labels an example as spam if it includes the word "my".
 
@@ -178,15 +176,15 @@ lfs = []
 @labeling_function()
 def keyword_my(x):
     """Many spam comments talk about 'my channel', 'my video', etc."""
-    return SPAM if "my" in x.CONTENT.lower() else ABSTAIN
+    return SPAM if "my" in x.text.lower() else ABSTAIN
 
 
 lfs.append(keyword_my)
 
 # %% [markdown]
-# To apply one or more LFs that we've written to a collection of `DataPoints`, we use an `LFApplier`.
+# To apply one or more LFs that we've written to a collection of data points, we use an `LFApplier`.
 #
-# Because our `DataPoints` are represented with a Pandas dataframe in this tutorial, we use the `PandasLFApplier` class.
+# Because our data points are represented with a Pandas dataframe in this tutorial, we use the `PandasLFApplier` class.
 
 # %%
 from snorkel.labeling.apply import PandasLFApplier
@@ -223,7 +221,7 @@ import numpy as np
 L_dev = applier.apply(df_dev)
 L_dev_array = L_dev.squeeze()
 
-Y_dev = df_dev["LABEL"].values
+Y_dev = df_dev["label"].values
 
 accuracy = ((L_dev_array == Y_dev)[L_dev_array != ABSTAIN]).sum() / (
     L_dev_array != ABSTAIN
@@ -253,8 +251,8 @@ print(f"Accuracy: {accuracy}")
 # * Coverage: The fraction of the dataset the LF labels
 # * Overlaps: The fraction of the dataset where this LF and at least one other LF label
 # * Conflicts: The fraction of the dataset where this LF and at least one other LF label and disagree
-# * Correct: The number of `DataPoints` this LF labels correctly (if gold labels are provided)
-# * Incorrect: The number of `DataPoints` this LF labels incorrectly (if gold labels are provided)
+# * Correct: The number of data points this LF labels correctly (if gold labels are provided)
+# * Incorrect: The number of data points this LF labels incorrectly (if gold labels are provided)
 # * Emp. Acc.: The empirical accuracy of this LF (if gold labels are provided)
 
 # %%
@@ -275,13 +273,13 @@ LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
 from snorkel.analysis.error_analysis import error_buckets
 
 buckets = error_buckets(Y_dev, L_dev_array)
-df_dev[["CONTENT", "LABEL"]].iloc[buckets[(1, 0)]].head()
+df_dev[["text", "label"]].iloc[buckets[(1, 0)]].head()
 
 # %% [markdown]
 # On the other hand, `buckets[(1, 1)]` contains SPAM examples it labeled correctly.
 
 # %%
-df_dev[["CONTENT", "LABEL"]].iloc[buckets[(1, 1)]].head()
+df_dev[["text", "label"]].iloc[buckets[(1, 1)]].head()
 
 
 # %% [markdown]
@@ -290,7 +288,7 @@ df_dev[["CONTENT", "LABEL"]].iloc[buckets[(1, 1)]].head()
 # %%
 @labeling_function()
 def keywords_my_channel(x):
-    return SPAM if "my channel" in x.CONTENT.lower() else ABSTAIN
+    return SPAM if "my channel" in x.text.lower() else ABSTAIN
 
 
 lfs = [keywords_my_channel]
@@ -324,7 +322,7 @@ lfs = []
 @labeling_function()
 def keyword_my(x):
     """Spam comments talk about 'my channel', 'my video', etc."""
-    return SPAM if "my" in x.CONTENT.lower() else ABSTAIN
+    return SPAM if "my" in x.text.lower() else ABSTAIN
 
 
 lfs.append(keyword_my)
@@ -333,7 +331,7 @@ lfs.append(keyword_my)
 @labeling_function()
 def lf_subscribe(x):
     """Spam comments ask users to subscribe to their channels."""
-    return SPAM if "subscribe" in x.CONTENT else 0
+    return SPAM if "subscribe" in x.text else ABSTAIN
 
 
 lfs.append(lf_subscribe)
@@ -342,7 +340,7 @@ lfs.append(lf_subscribe)
 @labeling_function()
 def lf_link(x):
     """Spam comments post links to other channels."""
-    return SPAM if "http" in x.CONTENT.lower() else 0
+    return SPAM if "http" in x.text.lower() else ABSTAIN
 
 
 lfs.append(lf_link)
@@ -353,7 +351,7 @@ def lf_please(x):
     """Spam comments make requests rather than commenting."""
     return (
         SPAM
-        if any([word in x.CONTENT.lower() for word in ["please", "plz"]])
+        if any([word in x.text.lower() for word in ["please", "plz"]])
         else ABSTAIN
     )
 
@@ -364,7 +362,7 @@ lfs.append(lf_please)
 @labeling_function()
 def lf_song(x):
     """Ham comments actually talk about the video's content."""
-    return HAM if "song" in x.CONTENT.lower() else ABSTAIN
+    return HAM if "song" in x.text.lower() else ABSTAIN
 
 
 lfs.append(lf_song)
@@ -382,7 +380,7 @@ import re
 @labeling_function()
 def regex_check_out(x):
     """Spam comments say 'check out my video', 'check it out', etc."""
-    return SPAM if re.search(r"check.*out", x.CONTENT, flags=re.I) else ABSTAIN
+    return SPAM if re.search(r"check.*out", x.text, flags=re.I) else ABSTAIN
 
 
 lfs.append(regex_check_out)
@@ -399,7 +397,7 @@ lfs.append(regex_check_out)
 @labeling_function()
 def short_comment(x):
     """Ham comments are often short, such as 'cool video!'"""
-    return HAM if len(x.CONTENT.split()) < 5 else ABSTAIN
+    return HAM if len(x.text.split()) < 5 else ABSTAIN
 
 
 lfs.append(short_comment)
@@ -408,7 +406,7 @@ lfs.append(short_comment)
 # @labeling_function()
 # def short_word_lengths(x):
 #     """Ham comments tend to have shorter words."""
-#     words = x.CONTENT.split()
+#     words = x.text.split()
 #     lengths = [len(word) for word in words]
 #     mean_word_length = sum(lengths) / len(lengths)
 #     return HAM if mean_word_length < 4 else ABSTAIN
@@ -431,7 +429,7 @@ from snorkel.labeling.preprocess.nlp import SpacyPreprocessor
 
 # The SpacyPreprocessor parses the text in text_field and
 # stores the new enriched representation in doc_field
-spacy = SpacyPreprocessor(text_field="CONTENT", doc_field="doc", memoize=True)
+spacy = SpacyPreprocessor(text_field="text", doc_field="doc", memoize=True)
 
 
 @labeling_function(preprocessors=[spacy])
@@ -458,14 +456,14 @@ import matplotlib.pyplot as plt
 from textblob import TextBlob
 
 spam_polarities = [
-    TextBlob(x.CONTENT).sentiment.polarity
+    TextBlob(x.text).sentiment.polarity
     for i, x in df_dev.iterrows()
-    if x.LABEL == SPAM
+    if x.label == SPAM
 ]
 ham_polarities = [
-    TextBlob(x.CONTENT).sentiment.polarity
+    TextBlob(x.text).sentiment.polarity
     for i, x in df_dev.iterrows()
-    if x.LABEL == HAM
+    if x.label == HAM
 ]
 
 _ = plt.hist([spam_polarities, ham_polarities])
@@ -476,7 +474,7 @@ from textblob import TextBlob
 
 @labeling_function()
 def textblob_polarity(x):
-    return HAM if TextBlob(x.CONTENT).sentiment.polarity > 0.3 else ABSTAIN
+    return HAM if TextBlob(x.text).sentiment.polarity > 0.3 else ABSTAIN
 
 
 lfs.append(textblob_polarity)
@@ -484,7 +482,7 @@ lfs.append(textblob_polarity)
 
 @labeling_function()
 def textblob_subjectivity(x):
-    return HAM if TextBlob(x.CONTENT).sentiment.subjectivity > 0.9 else ABSTAIN
+    return HAM if TextBlob(x.text).sentiment.subjectivity > 0.9 else ABSTAIN
 
 
 lfs.append(textblob_subjectivity)
@@ -524,7 +522,7 @@ LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
 
 # %% [markdown]
 # We see that our labeling functions vary in coverage, accuracy, and how much they overlap/conflict with one another.
-# We can view a histogram of how many weak labels the `DataPoints` in our dev set have to get an idea of our total coverage.
+# We can view a histogram of how many weak labels the data points in our dev set have to get an idea of our total coverage.
 
 # %%
 # TODO: Move plot_label_frequency() to core snorkel repo
@@ -538,15 +536,15 @@ def plot_label_frequency(L):
 plot_label_frequency(L_train)
 
 # %% [markdown]
-# We see that over half of our training dataset `DataPoints` have 0 or 1 weak labels.
+# We see that over half of our training dataset data points have 0 or 1 weak labels.
 # Fortunately, the signal we do have can be used to train a classifier with a larger feature set than just these labeling functions that we've created, allowing it to generalize beyond what we've specified.
 
 # %% [markdown]
 # ## 3. Combine with Label Model
 
 # %% [markdown]
-# Our goal is now to convert these many weak labels into a single _noise-aware_ probabilistic (or confidence-weighted) label per `DataPoint`.
-# A simple baseline for doing this is to take the majority vote on a per-`DataPoint` basis: if more LFs voted SPAM than HAM, label it SPAM (and vice versa).
+# Our goal is now to convert these many weak labels into a single _noise-aware_ probabilistic (or confidence-weighted) label per data point.
+# A simple baseline for doing this is to take the majority vote on a per-data pointt` basis: if more LFs voted SPAM than HAM, label it SPAM (and vice versa).
 
 # %%
 from snorkel.labeling.model import MajorityLabelVoter
@@ -559,18 +557,17 @@ mv_model.score(L_dev, Y_dev)
 #
 # This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers.
 #
-# Note that no gold labels are used during the training process; the `LabelModel` is able to estimate the accuracies of the labeling functions using only the weak label matrix as input. (See the [TODO: dependency learning](TBD) tutorial for a demonstration of how to learn correlations as well).
+# Note that no gold labels are used during the training process; the `LabelModel` is able to learn weights for the labeling functions using only the weak label matrix as input.
 
 # %%
 from snorkel.labeling.model import LabelModel
 
-# TODO: get more frequent logging statement printing
-label_model = LabelModel(cardinality=2, verbose=True, seed=123)
-label_model.train_model(L_train, n_epochs=300, log_train_every=25)
+label_model = LabelModel(cardinality=2, verbose=True)
+label_model.fit(L_train, n_epochs=500, log_freq=50, seed=123)
 
 
 # %% [markdown]
-# We can confirm that our resulting predicted labels are probabilistic, with the points we are least certain about having labels close to 0.5. The following histogram shows the confidences we have that each `DataPoint` has the label SPAM.
+# We can confirm that our resulting predicted labels are probabilistic, with the points we are least certain about having labels close to 0.5. The following histogram shows the confidences we have that each data point` has the label SPAM.
 
 # %%
 def plot_probabilities_histogram(Y_probs):
@@ -585,7 +582,7 @@ label_model.score(L_dev, Y_dev)
 
 # %% [markdown]
 # While our `LabelModel` does improve over the majority vote baseline, it is still somewhat limited as a classifier.
-# For example, many of our `DataPoints` have few or no LFs voting on them.
+# For example, many of our data points have few or no LFs voting on them.
 # We will now train a discriminative classifier with this training set to see if we can improve performance further.
 
 # %% [markdown]
@@ -602,11 +599,11 @@ label_model.score(L_dev, Y_dev)
 # %%
 from snorkel.analysis.utils import probs_to_preds
 
-# Y_train = df_train['LABEL'].map({1: 1, 2: 0}) # This will not be available
+# Y_train = df_train['label'].map({1: 1, 2: 0}) # This will not be available
 Y_train = Y_probs_train
-Y_dev = df_dev["LABEL"].values
-Y_valid = df_valid["LABEL"].values
-Y_test = df_test["LABEL"].values
+Y_dev = df_dev["label"].values
+Y_valid = df_valid["label"].values
+Y_test = df_test["label"].values
 
 # %% [markdown]
 # * Use bag-of-ngrams as features
@@ -614,10 +611,10 @@ Y_test = df_test["LABEL"].values
 # %%
 from sklearn.feature_extraction.text import CountVectorizer
 
-words_train = [row.CONTENT for i, row in df_train.iterrows()]
-words_dev = [row.CONTENT for i, row in df_dev.iterrows()]
-words_valid = [row.CONTENT for i, row in df_valid.iterrows()]
-words_test = [row.CONTENT for i, row in df_test.iterrows()]
+words_train = [row.text for i, row in df_train.iterrows()]
+words_dev = [row.text for i, row in df_dev.iterrows()]
+words_valid = [row.text for i, row in df_valid.iterrows()]
+words_test = [row.text for i, row in df_test.iterrows()]
 
 vectorizer = CountVectorizer(ngram_range=(1, 2))
 X_train = vectorizer.fit_transform(words_train)
