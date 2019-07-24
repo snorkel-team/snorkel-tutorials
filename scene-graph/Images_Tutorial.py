@@ -15,7 +15,15 @@
 # ---
 
 # %% [markdown]
-# # Classifying Visual Relationships
+# # Visual Relationship Detection
+#
+# In this tutorial, we focus on the task of classifying visual relationships. These are relationships among a pair of objects in images (e.g. "man riding bicycle"), where "man" and "bicycle" are the subject and object, respectively, and "riding" is the relationship predicate. 
+#
+# ![Visual Relationships](https://cs.stanford.edu/people/ranjaykrishna/vrd/dataset.png)
+#
+# For the purpose of this tutorial, we operate over the [Visual Relationship Detection (VRD) dataset](https://cs.stanford.edu/people/ranjaykrishna/vrd/) and focus on action relationships. We define our three class classification task as **identifying whether a pair of bounding boxes represents the relationship of `ride`, `carry` or a different semantic relationship.**
+#
+# In the examples of the relationships shown below, the red box represents the _subject_ while the green box represents the _object_. The _predicate_ (e.g. kick) denotes what action connects the subject and the object.
 
 # %%
 # %load_ext autoreload
@@ -25,6 +33,18 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 # %matplotlib inline
+
+# %% [markdown]
+# ### 1. Load Dataset
+# We load the VRD dataset and filter images with at least one semantic predicate in it. We load the train, valid, and test sets as Pandas DataFrame objects with the following fields:
+# - label: The relationship between the objects. 0: `RIDE`, 1: `CARRY`, 2: `OTHER` action predicates
+# - object_bbox: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`	
+# - object_category: category of the object	
+# - source_img: filename for image the relationship is in	
+# - subject_bbox: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]` 		
+# - subject_category: category of the subject
+#
+# Note that the `train_df` object has a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
 
 # %%
 import json
@@ -91,6 +111,10 @@ print("Test Relationships: ", len(test_df))
 
 valid_df.sample(n=35)
 
+# %% [markdown]
+# ## 2. Writing Labeling Functions
+# We now write labeling functions to detect what relationship exists between pairs of bounding boxes. To do so, we can encode knowledge about the categories of subjects and objects usually involved in these relationships (e.g., `person` is usually the subject for predicates like `ride` and `carry`). We can encode common knowledge about these predicates, such as the subject is usually higher than the object for the predicate `ride` into the labeling functions. 
+
 # %%
 from snorkel.labeling.apply import PandasLFApplier
 from snorkel.labeling.lf import labeling_function
@@ -145,7 +169,6 @@ lfs.append(LF_person)
 
 
 #Distance-based LFs
-#bbox in the form [ymin, ymax, xmin, xmax]
 @labeling_function()
 def LF_ydist(x):
     if x.subject_bbox[3] < x.object_bbox[3]:
@@ -178,6 +201,9 @@ applier = PandasLFApplier(lfs)
 L_train = applier.apply(train_df)
 L_valid = applier.apply(valid_df)
 
+# %% [markdown]
+# Note that the labeling functions have varying empirical accuracies and coverages. Because of the imbalance in how the classes are defined, labeling functions that label the `OTHER` class have higher coverage than labeling functions for `RIDE` or `CARRY`. This reflects the distribution of classes in the dataset as well.
+
 # %%
 from snorkel.labeling.analysis import LFAnalysis
 
@@ -187,18 +213,9 @@ lf_names= [lf.name for lf in lfs]
 lf_analysis = LFAnalysis(L_valid)
 lf_analysis.lf_summary(Y_valid, lf_names=lf_names)
 
-# %%
-from snorkel.labeling.model import MajorityClassVoter
-mc_voter = MajorityClassVoter(cardinality=3)
-mc_voter.train_model(balance=[np.mean(Y_valid == 0), np.mean(Y_valid == 1), np.mean(Y_valid == 2)])
-
-mc_voter.score(L_valid, Y_valid, metrics=["accuracy"])
-
-# %%
-from snorkel.labeling.model import MajorityLabelVoter
-
-mv_model = MajorityLabelVoter(cardinality=3)
-mv_model.score(L_valid, Y_valid, metrics=["accuracy"])
+# %% [markdown]
+# ## 3. Train Label Model
+# We now train a multi-class `LabelModel` to assign training labels to the unalabeled training set. 
 
 # %%
 from snorkel.labeling.model import LabelModel
@@ -210,16 +227,15 @@ label_model.fit(L_train, seed=123, lr=0.01, log_freq=10, n_epochs=100)
 label_model.score(L_valid, Y_valid, metrics=["accuracy"])
 
 # %% [markdown]
-# ## Now, train a discriminative model with your weak labels! 
+# ## 4. Train a Classifier
 # You can then use these training labels to train any standard discriminative model, such as [a state-of-the-art ResNet](https://github.com/KaimingHe/deep-residual-networks), which should learn to generalize beyond the LF's we've developed!
-#
-# The only change needed from standard procedure is to deal with the fact that the training labels Snorkel generates are _probabilistic_ (i.e. for the binary case, in [0,1])— luckily, this is a one-liner in most modern ML frameworks! For example, in TensorFlow, you can use the [cross-entropy loss](https://www.tensorflow.org/versions/r1.1/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits).
 
 # %% [markdown]
 # ## Make DataLoaders
 
 # %%
 TRAIN_DIR  = "data/VRD/sg_dataset/sg_train_images"
+train_df['labels'] = label_model.predict(L_train)
 
 # %%
 # TODO: add bbox visualization
@@ -228,7 +244,7 @@ import os
 from PIL import Image
 import matplotlib.pyplot as plt
 
-pos_idx = np.where(train_df["label"] == 1)[0]
+pos_idx = np.where(train_df["label"] == 0)[0]
 for idx in pos_idx[:3]:
     img_path = os.path.join(TRAIN_DIR, train_df.iloc[idx].source_img)
     img = np.array(Image.open(img_path))
@@ -237,15 +253,12 @@ for idx in pos_idx[:3]:
 
 # %%
 # TODO: add bbox visualization
-neg_idx = np.where(train_df["label"] == 2)[0]
+neg_idx = np.where(train_df["label"] == 1)[0]
 for idx in neg_idx[:3]:
     img_path = os.path.join(TRAIN_DIR, train_df.iloc[idx].source_img)
     img = np.array(Image.open(img_path))
     plt.imshow(img)
     plt.show()
-
-# %%
-train_df.head()
 
 # %%
 from pathlib import Path
@@ -287,7 +300,7 @@ class SceneGraphDataset(DictDataset):
             "obj_category": df["object_category"].tolist(),
             "sub_category": df["subject_category"].tolist()
         }
-        Y_dict = {"riding_task": torch.LongTensor(df["label"].to_numpy())}
+        Y_dict = {"scene_graph_task": torch.LongTensor(df["label"].to_numpy())} #change to take in the rounded train labels
         super(SceneGraphDataset, self).__init__(name, split, X_dict, Y_dict)
         
         # define standard set of transformations to apply to each image
@@ -398,11 +411,10 @@ class WordEmb(nn.Module):
         return torch.FloatTensor(embs)
 
 
-
 # %%
 # initialize fully connected layer—maps 3 sets of image features to class logits
 # includes 2x word embeddings for subj and obj category
-fc = nn.Linear(in_features*3 + 2*WEMB_SIZE, 2)
+fc = nn.Linear(in_features*3 + 2*WEMB_SIZE, 3)
 init_fc(fc)
 
 # %%
@@ -467,19 +479,19 @@ import torch.nn.functional as F
 def ce_loss(module_name, outputs, Y, active):
     # Subtract 1 from hard labels in Y to account for Snorkel reserving the label 0 for
     # abstains while F.cross_entropy() expects 0-indexed labels
-    return F.cross_entropy(outputs[module_name][0][active], (Y.view(-1) - 1)[active])
+    return F.cross_entropy(outputs[module_name][0][active], (Y.view(-1))[active])
 
 
 def softmax(module_name, outputs):
     return F.softmax(outputs[module_name][0], dim=1)
 
 pred_cls_task = Task(
-    name="riding_task",
+    name="scene_graph_task",
     module_pool=module_pool,
     task_flow=task_flow,
     loss_func=partial(ce_loss, "head_op"),
     output_func=partial(softmax, "head_op"),
-    scorer = Scorer(metrics=["accuracy", "f1"])
+    scorer = Scorer(metrics=["accuracy"])
 )
 
 # %% [markdown]
@@ -493,7 +505,7 @@ from snorkel.classification.snorkel_classifier import SnorkelClassifier
 
 model = SnorkelClassifier([pred_cls_task])
 trainer = Trainer(
-    n_epochs=1, optimizer_config={"lr":1e-3}, 
+    n_epochs=1, lr=1e-3, 
     checkpointing=True, checkpointer_config={"checkpoint_dir": "checkpoint"}
 )
 trainer.train_model(model, [train_dl])
