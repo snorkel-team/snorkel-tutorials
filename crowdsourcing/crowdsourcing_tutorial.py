@@ -2,8 +2,8 @@
 # # Crowdsourcing tutorial
 # In this tutorial, we'll provide a simple walkthrough of how to use Snorkel to resolve conflicts
 # in a noisy crowdsourced dataset for a sentiment analysis task.
-# Like most Snorkel labeling pipelines, we'll use these denoised labels a deep learning model
-# which can be applied to new, unseen data to automatically make predictions!
+# Like most Snorkel labeling pipelines, we'll use these denoised labels to train a deep learning
+# model which can be applied to new, unseen data to automatically make predictions!
 #
 # In this tutorial, we're using the
 # [Weather Sentiment](https://data.world/crowdflower/weather-sentiment)
@@ -20,7 +20,7 @@
 #
 # The catch is that 20 contributors graded each tweet, and in many cases contributors assigned
 # conflicting sentiment labels to the same tweet. Our goal is to label each tweet as either
-# positive or negative.
+# positive or negative so that we can train a language model over the tweets themselves.
 #
 # This is a common issue when dealing with crowdsourced labeling workloads.
 # We've also altered the data set to reflect a realistic crowdsourcing pipeline
@@ -32,7 +32,7 @@
 # signals makes it an ideal framework to approach this problem.
 
 # %% [markdown]
-# We start by loading our data. It has 632 examples. We take 50 for our development set and 50 for our test set. The remaining 187 examples form our training set. 100 of the examples have crowd labels, and the remaining 87 do not. This data set is very small, and we're primarily using it for demonstration purposes.
+# We start by loading our data. It has 287 examples. We take 50 for our development set and 50 for our test set. The remaining 187 examples form our training set. This data set is very small, and we're primarily using it for demonstration purposes. In particular, we'd expect to have access to many more unlabeled tweets in order to train a high performance text model.
 #
 # The labels above have been mapped to integers, which we show here.
 
@@ -123,12 +123,20 @@ lfs = worker_lfs_pos + worker_lfs_neg
 lf_names = [lf.name for lf in lfs]
 
 applier = PandasLFApplier(lfs)
+L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
 
 # %%
 from snorkel.labeling.analysis import LFAnalysis
 
 LFAnalysis(L_dev).lf_summary(Y_dev, lf_names=lf_names).head(10)
+
+# %% [markdown]
+# So the crowd labels are quite good! But how much of our dev and training sets do they cover?
+
+# %%
+print("Training set coverge:", LFAnalysis(L_train).label_coverage())
+print("Dev set coverge:", LFAnalysis(L_dev).label_coverage())
 
 # %% [markdown]
 # ### Additional labeling functions
@@ -185,6 +193,13 @@ L_dev = applier.apply(df_dev)
 LFAnalysis(L_dev).lf_summary(Y_dev, lf_names=lf_names).head(10)
 
 # %% [markdown]
+# Using the text-based LFs, we've expanded coverage on both our training set and dev set to 100%. We'll now take these noisy and conflicting labels, and use the label model to denoise and combine them.
+
+# %%
+print("Training set coverge:", LFAnalysis(L_train).label_coverage())
+print("Dev set coverge:", LFAnalysis(L_dev).label_coverage())
+
+# %% [markdown]
 # ## Train Label Model And Generate Soft Labels
 
 # %%
@@ -208,7 +223,7 @@ acc = metric_score(Y_dev, Y_dev_pred, probs=None, metric="accuracy")
 print(f"Label Model Accuracy: {acc:.3f}")
 
 # %% [markdown]
-# Look at that, we get perfect accuracy on the development set. This is due to the abundance of high quality crowd worker labels. In order to train a discriminative model, let's generate a set of probabilistic labels for the training set.
+# Look at that, we get very high accuracy on the development set. This is due to the abundance of high quality crowd worker labels. **Since we don't have these high quality crowdsourcing labels for the test set or new incoming examples, we can't use the label model reliably at inference time.** In order to run inference on new incoming examples, we need to train a discriminative model over the tweets themselves. Let's generate a set of probabilistic labels for the training set.
 
 # %%
 Y_train_prob = label_model.predict_proba(L_train)
@@ -243,7 +258,7 @@ model = tf.keras.Sequential()
 model.add(tf.keras.layers.Dense(10, activation=tf.nn.relu))
 model.add(tf.keras.layers.Dense(2, activation=tf.nn.softmax))
 model.compile("Adam", "categorical_crossentropy")
-callbacks = model.fit(X_train, Y_train_prob, epochs=100, verbose=0)
+callbacks = model.fit(X_train, Y_train_prob, epochs=10, verbose=0)
 
 # %%
 probs = model.predict(X_test)
