@@ -22,9 +22,9 @@ def load_spam_dataset():
         # Lowercase column names
         df.columns = map(str.lower, df.columns)
         # Remove comment_id field
-        df.drop("comment_id", axis=1)
+        df = df.drop("comment_id", axis=1)
         # Add field indicating source video
-        df["video_id"] = [i] * len(df)
+        df["video"] = [i] * len(df)
         # Rename fields
         df = df.rename(columns={"class": "label", "content": "text"})
         # Shuffle order

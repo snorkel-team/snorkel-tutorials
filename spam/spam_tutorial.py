@@ -56,11 +56,11 @@
 
 # %% [markdown]
 # We load the Kaggle dataset and create Pandas dataframe objects for each of the sets described above. Each dataframe consists of the following fields:
-# * **author_id**: Username of the comment author
+# * **author**: Username of the comment author
 # * **data**: Date and time the comment was posted
 # * **text**: Raw text content of the comment
 # * **label**: Whether the comment is `SPAM` (1), `HAM` (0), or `UNKNOWN/ABSTAIN` (-1)
-# * **video_id**: Video the comment is associated with
+# * **video**: Video the comment is associated with
 #
 # We start by loading our data.
 # The `load_spam_dataset()` method downloads the raw csv files from the internet, divides them into splits, converts them into dataframes, and shuffles them.
