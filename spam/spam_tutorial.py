@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # %% [markdown]
 # # Introductory Snorkel Tutorial: Spam Detection
 
@@ -72,6 +73,7 @@
 # %%
 import os
 
+# Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("spam")
 
@@ -87,7 +89,7 @@ Y_test = df_test["label"].values
 
 
 # %% [markdown]
-# Let's view a few examples
+# Let's view a few examples.
 
 # %%
 import pandas as pd
@@ -122,20 +124,21 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 # LFs are heuristics that take as input a data point and either assign a label to it (in this case, `HAM` or `SPAM`) or abstain (don't assign any label). Labeling functions can be *noisy*: they don't have perfect accuracy and don't have to label every data point.
 #
 # Because their only requirement is that they map a data point a label (or abstain), they can wrap a wide variety of forms of supervision. Examples include, but are not limited to:
-# * Keyword searches: looking for specific words in a sentence
-# * Pattern matching: looking for specific syntactical patterns
-# * Third-party models: using an pre-trained model (usually a model for a different task than the one at hand)
-# * Distant supervision: using external knowledge base
-# * Crowdworker labels: treating each crowdworker as a black-box function that assigns labels to subsets of the data
+# * *Keyword searches*: looking for specific words in a sentence
+# * *Pattern matching*: looking for specific syntactical patterns
+# * *Third-party models*: using an pre-trained model (usually a model for a different task than the one at hand)
+# * *Distant supervision*: using external knowledge base
+# * *Crowdworker labels*: treating each crowdworker as a black-box function that assigns labels to subsets of the data
 #
 # The process of **developing LFs** is iterative and usually consists of:
 # * Writing a function
 # * Estimating its performance by looking at labeled examples in the training set or dev set
 # * Iterating to improve coverage or accuracy as necessary.
+#
 # Balancing accuracy and coverage for specific labeling functions as well as the overall set of LFs developed is often a trade-off, and depending on the use case, users may tend to prefer one over the other.
 #
 # Once multiple LFs have been created, users can look at data points that have received no labels so far (or many conflicting labels) to get ideas for new LFs to write.
-# Another thing to check is whether there are any classes for which there are very few LFs, so that additional LFs can be written to cover that part of the dataset.
+# Furthermore, if there are some classes that have votes form very few LFs, users might iterate by writing additional LFs to cover those parts of the dataset.
 # **Note, however, that it is not necessary for LFs to assign labels to every data point;** in fact, most of the time your LFs will not have perfect dataset-wide coverage.
 # We rely on the fact that the classifier that trains on labels from Snorkel has the power to _generalize_ and can therefore learn a good representation of the data even if the each data point in the training set does not receive a label from any LFs.
 #
@@ -155,7 +158,7 @@ df_dev[["text", "label"]].sample(10, random_state=123)
 # ### b) Write an LF
 
 # %% [markdown]
-# The recommended way to create labeling functions in Snorkel is with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point (in this case, a row of the dataframe).
+# Labeling functions in Snorkel are created with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point (in this case, a row of the dataframe).
 #
 # Looking at samples of our data, we see multiple messages where spammers are trying to get viewers to look at "my channel" or "my video," so we write a simple LF that labels an example as `SPAM` if it includes the word "my" and otherwise abstains.
 
@@ -601,7 +604,7 @@ X_test = vectorizer.transform(words_test)
 
 # %% [markdown]
 # As we saw earlier, some of the data points in our training set received no weak labels from our LFs.
-# These examples are not helpful for training our classifier, as they convey no supervision signal, so we filter them out before training.
+# These examples convey no supervision signal and tend to hurt performance, so we filter them out before training.
 
 # %%
 mask = L_train.sum(axis=1) != ABSTAIN * len(lfs)
@@ -614,13 +617,15 @@ Y_probs_train = Y_probs_train[mask]
 # %% [markdown]
 # Our Keras classifier is a simple logistic regression classifier.
 # We compile it with a `categorical_crossentropy` loss so that it can handle probabilistic labels instead of integer labels.
-# We use the common settings of an `Adam` optimizer and early stopping (evaluating the model on the validation set after each epoch and reloading the weights from when it achived the best score).
+# We use the common settings of an `Adam` optimizer and early stopping (evaluating the model on the validation set after each epoch and reloading the weights from when it achieved the best score).
 
 # %%
 from snorkel.analysis.utils import probs_to_preds, preds_to_probs
 from snorkel.analysis.metrics import metric_score
 import tensorflow as tf
 
+# Our model is a simple linear layer mapping from feature
+# vectors to the number of labels in our problem (2).
 keras_model = tf.keras.Sequential()
 keras_model.add(
     tf.keras.layers.Dense(
@@ -653,7 +658,7 @@ Y_preds_test = probs_to_preds(Y_probs_test)
 print(f"Test Accuracy: {metric_score(Y_test, Y_preds_test, metric='accuracy')}")
 
 # %% [markdown]
-# Doing this, we observe an additional boost in accuracy over the `LabelModel` by multiple points---**the training set produced by the `LabelModel` successfully transferred our domain knowledge to the classifier, which was able to generalize beyond the noisy heuristics we provided in our LFs!**
+# Doing this, we observe an additional boost in accuracy over the `LabelModel` by multiple points—**the training set produced by the `LabelModel` successfully transferred our domain knowledge to the classifier, which was able to generalize beyond the noisy heuristics we provided in our LFs!**
 
 # %% [markdown]
 # We can compare this to the score we could have gotten if we had used our small labeled dev set directly as training data instead of using it to guide the creation of LFs.
