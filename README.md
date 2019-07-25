@@ -16,7 +16,7 @@ Start with the `spam` tutorial for a gentle introduction to the concepts and cla
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 
 To run a tutorial in a jupyter notebook, run the following commands, which create a virtual environment, install requirements, create an ipython kernel, and launch Jupyter:
-```
+```bash
 TUTORIAL="spam"  # Change this to the name of the directory for the tutorial you want
 
 # Create virtual env
