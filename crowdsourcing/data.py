@@ -43,7 +43,7 @@ def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
     df_dev = labeled[:50]
     df_dev = df_dev[["tweet_id", "tweet_text", "sentiment"]]
     df_dev.sentiment = df_dev.sentiment.map(answer_mapping).values
-    crowd_answers = crowd_answers.drop(df_dev[:int(len(df_dev) / 2)].tweet_id)
+    crowd_answers = crowd_answers.drop(df_dev[: int(len(df_dev) / 2)].tweet_id)
 
     df_test = labeled[50:100]
     df_test = df_test[["tweet_id", "tweet_text", "sentiment"]]
@@ -51,6 +51,6 @@ def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
     crowd_answers = crowd_answers.drop(df_test.tweet_id)
 
     df_train = labeled[100:][["tweet_id", "tweet_text"]]
-    crowd_answers = crowd_answers.drop(df_train[:int(len(df_train) / 2)].tweet_id)
+    crowd_answers = crowd_answers.drop(df_train[: int(len(df_train) / 2)].tweet_id)
 
     return crowd_answers, df_train, df_dev, df_test
