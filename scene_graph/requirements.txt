@@ -2,4 +2,4 @@ numpy>=1.16.0
 pandas>=0.24.0,<0.25.0
 torchvision==0.3.0
 Pillow==6.1.0
-tensorboardX
+tensorboardX==1.8

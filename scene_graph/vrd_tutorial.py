@@ -28,10 +28,10 @@
 # In the examples of the relationships shown below, the red box represents the _subject_ while the green box represents the _object_. The _predicate_ (e.g. kick) denotes what relationship connects the subject and the object.
 
 # %%
-# %load_ext autoreload
-# %autoreload 2
+import os
 
-import numpy as np
+if os.path.basename(os.getcwd()) == "scene_graph":
+    os.chdir("..")
 
 # %% [markdown]
 # ### 1. Load Dataset
@@ -46,10 +46,10 @@ import numpy as np
 # Note that the `train_df` object has a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
 
 # %%
-import os
+# %load_ext autoreload
+# %autoreload 2
 
-if os.path.basename(os.getcwd()) == "scene_graph":
-    os.chdir("..")
+import numpy as np
 
 # %%
 from scene_graph.utils import load_vrd_data
@@ -62,7 +62,7 @@ print("Test Relationships: ", len(test_df))
 
 # %% [markdown]
 # ## 2. Writing Labeling Functions
-# We now write labeling functions to detect what relationship exists between pairs of bounding boxes. To do so, we can encode knowledge about the categories of subjects and objects usually involved in these relationships (e.g., `person` is usually the subject for predicates like `ride` and `carry`). We can encode common knowledge about these predicates, such as the subject is usually higher than the object for the predicate `ride` into the labeling functions.
+# We now write labeling functions to detect what relationship exists between pairs of bounding boxes. To do so, we can encode various intuitions into the labeling functions. _Categorical_ intution: knowledge about the categories of subjects and objects usually involved in these relationships (e.g., `person` is usually the subject for predicates like `ride` and `carry`), and _spatial_ intuition: knowledge about the relative positions of the subject and objects (e.g., subject is usually higher than the object for the predicate `ride`).
 
 # %%
 RIDE = 0
@@ -70,7 +70,10 @@ CARRY = 1
 OTHER = 2
 ABSTAIN = -1
 
+# %% [markdown]
+# We begin with labeling functions that encode categorical intuition: we use knowledge about common subject-object category pairs that are common for `RIDE` and `CARRY` and also knowledge about what subjects or objects are unlikely to be involved in the two relationships.
 
+# %%
 from snorkel.labeling.lf import labeling_function
 
 # Category-based LFs
@@ -113,6 +116,10 @@ def LF_person(x):
     return ABSTAIN
 
 
+# %% [markdown]
+# We now encode our spatial intuition, which includes measuring the distance between the bounding boxes and comparing their relative areas.
+
+# %%
 # Distance-based LFs
 @labeling_function()
 def LF_ydist(x):
@@ -144,7 +151,7 @@ def LF_area(x):
 
 
 # %% [markdown]
-# Note that the labeling functions have varying empirical accuracies and coverages. Because of the imbalance in how the classes are defined, labeling functions that label the `OTHER` class have higher coverage than labeling functions for `RIDE` or `CARRY`. This reflects the distribution of classes in the dataset as well.
+# Note that the labeling functions have varying empirical accuracies and coverages. Due to class imbalance in our chosen relationships, labeling functions that label the `OTHER` class have higher coverage than labeling functions for `RIDE` or `CARRY`. This reflects the distribution of classes in the dataset as well.
 
 # %%
 from snorkel.labeling.apply import PandasLFApplier
@@ -183,12 +190,15 @@ from snorkel.labeling.model import LabelModel
 label_model = LabelModel(cardinality=3, verbose=True)
 label_model.fit(L_train, seed=123, lr=0.01, log_freq=10, n_epochs=100)
 
+# %% [markdown]
+# We use F1 Micro average for the multiclass setting, which calculates metrics globally by counting the total true positives, false negatives and false positives. [source](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
+
 # %%
 label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 
 # %% [markdown]
 # ## 4. Train a Classifier
-# You can then use these training labels to train any standard discriminative model, such as [a state-of-the-art ResNet](https://github.com/KaimingHe/deep-residual-networks), which should learn to generalize beyond the LF's we've developed!
+# You can then use these training labels to train any standard discriminative model, such as [an off-the-shelf ResNet](https://github.com/KaimingHe/deep-residual-networks), which should learn to generalize beyond the LF's we've developed!
 
 # %% [markdown]
 # #### Create DataLoaders for Classifier
@@ -214,22 +224,6 @@ valid_dl = DictDataLoader(
 )
 
 # %% [markdown]
-# #### Define Loss Functions
-
-
-# %%
-import torch.nn.functional as F
-
-
-def ce_loss(module_name, outputs, Y, active):
-    return F.cross_entropy(outputs[module_name][0][active], (Y.view(-1))[active])
-
-
-def softmax(module_name, outputs):
-    return F.softmax(outputs[module_name][0], dim=1)
-
-
-# %% [markdown]
 # #### Define Model Architecture
 
 # %%
@@ -238,7 +232,9 @@ import torch.nn as nn
 
 from functools import partial
 from snorkel.classification.scorer import Scorer
+from snorkel.classification.task import ce_loss, softmax
 from snorkel.classification.task import Operation, Task
+
 
 # initialize pretrained feature extractor
 cnn = models.resnet18(pretrained=True)
@@ -266,6 +262,7 @@ module_pool = nn.ModuleDict(
     }
 )
 
+# define feature extractors for each of the (union, subject, and object) image crops
 union_feat_op = Operation(
     name="union_feat_op",
     module_name="feat_extractor",
@@ -280,12 +277,14 @@ obj_feat_op = Operation(
     name="obj_feat_op", module_name="feat_extractor", inputs=[("_input_", "obj_crop")]
 )
 
+# define an operation to extract word embeddings for subject and object categories
 word_emb_op = Operation(
     name="word_emb_op",
     module_name="word_emb",
     inputs=[("_input_", "sub_category"), ("_input_", "obj_category")],
 )
 
+# define an operation to concatenate image features and word embeddings
 concat_op = Operation(
     name="concat_op",
     module_name="feat_concat",
@@ -297,6 +296,7 @@ concat_op = Operation(
     ],
 )
 
+# define an operation to make a prediction over all concatenated features
 prediction_op = Operation(
     name="head_op", module_name="prediction_head", inputs=[("concat_op", 0)]
 )
@@ -310,7 +310,6 @@ task_flow = [
     concat_op,
     prediction_op,
 ]
-
 
 pred_cls_task = Task(
     name="scene_graph_task",
