@@ -44,6 +44,11 @@ import numpy as np
 # Note that the `train_df` object has a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
 
 # %%
+import os
+if os.path.basename(os.getcwd()) == "scene_graph":
+    os.chdir("../")
+
+# %%
 from scene_graph.utils import load_vrd_data
 
 train_df, valid_df, test_df = load_vrd_data()
@@ -187,8 +192,8 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 from snorkel.classification.data import DictDataLoader
 from scene_graph.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
 
-#TRAIN_DIR = "data/VRD/sg_dataset/sg_train_images"
-TRAIN_DIR = "data/VRD/sg_dataset/samples"
+#change to "scene_graph/data/VRD/sg_dataset/sg_train_images" for full set
+TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/samples" 
 train_df["labels"] = label_model.predict(L_train)
 
 train_dl = DictDataLoader(

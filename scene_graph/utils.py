@@ -38,15 +38,14 @@ def vrd_to_pandas(
     for img in relationships_set:
         if (keys_list is None) or (img in keys_list):
             img_relationships = relationships_set[img]
+            for relationship in img_relationships:
+                predicate_idx = relationship["predicate"]
+                if predicates[predicate_idx] in list_of_predicates:
+                    relationships.append(
+                        flatten_vrd_relationship(img, relationship, objects, predicates)
+                    )
         else:
             continue
-        for relationship in img_relationships:
-            predicate_idx = relationship["predicate"]
-            if predicates[predicate_idx] in list_of_predicates:
-                relationships.append(
-                    flatten_vrd_relationship(img, relationship, objects, predicates)
-                )
-
     return pd.DataFrame.from_dict(relationships)
 
 
