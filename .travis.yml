@@ -10,9 +10,6 @@ cache: pip
 # python3.7 only available on xenial
 dist: xenial
 
-env:
-  TOX_INSTALL_DIR=.env
-
 jobs:
   include:
     - name: "Python 3.6: tutorial tests"
