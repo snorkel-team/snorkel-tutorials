@@ -419,9 +419,7 @@ train_L = applier.apply(train_df)
 from snorkel.labeling.model.label_model import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
-label_model.fit(
-    train_L, dev_labels, l2=0.0, n_epochs=5000, log_freq=500, seed=123,
-)
+label_model.fit(train_L, dev_labels, l2=0.0, n_epochs=5000, log_freq=500, seed=123)
 
 # %% [markdown]
 # ### Label Model Accuracy
@@ -474,7 +472,7 @@ import pandas as pd
 from snorkel.analysis.utils import preds_to_probs
 
 dev_label_probs = preds_to_probs(dev_labels, 2)
-mask = (train_L.max(1) != -1)
+mask = train_L.max(1) != -1
 combined_df = pd.concat([dev_df, train_df.iloc[mask]])
 combined_proba = np.concatenate([dev_label_probs, train_proba[mask, :]], 0)
 
