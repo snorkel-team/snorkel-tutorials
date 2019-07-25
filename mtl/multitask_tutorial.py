@@ -1,36 +1,19 @@
 # -*- coding: utf-8 -*-
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.2'
-#       jupytext_version: 1.1.7
-#   kernelspec:
-#     display_name: Python 3
-#     language: python
-#     name: python3
-# ---
-
 # %% [markdown]
 # # Multi-Task Learning (MTL) Basics Tutorial
 
 # %% [markdown]
-# Multi-task learning is increasingly becoming a standard tool for the modern ML practioner. A major requirement of this regime is the ability to easily *add or remove new datasets, new label sets, new tasks, and new metrics*. Thus, in the Snorkel multi-task model design, each of these concepts have been decoupled.
+# Multi-task learning is becoming a standard tool for the modern ML practioner. A major requirement of this approach is the ability to easily *add new datasets, label sets, tasks, and metrics* (and just as easily remove them). Thus, in the Snorkel multi-task model design, each of these concepts have been decoupled.
 
 # %% [markdown]
-# The purpose of this tutorial is to introduce the basic classes and flow of the multi-task learning tools within Snorkel (not necessarily to motivate or explain multi-task learning at large; we assume prior experience with MTL).
+# The purpose of this tutorial is to introduce the basic interfaces and flow of the multi-task learning tools within Snorkel (we assume that you have prior experience with MTL, so we don't motivate or explain multi-task learning at large here.
 #
-# In this notebook, we'll look at a simple MTL model with only two tasks, each having distinct data and only one set of labels (the ground truth or "gold" labels). We'll also use data where the raw data is directly usable as features, for simplicity (i.e., unlike text data, where we would first need to tokenize and transform the data into token ids).
+# In this notebook, we'll look at a simple MTL model with only two tasks, each having distinct data and only one set of ground truth labels ("gold" labels). We'll also use data where the raw data is directly usable as features, for simplicity (i.e., unlike text data, where we would first need to tokenize and transform the data into token ids).
 
 # %% [markdown]
 # ## Environment Setup
 
 # %%
-# %load_ext autoreload
-# %autoreload 2
 # %matplotlib inline
 
 from snorkel.analysis.utils import set_seed
@@ -50,10 +33,11 @@ set_seed(SEED)
 # 2. Inside a **unit square** centered on the origin
 #
 # We'll visualize these decision boundaries in a few cells.
+#
+# _Note: In this toy example, we don't expect these specific tasks to help each other learn, but this is often a benefit of joint training in MTL settings._
 
 # %%
 import numpy as np
-
 
 N = 500  # Data points per dataset
 R = 1  # Unit distance
@@ -65,10 +49,8 @@ circle_labels = circle_data[:, 0] ** 2 + circle_data[:, 1] ** 2 < R
 # Dataset 1 ("square")
 square_data = np.random.uniform(0, 1, size=(N, 2)) * 2 - 1
 square_labels = (
-    (-0.5 < square_data[:, 0])
-    * (square_data[:, 0] < 0.5)
-    * (-0.5 < square_data[:, 1])
-    * (square_data[:, 1] < 0.5)
+    (abs(square_data[:, 0]) < 0.5)
+    * (abs(square_data[:, 1]) < 0.5)
 )
 
 # %% [markdown]
@@ -92,9 +74,11 @@ axs[1].set_title("Task1", fontsize=10)
 
 plt.show()
 
+# %% [markdown]
+# Here, we wrap the `train_test_split` function to split the data into train/valid/test splits.
+
 # %%
 from sklearn.model_selection import train_test_split
-
 
 def split_data(data, labels, seed=123):
     """Split data twice using sklearn train_test_split helper."""
@@ -103,7 +87,7 @@ def split_data(data, labels, seed=123):
         data, labels, test_size=0.2, random_state=SEED
     )
     X_train, X_val, y_train, y_val = train_test_split(
-        data, labels, test_size=0.1, random_state=SEED
+        X_train, y_train, test_size=0.1, random_state=SEED
     )
 
     return (
@@ -113,7 +97,7 @@ def split_data(data, labels, seed=123):
 
 
 # %% [markdown]
-# We'll now divide this synthetic data into train/valid/test splits using our helper function `split_data()`.
+# We'll now divide the synthetic `circle_data` and `square_data` into train/valid/test splits using our helper function `split_data()`.
 
 # %%
 circle_data_splits, circle_label_splits = split_data(
@@ -127,9 +111,11 @@ square_data_splits, square_label_splits = split_data(
 # ## Make DataLoaders
 
 # %% [markdown]
-# With our data now loaded/created, we can now package it up into `DictDataLoader`s for training.
+# With our data now loaded/created, we can now package it up into `DictDataset`s for training. This object is a simple wrapper around `torch.utils.data.Dataset` and stores data fields and labels as dictionaries.
 #
-# In the `DictDataLoader`, we specify a mapping from each `Task` to its corresponding labels.  We'll define these `Task` objects in the following section as we define our model.
+# In the `DictDataset`, each label corresponds to a particular `Task` by name.  We'll define these `Task` objects in the following section as we define our model.
+#
+# `DictDataloader` is a wrapper for `torch.utils.data.Dataloader`, which handles the collate function for `DictDataset` appropriately.
 
 # %%
 import torch
@@ -151,6 +137,9 @@ for split in ["train", "valid", "test"]:
     dataloaders.append(dataloader)
 
 # %% [markdown]
+# We now have 6 data loaders, one for each task (`circle_task` and `square_task`) for each split (`train`, `valid`, `test`).
+
+# %% [markdown]
 # ## Define Model
 
 # %% [markdown]
@@ -160,7 +149,7 @@ for split in ["train", "valid", "test"]:
 # ### Tasks
 
 # %% [markdown]
-# A `Task` represents a path through a network. In Snorkel, this corresponds to a particular sequence of PyTorch modules that each `DataPoint` will pass through.
+# A `Task` represents a path through a neural network. In `SnorkelClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each example will make a forward pass.
 #
 # To specify this sequence of modules, each `Task` defines a **module pool** (a set of modules that it relies on) and a **task flow**—a sequence of `Operation`s. Each `Operation` defines a module and the inputs to feed to that module. These inputs are described with a list of tuples, where each tuple is either (`_input_`, \[field_name\]), or the name of a previous operation and the index of its output to use (most modules have only a single output, so the second element of these tuples is almost always 0).
 #
@@ -170,18 +159,18 @@ for split in ["train", "valid", "test"]:
 import torch.nn as nn
 from snorkel.classification.task import Operation
 
-# Define a two-layer "input" module and a one-layer prediction "head" module
-input_module = nn.Sequential(nn.Linear(2, 8), nn.ReLU(), nn.Linear(8, 4), nn.ReLU())
+# Define a two-layer MLP module and a one-layer prediction "head" module
+base_mlp = nn.Sequential(nn.Linear(2, 8), nn.ReLU(), nn.Linear(8, 4), nn.ReLU())
 head_module = nn.Linear(4, 2)
 
 # The module pool contains all the modules this task uses
 module_pool = nn.ModuleDict(
-    {"input_module": input_module, "circle_head_module": head_module}
+    {"base_mlp": base_mlp, "circle_head_module": head_module}
 )
 
 # "From the input dictionary, pull out 'circle_data' and send it through input_module"
 op1 = Operation(
-    name="input_op", module_name="input_module", inputs=[("_input_", "circle_data")]
+    name="input_op", module_name="base_mlp", inputs=[("_input_", "circle_data")]
 )
 
 # "From the output of op1 (the input op), pull out the 0th indexed output
@@ -223,11 +212,11 @@ circle_task = Task(
 square_task = Task(
     name="square_task",
     module_pool=nn.ModuleDict(
-        {"input_module": input_module, "square_head": nn.Linear(4, 2)}
+        {"base_mlp": base_mlp, "square_head": nn.Linear(4, 2)}
     ),
     task_flow=[
-        Operation("input_module", [("_input_", "square_data")]),
-        Operation("square_head", [("input_module", 0)]),
+        Operation("base_mlp", [("_input_", "square_data")]),
+        Operation("square_head", [("base_mlp", 0)]),
     ],
     loss_func=partial(ce_loss, "square_head"),
     output_func=partial(softmax, "square_head"),
@@ -249,7 +238,7 @@ model = SnorkelClassifier([circle_task, square_task])
 # ### Train Model
 
 # %% [markdown]
-# Once the model is constructed, we can train it as we would a single-task model, using the `train_model` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all `DataPoints` will be seen exactly once before any are seen twice.
+# Once the model is constructed, we can train it as we would a single-task model, using the `train_model` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all examples  will be seen exactly once before any are seen twice.
 
 # %%
 from snorkel.classification.training import Trainer
@@ -276,7 +265,7 @@ model.score(dataloaders)
 # %% [markdown]
 # Task-specific metrics are recorded in the form `task/dataset/split/metric` corresponding to the task the made the predictions, the dataset the predictions were made on, the split being evaluated, and the metric being calculated.
 #
-# For model-wide metrics (such as the total loss over all tasks or the learning rate), the default task name is `model` and the dataset name is "all".
+# For model-wide metrics (such as the total loss over all tasks or the learning rate), the default task name is `model` and the dataset name is `all` (e.g. `model/all/train/loss`).
 
 # %% [markdown]
 # ## Summary
