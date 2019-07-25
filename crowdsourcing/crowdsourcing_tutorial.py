@@ -83,19 +83,22 @@ for worker_id in labels_by_annotator.groups:
     v = set(worker_df.answer.tolist())
     if len(worker_df) > 10:
         worker_dicts[worker_id] = dict(zip(worker_df.index, worker_df.answer))
-    
+
 print("Number of workers:", len(worker_dicts))
 
 # %%
 from snorkel.labeling.lf import LabelingFunction
 
+
 def f_pos(x, worker_dict):
     label = worker_dict.get(x.tweet_id)
     return 1 if label == 1 else -1
 
+
 def f_neg(x, worker_dict):
     label = worker_dict.get(x.tweet_id)
     return 0 if label == 0 else -1
+
 
 def get_worker_labeling_function(worker_id, f):
     worker_dict = worker_dicts[worker_id]
@@ -103,8 +106,12 @@ def get_worker_labeling_function(worker_id, f):
     return LabelingFunction(name, f=f, resources={"worker_dict": worker_dict})
 
 
-worker_lfs_pos = [get_worker_labeling_function(worker_id, f_pos) for worker_id in worker_dicts]
-worker_lfs_neg = [get_worker_labeling_function(worker_id, f_neg) for worker_id in worker_dicts]
+worker_lfs_pos = [
+    get_worker_labeling_function(worker_id, f_pos) for worker_id in worker_dicts
+]
+worker_lfs_neg = [
+    get_worker_labeling_function(worker_id, f_neg) for worker_id in worker_dicts
+]
 
 # %% [markdown]
 # Let's take a quick look at how well they do on the development set.
@@ -134,11 +141,13 @@ from snorkel.labeling.lf import labeling_function
 from snorkel.labeling.preprocess import preprocessor
 from textblob import TextBlob
 
+
 @preprocessor()
 def textblob_polarity(x):
     scores = TextBlob(x.tweet_text)
     x.polarity = scores.polarity
     return x
+
 
 textblob_polarity.memoize = True
 
@@ -183,26 +192,19 @@ from snorkel.labeling.model.label_model import LabelModel
 
 # Train label model.
 label_model = LabelModel(cardinality=2, verbose=True)
-label_model.fit(
-    L_train,
-    n_epochs=100,
-    seed=123,
-    log_freq=20,
-    l2=0.1,
-    lr=0.01,
-)
+label_model.fit(L_train, n_epochs=100, seed=123, log_freq=20, l2=0.1, lr=0.01)
 
 # %% [markdown]
 # As a spot-check for the quality of our label model, we'll score it on the dev set.
 
 # %%
 from snorkel.analysis.metrics import metric_score
-from snorkel.analysis.utils import probs_to_preds, preds_to_probs
+from snorkel.analysis.utils import probs_to_preds
 
 Y_dev_prob = label_model.predict_proba(L_dev)
 Y_dev_pred = probs_to_preds(Y_dev_prob)
 
-acc = metric_score(Y_dev, Y_dev_pred, probs=None, metric='accuracy')
+acc = metric_score(Y_dev, Y_dev_pred, probs=None, metric="accuracy")
 print(f"Label Model Accuracy: {acc:.3f}")
 
 # %% [markdown]
