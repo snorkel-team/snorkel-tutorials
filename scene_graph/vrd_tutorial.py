@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.2'
-#       jupytext_version: 1.2.0
+#       jupytext_version: 1.1.7
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -233,7 +233,7 @@ import torch.nn as nn
 from functools import partial
 from snorkel.classification.scorer import Scorer
 from snorkel.classification.task import ce_loss, softmax
-from snorkel.classification.task import Operation, Task
+from snorkel.classification.task import Task
 
 
 # initialize pretrained feature extractor
@@ -262,55 +262,11 @@ module_pool = nn.ModuleDict(
     }
 )
 
-# define feature extractors for each of the (union, subject, and object) image crops
-union_feat_op = Operation(
-    name="union_feat_op",
-    module_name="feat_extractor",
-    inputs=[("_input_", "union_crop")],
-)
-
-sub_feat_op = Operation(
-    name="sub_feat_op", module_name="feat_extractor", inputs=[("_input_", "sub_crop")]
-)
-
-obj_feat_op = Operation(
-    name="obj_feat_op", module_name="feat_extractor", inputs=[("_input_", "obj_crop")]
-)
-
-# define an operation to extract word embeddings for subject and object categories
-word_emb_op = Operation(
-    name="word_emb_op",
-    module_name="word_emb",
-    inputs=[("_input_", "sub_category"), ("_input_", "obj_category")],
-)
-
-# define an operation to concatenate image features and word embeddings
-concat_op = Operation(
-    name="concat_op",
-    module_name="feat_concat",
-    inputs=[
-        ("obj_feat_op", 0),
-        ("sub_feat_op", 0),
-        ("union_feat_op", 0),
-        ("word_emb_op", 0),
-    ],
-)
-
-# define an operation to make a prediction over all concatenated features
-prediction_op = Operation(
-    name="head_op", module_name="prediction_head", inputs=[("concat_op", 0)]
-)
+# %%
+from scene_graph.model import get_task_flow
 
 # define task flow through modules
-task_flow = [
-    sub_feat_op,
-    obj_feat_op,
-    union_feat_op,
-    word_emb_op,
-    concat_op,
-    prediction_op,
-]
-
+task_flow = get_task_flow()
 pred_cls_task = Task(
     name="scene_graph_task",
     module_pool=module_pool,

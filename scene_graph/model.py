@@ -10,6 +10,7 @@ from PIL import Image
 from torchvision import transforms
 
 from snorkel.classification.data import DictDataset, XDict, YDict
+from snorkel.classification.task import Operation
 
 
 def union(bbox1, bbox2):
@@ -150,3 +151,58 @@ class FlatConcat(nn.Module):
 
     def forward(self, *inputs):
         return torch.cat([input.view(input.size(0), -1) for input in inputs], dim=1)
+
+
+# Helper functions to geenerate operations
+def get_task_flow():
+    # define feature extractors for each of the (union, subject, and object) image crops
+    union_feat_op = Operation(
+        name="union_feat_op",
+        module_name="feat_extractor",
+        inputs=[("_input_", "union_crop")],
+    )
+
+    sub_feat_op = Operation(
+        name="sub_feat_op",
+        module_name="feat_extractor",
+        inputs=[("_input_", "sub_crop")],
+    )
+
+    obj_feat_op = Operation(
+        name="obj_feat_op",
+        module_name="feat_extractor",
+        inputs=[("_input_", "obj_crop")],
+    )
+
+    # define an operation to extract word embeddings for subject and object categories
+    word_emb_op = Operation(
+        name="word_emb_op",
+        module_name="word_emb",
+        inputs=[("_input_", "sub_category"), ("_input_", "obj_category")],
+    )
+
+    # define an operation to concatenate image features and word embeddings
+    concat_op = Operation(
+        name="concat_op",
+        module_name="feat_concat",
+        inputs=[
+            ("obj_feat_op", 0),
+            ("sub_feat_op", 0),
+            ("union_feat_op", 0),
+            ("word_emb_op", 0),
+        ],
+    )
+
+    # define an operation to make a prediction over all concatenated features
+    prediction_op = Operation(
+        name="head_op", module_name="prediction_head", inputs=[("concat_op", 0)]
+    )
+
+    return [
+        sub_feat_op,
+        obj_feat_op,
+        union_feat_op,
+        word_emb_op,
+        concat_op,
+        prediction_op,
+    ]
