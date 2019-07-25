@@ -166,19 +166,21 @@ module_pool = nn.ModuleDict({"base_mlp": base_mlp, "circle_head_module": head_mo
 
 # "From the input dictionary, pull out 'circle_data' and send it through input_module"
 op1 = Operation(
-    name="input_op", module_name="base_mlp", inputs=[("_input_", "circle_data")]
+    name="base_mlp", module_name="base_mlp", inputs=[("_input_", "circle_data")]
 )
 
 # "From the output of op1 (the input op), pull out the 0th indexed output
 # (i.e., the only output) and send it through the head_module"
 op2 = Operation(
-    name="head_op", module_name="circle_head_module", inputs=[("input_op", 0)]
+    name="circle_head", module_name="circle_head_module", inputs=[("base_mlp", 0)]
 )
 
 task_flow = [op1, op2]
 
 # %% [markdown]
-# The output of the final module in that sequence will then go into a `loss_func()` to calculate the loss (e.g., cross-entropy) during training or an `output_func()` (e.g., softmax) to convert the logits into a prediction.  Each `Task` also specifies which metrics it supports, which are bundled together in a `Scorer` object. For this tutorial, we'll just look at accuracy.
+# The output of the final module in that sequence will then go into a `loss_func()` to calculate the loss (e.g., cross-entropy) during training or an `output_func()` (e.g., softmax) to convert the logits into a prediction. Each of these functions accepts as the first argument the final `module_name` to indicate inputs—we indicate this with the `partial(fn, module_name)` syntax.
+#
+# Each `Task` also specifies which metrics it supports, which are bundled together in a `Scorer` object. For this tutorial, we'll just look at accuracy.
 
 # %% [markdown]
 # Putting this all together, we define the circle task:
@@ -193,8 +195,8 @@ circle_task = Task(
     name="circle_task",
     module_pool=module_pool,
     task_flow=task_flow,
-    loss_func=partial(ce_loss, "head_op"),
-    output_func=partial(softmax, "head_op"),
+    loss_func=partial(ce_loss, "circle_head"),
+    output_func=partial(softmax, "circle_head"),
     scorer=Scorer(metrics=["accuracy"]),
 )
 
