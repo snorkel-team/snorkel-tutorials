@@ -123,14 +123,14 @@ dataloaders = []
 for split in ["train", "valid", "test"]:
     X_dict = {"circle_data": torch.FloatTensor(circle_data_splits[split])}
     Y_dict = {"circle_task": torch.LongTensor(circle_label_splits[split])}
-    dataset = DictDataset("Circle", split, X_dict, Y_dict)
+    dataset = DictDataset("CircleDataset", split, X_dict, Y_dict)
     dataloader = DictDataLoader(dataset, batch_size=32)
     dataloaders.append(dataloader)
 
 for split in ["train", "valid", "test"]:
     X_dict = {"square_data": torch.FloatTensor(square_data_splits[split])}
     Y_dict = {"square_task": torch.LongTensor(square_label_splits[split])}
-    dataset = DictDataset("Square", split, X_dict, Y_dict)
+    dataset = DictDataset("SquareDataset", split, X_dict, Y_dict)
     dataloader = DictDataLoader(dataset, batch_size=32)
     dataloaders.append(dataloader)
 
@@ -204,7 +204,11 @@ circle_task = Task(
 # Note that `Task` objects are not dependent on a particular dataset; multiple datasets can be passed through the same modules for pre-training or co-training.
 
 # %% [markdown]
-# We'll now define the square task, but more succinctly—for example, using the fact that the default name for an `Operation` is its `module_name` (since most tasks only use their modules once per forward pass). We'll also define the square task to share the input module with the circle task to demonstrate how to share modules. (Note that this is purely for illustrative purposes; for this toy task, it is very possible that this is not the optimal arrangement of modules).
+# We'll now define the square task, but more succinctly—for example, using the fact that the default name for an `Operation` is its `module_name` (since most tasks only use their modules once per forward pass).
+#
+# We'll also define the square task to share the first module in its task flow (`base_mlp`) with the circle task to demonstrate how to share modules. (Note that this is purely for illustrative purposes; for this toy task, it is very possible that this is not the optimal arrangement of modules).
+#
+# Finally, the most common task definitions we see in practice are classification tasks with cross-entropy loss and softmax on the output of the last module, and accuracy is most often the primary metric of interest, these are all the default values, so we can drop them here for brevity.
 
 # %%
 square_task = Task(
@@ -214,8 +218,6 @@ square_task = Task(
         Operation("base_mlp", [("_input_", "square_data")]),
         Operation("square_head", [("base_mlp", 0)]),
     ],
-    loss_func=partial(ce_loss, "square_head"),
-    output_func=partial(softmax, "square_head"),
     scorer=Scorer(metrics=["accuracy"]),
 )
 
@@ -224,6 +226,9 @@ square_task = Task(
 
 # %% [markdown]
 # With our tasks defined, constructing a model is simple: we simply pass the list of tasks in and the model constructs itself using information from the task flows.
+#
+# Note that the model uses the names of modules (not the modules themselves) to determine whether two modules specified by separate tasks are the same module (and should share weights) or different modules (with separate weights).
+# So because both the `square_task` and `circle_task` include "base_mlp" in their module pools, this module will be shared between the two tasks.
 
 # %%
 from snorkel.classification.snorkel_classifier import SnorkelClassifier
@@ -239,12 +244,7 @@ model = SnorkelClassifier([circle_task, square_task])
 # %%
 from snorkel.classification.training import Trainer
 
-trainer_config = {
-    "progress_bar": True,
-    "n_epochs": 10,
-    "lr": 0.02,
-    "log_manager_config": {"counter_unit": "epochs", "evaluation_freq": 2.0},
-}
+trainer_config = {"progress_bar": True, "n_epochs": 10, "lr": 0.02}
 
 trainer = Trainer(**trainer_config)
 trainer.train_model(model, dataloaders)
@@ -262,6 +262,89 @@ model.score(dataloaders)
 # Task-specific metrics are recorded in the form `task/dataset/split/metric` corresponding to the task the made the predictions, the dataset the predictions were made on, the split being evaluated, and the metric being calculated.
 #
 # For model-wide metrics (such as the total loss over all tasks or the learning rate), the default task name is `model` and the dataset name is `all` (e.g. `model/all/train/loss`).
+
+# %% [markdown]
+# # Your Turn
+
+# %% [markdown]
+# To check your understanding of how to use the multi-task `SnorkelClassifier`, see if you can add a task to this multi-task model.
+#
+# In this case, we'll pretend that we have training data for this third task, but no test data; that is, its only purpose is to provide additional training signal that might be helpful for the other two tasks.
+#
+# We'll generate the data for you: let's call it the `inv_circle_task`, since it will have the same distribution as our circle data, but with the inverted (flipped) labels.
+# Intuitively, a model that is very good at telling whether a point is within a certain region should also be very good at telling if it's outside the region.
+#
+# By sharing some layers (the `base_mlp`), this new task will help the model to learn a representation that benefits the `circle_task` as well.
+# And because it will have a non-shared layer (call it the `inv_circle_head`), it will have the flexibility to map that good representation into the right label space for its own task.
+
+# %% [markdown]
+# ### Create the data
+
+# %%
+# We flip the inequality when generating the labels so that our positive class is now _outside_ the circle.
+
+inv_circle_data = torch.FloatTensor(np.random.uniform(0, 1, size=(N, 2)) * 2 - 1)
+inv_circle_labels = (inv_circle_data[:, 0] ** 2 + inv_circle_data[:, 1] ** 2 > R).long()
+
+# %% [markdown]
+# ### Create the DictDataLoader
+
+# %% [markdown]
+# Create the `DictDataLoader` for this new dataset.
+# - The X_dict should map data field names to data (in this case, we only need one field, since our data is represented by a single Tensor). You can name the field whatever you want; you'll just need to make sure that your `Task` object refers to the right field name in its task flow.
+# - The Y_dict should map a task name to a set of labels. This will tell the model what path through the network to use when making predictions or calculating loss on batches from this dataset. At this point we haven't yet defined our
+
+# %%
+X_dict = {}  # Replace this with the correct definition
+Y_dict = {}  # Replace this with the correct definition
+inv_dataset = DictDataset("InvCircleDataset", "train", X_dict, Y_dict)
+inv_dataloader = DictDataLoader(inv_dataset, batch_size=32)
+
+# %% [markdown]
+# We add this new dataloader to the dataloaders for the other tasks.
+
+# %%
+all_dataloaders = dataloaders + [inv_dataloader]
+
+# %% [markdown]
+# ### Create the task
+
+# %% [markdown]
+# Using the `square_task` definition as a template, fill in the arguments for an `inverse_circle_task` that consists of the same `base_mlp` module as the other tasks and a separate linear head with an output of size 2.
+
+# %%
+# Uncomment and fill in the arguments to the Task object to define the inverse_circle task.
+# inv_circle_task = Task()
+
+# %% [markdown]
+# ### Create the model
+
+# %% [markdown]
+# Once we have our task objects, creating the new multi-task model is as easy as adding the new task to the list of tasks at model initialization time.
+
+# %%
+# Uncomment and run the following line.
+# model = SnorkelClassifier([circle_task, square_task, inv_circle_task])
+
+# %% [markdown]
+# ### Train the model
+
+# %% [markdown]
+# We can use the same trainer and training settings as before.
+
+# %%
+# trainer.train_model(model, all_dataloaders)
+# model.score(all_dataloaders)
+
+# %% [markdown]
+# ### Validation
+
+# %% [markdown]
+# If you successfully added the appropriate task, the previous command should have succesfully trained and reported scores in the high 90s for all datasets and splits, including for the new `inv_circle_task`.
+# The following assert statement should also pass if you uncomment and run it.
+
+# %%
+# assert len(model.module_pool) == 4  # 1 shared module plus 3 separate task heads
 
 # %% [markdown]
 # ## Summary
