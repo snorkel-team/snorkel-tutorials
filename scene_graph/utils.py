@@ -8,6 +8,7 @@ import pandas as pd
 
 # %%
 def flatten_vrd_relationship(img, relationship, objects, predicates):
+    """Create a per-relationship entry from a per-image entry JSON."""
     new_relationship_dict = {}
     new_relationship_dict["subject_category"] = objects[
         relationship["subject"]["category"]
@@ -34,6 +35,7 @@ def flatten_vrd_relationship(img, relationship, objects, predicates):
 def vrd_to_pandas(
     relationships_set, objects, predicates, list_of_predicates, keys_list=None
 ):
+    """Create Pandas DataFrame from JSON of relationships."""
     relationships = []
 
     for img in relationships_set:
@@ -52,8 +54,12 @@ def vrd_to_pandas(
 
 # %%
 def load_vrd_data():
-    subprocess.call("bash spam/download_data.sh", shell=True)
-    
+    """Download and load Pandas DataFrame of VRD relationships.
+
+    NOTE: Only loads semantic relationship examples.
+    """
+    subprocess.call("bash scene_graph/download_data.sh", shell=True)
+
     relationships_train = json.load(open("scene_graph/data/VRD/annotations_train.json"))
     relationships_test = json.load(open("scene_graph/data/VRD/annotations_test.json"))
 
@@ -86,6 +92,7 @@ def load_vrd_data():
 
     # TODO: hack to work with small sample of data for tox
     if os.path.isdir("scene_graph/data/VRD/sg_dataset/samples"):
+        #pass in list of images as keys_list
         keys_list = os.listdir("scene_graph/data/VRD/sg_dataset/samples")
         test_df = vrd_to_pandas(relationships_test, objects, predicates, list_of_predicates=semantic_predicates, keys_list=keys_list)
         return test_df, test_df, test_df

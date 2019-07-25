@@ -18,19 +18,25 @@ if [ ! -d "scene_graph/data" ]; then
     rm vrd.zip
     cd VRD
 
-    if [ "$TRAVIS" = "true" ]; then
-        # Download and unzip sample images
-        mkdir sg_dataset
-        cd sg_dataset
-        svn checkout $SAMPLE_IMAGES_URL
-        cd ../..
-    else
-        # Download and unzip all images
-        wget $IMAGES_URL
-        unzip sg_dataset.zip
-        rm sg_dataset.zip
-        cd ../../..
-    fi
+    # if [ "$TRAVIS" = "true" ]; then
+    #     # Download and unzip sample images
+    #     mkdir sg_dataset
+    #     cd sg_dataset
+    #     svn checkout $SAMPLE_IMAGES_URL
+    #     cd ../..
+    # else
+    #     # Download and unzip all images
+    #     wget $IMAGES_URL
+    #     unzip sg_dataset.zip
+    #     rm sg_dataset.zip
+    #     cd ../../..
+    # fi
+
+    # Download and unzip all images
+    mkdir sg_dataset
+    cd sg_dataset
+    svn checkout $SAMPLE_IMAGES_URL
+    cd ../..
 
     mkdir -p scene_graph/data/glove
     cd scene_graph/data/glove
