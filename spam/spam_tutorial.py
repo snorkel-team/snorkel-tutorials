@@ -90,9 +90,9 @@ Y_test = df_test["label"].values
 # Let's view a few examples
 
 # %%
-# Don't truncate text fields in the display
 import pandas as pd
 
+# Don't truncate text fields in the display
 pd.set_option("display.max_colwidth", 0)
 
 df_dev.sample(5, random_state=123)
@@ -455,7 +455,7 @@ def textblob_subjectivity(x):
 
 
 # %% [markdown]
-# ### v. Write your own LFs
+# ### Apply LFs
 
 # %% [markdown]
 # This tutorial demonstrates just a handful of the types of LFs that one might write for this task.
@@ -477,10 +477,7 @@ lfs = [
 ]
 
 # %% [markdown]
-# ### Apply LFs
-
-# %% [markdown]
-# With our full set of LFs (including any you wrote), we can now apply these once again with `LFApplier` to get our the label matrices for the `train` and `dev` splits. We'll use the `train` split's label matrix to generate training labels with the Label Model. The `dev` split's label model is primarily helpful for looking at summary statistics.
+# With our full set of LFs, we can now apply these once again with `LFApplier` to get our the label matrices for the `train` and `dev` splits. We'll use the `train` split's label matrix to generate training labels with the Label Model. The `dev` split's label model is primarily helpful for looking at summary statistics.
 #
 # Note that the `pandas` format provides an easy interface that many practioners are familiar with, but it is also less optimized for scale. For larger datasets, more compute-intensive LFs, or larger LF sets, you may decide to use one of the other supported data formats such as `dask` or `spark` dataframes, and their corresponding applier objects.
 
@@ -604,7 +601,7 @@ X_test = vectorizer.transform(words_test)
 
 # %% [markdown]
 # As we saw earlier, some of the data points in our training set received no weak labels from our LFs.
-# These examples are not helpful for training our classifier, so we filter them out before training.
+# These examples are not helpful for training our classifier, as they convey no supervision signal, so we filter them out before training.
 
 # %%
 mask = L_train.sum(axis=1) != ABSTAIN * len(lfs)
