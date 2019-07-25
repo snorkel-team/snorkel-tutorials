@@ -1,6 +1,7 @@
 # %%
 import json
 import os
+import subprocess
 
 import numpy as np
 import pandas as pd
@@ -51,6 +52,8 @@ def vrd_to_pandas(
 
 # %%
 def load_vrd_data():
+    subprocess.call("bash spam/download_data.sh", shell=True)
+    
     relationships_train = json.load(open("scene_graph/data/VRD/annotations_train.json"))
     relationships_test = json.load(open("scene_graph/data/VRD/annotations_test.json"))
 
