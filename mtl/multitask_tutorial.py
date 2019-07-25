@@ -48,10 +48,7 @@ circle_labels = circle_data[:, 0] ** 2 + circle_data[:, 1] ** 2 < R
 
 # Dataset 1 ("square")
 square_data = np.random.uniform(0, 1, size=(N, 2)) * 2 - 1
-square_labels = (
-    (abs(square_data[:, 0]) < 0.5)
-    * (abs(square_data[:, 1]) < 0.5)
-)
+square_labels = (abs(square_data[:, 0]) < 0.5) * (abs(square_data[:, 1]) < 0.5)
 
 # %% [markdown]
 # Note that, as is the case throughout the Snorkel repo, the **label -1 is reserved for abstaining/no label**; all actual labels have non-negative integer values: 0, 1, 2, .... This provides flexibility for supervision sources to label only portions of a dataset, for example.
@@ -79,6 +76,7 @@ plt.show()
 
 # %%
 from sklearn.model_selection import train_test_split
+
 
 def split_data(data, labels, seed=123):
     """Split data twice using sklearn train_test_split helper."""
@@ -164,9 +162,7 @@ base_mlp = nn.Sequential(nn.Linear(2, 8), nn.ReLU(), nn.Linear(8, 4), nn.ReLU())
 head_module = nn.Linear(4, 2)
 
 # The module pool contains all the modules this task uses
-module_pool = nn.ModuleDict(
-    {"base_mlp": base_mlp, "circle_head_module": head_module}
-)
+module_pool = nn.ModuleDict({"base_mlp": base_mlp, "circle_head_module": head_module})
 
 # "From the input dictionary, pull out 'circle_data' and send it through input_module"
 op1 = Operation(
@@ -211,9 +207,7 @@ circle_task = Task(
 # %%
 square_task = Task(
     name="square_task",
-    module_pool=nn.ModuleDict(
-        {"base_mlp": base_mlp, "square_head": nn.Linear(4, 2)}
-    ),
+    module_pool=nn.ModuleDict({"base_mlp": base_mlp, "square_head": nn.Linear(4, 2)}),
     task_flow=[
         Operation("base_mlp", [("_input_", "square_data")]),
         Operation("square_head", [("base_mlp", 0)]),
