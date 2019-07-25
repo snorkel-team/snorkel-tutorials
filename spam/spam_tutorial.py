@@ -411,7 +411,7 @@ from snorkel.labeling.lf.nlp import nlp_labeling_function
 
 
 @nlp_labeling_function()
-def has_person(x):
+def has_person_nlp(x):
     """Ham comments mention specific people and are short."""
     if len(x.doc) < 20 and any([ent.label_ == "PERSON" for ent in x.doc.ents]):
         return HAM
@@ -471,7 +471,7 @@ lfs = [
     lf_song,
     regex_check_out,
     short_comment,
-    has_person,
+    has_person_nlp,
     textblob_polarity,
     textblob_subjectivity,
 ]
