@@ -36,7 +36,7 @@ if [ ! -d "scene_graph/data" ]; then
     mkdir sg_dataset
     cd sg_dataset
     svn checkout $SAMPLE_IMAGES_URL
-    cd ../..
+    cd ../../../..
 
     mkdir -p scene_graph/data/glove
     cd scene_graph/data/glove

@@ -17,13 +17,15 @@
 # %% [markdown]
 # # Visual Relationship Detection
 #
-# In this tutorial, we focus on the task of classifying visual relationships. These are relationships among a pair of objects in images (e.g. "man riding bicycle"), where "man" and "bicycle" are the subject and object, respectively, and "riding" is the relationship predicate.
+# In this tutorial, we focus on the task of classifying visual relationships. For a given image, there might be many such relationships, defined formally as a `subject <predictate> object` (e.g. `person <riding> bike`).
+#
+# These are relationships among a pair of objects in images (e.g. "man riding bicycle"), where "man" and "bicycle" are the subject and object, respectively, and "riding" is the relationship predicate.
 #
 # ![Visual Relationships](https://cs.stanford.edu/people/ranjaykrishna/vrd/dataset.png)
 #
 # For the purpose of this tutorial, we operate over the [Visual Relationship Detection (VRD) dataset](https://cs.stanford.edu/people/ranjaykrishna/vrd/) and focus on action relationships. We define our three class classification task as **identifying whether a pair of bounding boxes represents a particular relationship.**
 #
-# In the examples of the relationships shown below, the red box represents the _subject_ while the green box represents the _object_. The _predicate_ (e.g. kick) denotes what action connects the subject and the object.
+# In the examples of the relationships shown below, the red box represents the _subject_ while the green box represents the _object_. The _predicate_ (e.g. kick) denotes what relationship connects the subject and the object.
 
 # %%
 # %load_ext autoreload
@@ -33,20 +35,20 @@ import numpy as np
 
 # %% [markdown]
 # ### 1. Load Dataset
-# We load the VRD dataset and filter images with at least one semantic predicate in it. We load the train, valid, and test sets as Pandas DataFrame objects with the following fields:
-# - label: The relationship between the objects. 0: `RIDE`, 1: `CARRY`, 2: `OTHER` action predicates
-# - object_bbox: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`
-# - object_category: category of the object
-# - source_img: filename for image the relationship is in
-# - subject_bbox: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`
-# - subject_category: category of the subject
+# We load the VRD dataset and filter images with at least one action predicate in it, since these are more difficult to classify than geometric relationships like `above` or `next to`. We load the train, valid, and test sets as Pandas DataFrame objects with the following fields:
+# - `label`: The relationship between the objects. 0: `RIDE`, 1: `CARRY`, 2: `OTHER` action predicates
+# - `object_bbox`: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`
+# - `object_category`: category of the object
+# - `source_img`: filename for the corresponding image the relationship is in
+# - `subject_bbox`: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`
+# - `subject_category`: category of the subject
 #
 # Note that the `train_df` object has a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
 
 # %%
 import os
 if os.path.basename(os.getcwd()) == "scene_graph":
-    os.chdir("../")
+    os.chdir("..")
 
 # %%
 from scene_graph.utils import load_vrd_data
