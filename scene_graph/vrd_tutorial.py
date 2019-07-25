@@ -47,6 +47,7 @@ import numpy as np
 
 # %%
 import os
+
 if os.path.basename(os.getcwd()) == "scene_graph":
     os.chdir("..")
 
@@ -71,6 +72,7 @@ ABSTAIN = -1
 
 
 from snorkel.labeling.lf import labeling_function
+
 # Category-based LFs
 @labeling_function()
 def LF_ride_object(x):
@@ -146,6 +148,7 @@ def LF_area(x):
 
 # %%
 from snorkel.labeling.apply import PandasLFApplier
+
 lfs = [
     LF_ride_object,
     LF_ride_rare_object,
@@ -194,8 +197,8 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 from snorkel.classification.data import DictDataLoader
 from scene_graph.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
 
-#change to "scene_graph/data/VRD/sg_dataset/sg_train_images" for full set
-TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/samples" 
+# change to "scene_graph/data/VRD/sg_dataset/sg_train_images" for full set
+TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/samples"
 train_df["labels"] = label_model.predict(L_train)
 
 train_dl = DictDataLoader(
@@ -216,6 +219,7 @@ valid_dl = DictDataLoader(
 
 # %%
 import torch.nn.functional as F
+
 
 def ce_loss(module_name, outputs, Y, active):
     return F.cross_entropy(outputs[module_name][0][active], (Y.view(-1))[active])

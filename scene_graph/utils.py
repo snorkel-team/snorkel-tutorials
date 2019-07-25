@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 
 # %%
+
+
 def flatten_vrd_relationship(img, relationship, objects, predicates):
     """Create a per-relationship entry from a per-image entry JSON."""
     new_relationship_dict = {}
@@ -92,13 +94,34 @@ def load_vrd_data():
 
     # TODO: hack to work with small sample of data for tox
     if os.path.isdir("scene_graph/data/VRD/sg_dataset/samples"):
-        #pass in list of images as keys_list
+        # pass in list of images as keys_list
         keys_list = os.listdir("scene_graph/data/VRD/sg_dataset/samples")
-        test_df = vrd_to_pandas(relationships_test, objects, predicates, list_of_predicates=semantic_predicates, keys_list=keys_list)
+        test_df = vrd_to_pandas(
+            relationships_test,
+            objects,
+            predicates,
+            list_of_predicates=semantic_predicates,
+            keys_list=keys_list,
+        )
         return test_df, test_df, test_df
     elif os.path.isdir("scene_graph/data/VRD/sg_dataset/sg_train_images"):
-        train_df = vrd_to_pandas(relationships_train, objects, predicates, list_of_predicates=semantic_predicates)
+        train_df = vrd_to_pandas(
+            relationships_train,
+            objects,
+            predicates,
+            list_of_predicates=semantic_predicates,
+        )
         train_df["labels"] = -1 * np.ones(len(train_df))
-        valid_df = vrd_to_pandas(relationships_val, objects, predicates, list_of_predicates=semantic_predicates)
-        test_df = vrd_to_pandas(relationships_test, objects, predicates, list_of_predicates=semantic_predicates)
+        valid_df = vrd_to_pandas(
+            relationships_val,
+            objects,
+            predicates,
+            list_of_predicates=semantic_predicates,
+        )
+        test_df = vrd_to_pandas(
+            relationships_test,
+            objects,
+            predicates,
+            list_of_predicates=semantic_predicates,
+        )
         return train_df, valid_df, test_df
