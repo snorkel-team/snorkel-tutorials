@@ -14,14 +14,9 @@
 # we can train a language model over the tweets themselves that can be applied
 # to new, unseen data points.
 # Crowd workers were asked to grade the sentiment of a
-# particular tweet relating to the weather.
-# Crowd workers could choose among the following categories:
-#
-# * Positive
-# * Negative
-# * I can't tell
-# * Neutral / author is just sharing information
-# * Tweet not related to weather condition
+# particular tweet relating to the weather. They could say it was positive or
+# negative, or choose one of three other options saying they weren't sure it was
+# positive or negative.
 #
 # The catch is that 20 crowd workers graded each tweet, and in many cases
 # crowd workers assigned conflicting sentiment labels to the same tweet.
@@ -29,6 +24,9 @@
 #
 # We've also altered the data set to reflect a realistic crowdsourcing pipeline
 # where only a subset of our full training set have recieved crowd labels.
+# Since our objective is to classify tweets as positive or negative, we limited
+# the dataset to tweets that were either positive or negative.
+#
 # We'll encode the crowd labels themselves as labeling functions in order
 # to learn trust weights for each crowd worker, and write a few heuristic
 # labeling functions to cover the data points without crowd labels.
@@ -41,7 +39,8 @@
 # The remaining 187 examples form our training set.
 # This data set is very small, and we're primarily using it for demonstration purposes.
 # In particular, we'd expect to have access to many more unlabeled tweets in order to
-# train a high performance text model.
+# train a high performance text model. Since the dataset is already small, we skip
+# using a validation set.
 #
 # The labels above have been mapped to integers, which we show here.
 
