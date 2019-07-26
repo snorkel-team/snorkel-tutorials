@@ -11,30 +11,46 @@ The Snorkel tutorials are grouped by application, with some applications having 
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
 
-## Getting Started
-Start with the `spam` tutorial for a gentle introduction to the concepts and classes of Snorkel.
+We recommend that all users **start with the `spam` tutorial** for a gentle introduction to the concepts and classes of Snorkel.  
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 
-To run a tutorial in a jupyter notebook, run the following commands, which create a virtual environment, install requirements, create an ipython kernel, and launch Jupyter:
+## Getting Started
+If you just want to get up and running, run the following command to:
+
+0. Create a virtual environment and activate it
+1. Install requirements
+2. Launch the Jupyter notebook interface
 ```bash
-TUTORIAL="spam"  # Change this to the name of the directory for the tutorial you want
-
-# Create virtual env
-VIRTUALENV=".env_${TUTORIAL}"
-virtualenv $VIRTUALENV
-source $VIRTUALENV/bin/activate  # Activate the created virtual environment
-pip3 install -r requirements.txt  # Requirements shared among all tutorials
-cd $TUTORIAL
-pip3 install -r requirements.txt  # Requirements specific to this tutorial
-
-# Launch Jupyter
-jupyter notebook
-
-# To deactivate the virtual environment when you are done, run `deactivate`.
+bash launch.sh spam  # Change `spam` to the name of the tutorial to run
 ```
-Then, in the browser tab that opens, select the notebook you would like to run.
+Then, in the browser tab that opens, navigate to a `*.ipynb` you would like to run, such as `snorkel-tutorials/spam/spam_tutorial.ipynb`, and click to open it.
 
-Alternatively, to run the tutorial as a script, skip the Jupyter launch command and run the tutorial's `.py` file directly (e.g. `python spam_tutorial.py`).
+Alternatively, you can go through these steps individually using the commands below.
+
+### 0. Create Virtual Environment (Optional)
+To avoid conflicts with other packages and projects you may have on your machine, we recommend creating a separate virtual environment for each tutorials. 
+This can be done with the following command, which installs `virtualenv`, creates a new virtual environment, and activates it. 
+To deactivate when you're done, simply type `deactivate`.
+```bash
+# Change 'spam' to the name of the tutorial whose environment you are creating.
+bash create_environment.sh spam
+```
+
+### 1. Install Requirements
+Each tutorial depends on some requirements common to all tutorials (`requirements.txt`), and some specific to itself (e.g., `spam/requirements.txt`). 
+To install both, run the following command.
+```bash
+# Change 'spam' to the name of the tutorial whose requirements you are installing.
+bash install_requirements.sh spam
+```
+
+### 2. Launch Jupyter
+To launch [Jupyter](https://jupyter.org/), run the following command.
+```bash
+jupyter lab
+```
+
+Alternatively, you can run the tutorial as a script by calling python on the corresponding `.py` file directly (e.g. `python spam_tutorial.py`).
 
 
 ## <a name="tutorials-index"> Tutorials Index </a>
