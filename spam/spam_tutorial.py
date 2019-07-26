@@ -246,8 +246,7 @@ print(f"Accuracy: {accuracy:.3f}")
 # %%
 from snorkel.labeling.analysis import LFAnalysis
 
-lf_names = [lf.name for lf in lfs]
-LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
+LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 
 # %% [markdown]
 # ### d) Balance accuracy/coverage
@@ -291,8 +290,7 @@ lfs = [keywords_my_channel]
 applier = PandasLFApplier(lfs)
 L_dev = applier.apply(df_dev)
 
-lf_names = [lf.name for lf in lfs]
-LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
+LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 
 # %% [markdown]
 # In this case, accuracy does improve a bit, but it was already fairly accurate to begin with, and "tightening" the LF like this causes the coverage drops significantly, so we'll stick with the original LF.
@@ -490,8 +488,7 @@ L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
 L_valid = applier.apply(df_valid)
 
-lf_names = [lf.name for lf in lfs]
-LFAnalysis(L_dev).lf_summary(Y=Y_dev, lf_names=lf_names)
+LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 
 # %% [markdown]
 # We see that our labeling functions vary in coverage, accuracy, and how much they overlap/conflict with one another.

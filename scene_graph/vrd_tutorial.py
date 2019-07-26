@@ -175,10 +175,7 @@ L_valid = applier.apply(valid_df)
 from snorkel.labeling.analysis import LFAnalysis
 
 Y_valid = valid_df.label.values
-lf_names = [lf.name for lf in lfs]
-
-lf_analysis = LFAnalysis(L_valid)
-lf_analysis.lf_summary(Y_valid, lf_names=lf_names)
+LFAnalysis(L_valid, lfs).lf_summary(Y_valid)
 
 # %% [markdown]
 # ## 3. Train Label Model
