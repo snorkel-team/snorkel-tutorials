@@ -264,9 +264,9 @@ Y_train_prob = label_model.predict_proba(L_train)
 # Since we have very limited training data, we cannot train a complex model like an LSTM with a lot of parameters. Instead, we use a pre-trained model, [BERT](https://github.com/google-research/bert), to generate embeddings for each our tweets, and treat the embedding values as features.
 
 # %%
+import numpy as np
 import torch
 from pytorch_transformers import BertModel, BertTokenizer
-import numpy as np
 
 model = BertModel.from_pretrained("bert-base-uncased")
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
@@ -282,13 +282,13 @@ test_vectors = np.array(list(df_test.tweet_text.apply(encode_text).values))
 
 # %% [markdown]
 # ### Model on soft labels
-# Now, we train a simple Logistic Regression model on the BERT features, using labels
+# Now, we train a simple logistic regression model on the BERT features, using labels
 # obtained from our label model.
 
 # %%
 from sklearn.linear_model import LogisticRegression
 
-sklearn_model = LogisticRegression()
+sklearn_model = LogisticRegression(solver="liblinear")
 sklearn_model.fit(train_vectors, probs_to_preds(Y_train_prob))
 
-sklearn_model.score(test_vectors, Y_test)
+print(f"Accuracy of trained model: {sklearn_model.score(test_vectors, Y_test)}")
