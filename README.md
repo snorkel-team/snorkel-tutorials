@@ -49,6 +49,7 @@ To launch [Jupyter](https://jupyter.org/), run the following command.
 ```bash
 jupyter lab
 ```
+Then, in the browser tab that opens, navigate to a `*.ipynb` you would like to run, such as `snorkel-tutorials/spam/spam_tutorial.ipynb`, and click to open it.
 
 Alternatively, you can run the tutorial as a script by calling python on the corresponding `.py` file directly (e.g. `python spam_tutorial.py`).
 
