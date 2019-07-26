@@ -1,11 +1,17 @@
+# +
+from typing import Optional
+
 from snorkel.labeling.preprocess import preprocessor
 from snorkel.types import DataPoint
+
+
+# -
 
 
 @preprocessor()
 def get_person_text(cand: DataPoint) -> DataPoint:
     """
-    Returns the text for the two person mentions in candidate cand
+    Returns the text for the two person mentions in candidate
     """
     person_names = []
     for index in [1, 2]:
@@ -20,7 +26,7 @@ def get_person_text(cand: DataPoint) -> DataPoint:
 @preprocessor()
 def get_person_last_names(cand: DataPoint) -> DataPoint:
     """
-    Returns the last names for the two person mentions in candidate cand
+    Returns the last names for the two person mentions in candidate
     """
     cand = get_person_text(cand)
     person1_name, person2_name = cand.person_names
@@ -37,7 +43,7 @@ def get_person_last_names(cand: DataPoint) -> DataPoint:
 @preprocessor()
 def get_text_between(cand: DataPoint) -> DataPoint:
     """
-    Returns the text between the two person mentions in the sentence for a candidate
+    Returns the text between the two person mentions in the sentence
     """
     start = cand.person1_word_idx[1] + 1
     end = cand.person2_word_idx[0]
@@ -48,7 +54,7 @@ def get_text_between(cand: DataPoint) -> DataPoint:
 @preprocessor()
 def get_between_tokens(cand: DataPoint) -> DataPoint:
     """
-    Returns the tokens between the two person mentions in the sentence for a candidate
+    Returns the tokens between the two person mentions in the sentence
     """
     start = cand.person1_word_idx[1] + 1
     end = cand.person2_word_idx[0]
@@ -59,7 +65,7 @@ def get_between_tokens(cand: DataPoint) -> DataPoint:
 @preprocessor()
 def get_left_tokens(cand: DataPoint) -> DataPoint:
     """
-    Returns the length window tokens between to the left of the person mentions
+    Returns tokens in the length 3 window to the left of the person mentions
     """
     # TODO: need to pass window as input params
     window = 3
@@ -75,7 +81,7 @@ def get_left_tokens(cand: DataPoint) -> DataPoint:
 @preprocessor()
 def get_right_tokens(cand: DataPoint) -> DataPoint:
     """
-    Returns the length window tokens between to the right of the person mentions
+    Returns tokens in the length 3 window to the right of the person mentions
     """
     # TODO: need to pass window as input params
     window = 3
@@ -86,3 +92,9 @@ def get_right_tokens(cand: DataPoint) -> DataPoint:
     start = cand.person2_word_idx[1] + 1
     cand.person2_right_tokens = cand.tokens[start::][0 : window + 1]
     return cand
+
+
+# Helper function to get last name for dbpedia entries.
+def last_name(s: str) -> Optional[str]:
+    name_parts = s.split(" ")
+    return name_parts[-1] if len(name_parts) > 1 else None

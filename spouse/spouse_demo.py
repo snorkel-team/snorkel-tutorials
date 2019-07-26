@@ -192,7 +192,7 @@ def lf_married(x):
 
 # %%
 # Check for words that refer to `family` relationships between and to the left of the person mentions
-family = [
+family = {
     "father",
     "mother",
     "sister",
@@ -204,8 +204,8 @@ family = [
     "uncle",
     "aunt",
     "cousin",
-]
-family = set(family + [f + "-in-law" for f in family])
+}
+family = family.union({f + "-in-law" for f in family})
 
 
 @labeling_function(resources=dict(family=family))
@@ -316,11 +316,7 @@ def lf_distant_supervision(x, known_spouses):
 
 
 # %%
-# Helper function to get last name for dbpedia entries.
-def last_name(s):
-    name_parts = s.split(" ")
-    return name_parts[-1] if len(name_parts) > 1 else None
-
+from preprocessors import last_name
 
 # Last name pairs for known spouses
 last_names = set(
@@ -419,7 +415,7 @@ train_L = applier.apply(train_df)
 from snorkel.labeling.model.label_model import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
-label_model.fit(train_L, dev_labels, l2=0.0, n_epochs=5000, log_freq=500, seed=123)
+label_model.fit(train_L, dev_labels, n_epochs=5000, log_freq=500, seed=123)
 
 # %% [markdown]
 # ### Label Model Accuracy
@@ -431,19 +427,12 @@ from snorkel.analysis.utils import probs_to_preds
 
 Y_probs_dev = label_model.predict_proba(dev_L)
 Y_preds_dev = probs_to_preds(Y_probs_dev)
-metric_score(dev_labels, Y_preds_dev, probs=Y_probs_dev, metric="accuracy")
-
-# %% [markdown]
-# ### Majority Vote Comparison
-# We can also compare the performance of the LabelModel to computing a majority vote across all the LFs.
-
-# %%
-from snorkel.labeling.model import MajorityLabelVoter
-
-mv_model = MajorityLabelVoter()
-Y_probs_dev = mv_model.predict_proba(dev_L)
-Y_preds_dev = probs_to_preds(Y_probs_dev)
-metric_score(dev_labels, Y_preds_dev, probs=None, metric="accuracy")
+print(
+    f"Label model accuracy: {metric_score(dev_labels, Y_preds_dev, probs=Y_probs_dev, metric='accuracy')}"
+)
+print(
+    f"Label model f1 score: {metric_score(dev_labels, Y_preds_dev, probs=Y_probs_dev, metric='f1')}"
+)
 
 # %% [markdown]
 # ### Plotting Probabilistic Labels
@@ -471,6 +460,7 @@ plt.show()
 import pandas as pd
 from snorkel.analysis.utils import preds_to_probs
 
+# Change dev labels 1D array to 2D probabilities array as required for training end model.
 dev_label_probs = preds_to_probs(dev_labels, 2)
 mask = train_L.max(1) != -1
 combined_df = pd.concat([dev_df, train_df.iloc[mask]])
@@ -530,8 +520,6 @@ print(
 # We compare this to an equivalent model that is only trained using the dev set labels. The accuracy is similar in other cases, because the dataset is very unbalanced. However, the ROC-AUC is lower when just training on the dev set, due to the much smaller number of examples.
 
 # %%
-dev_label_probs = preds_to_probs(dev_labels, 2)
-
 dev_model = get_model()
 dev_tokens, dev_idx1, dev_idx2 = get_feature_arrays(dev_df)
 num_epochs = 10  # TODO: Change this to 100.
