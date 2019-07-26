@@ -280,8 +280,7 @@ L = applier.apply(dev_df)
 # %%
 from snorkel.labeling.analysis import LFAnalysis
 
-lf_names = [lf.name for lf in lfs]
-LFAnalysis(L).lf_summary(dev_labels, lf_names=lf_names)
+LFAnalysis(L, lfs).lf_summary(dev_labels)
 
 # %% [markdown]
 # ## B. Distant Supervision Labeling Functions
