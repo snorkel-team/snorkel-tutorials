@@ -135,7 +135,6 @@ worker_lfs_neg = [
 from snorkel.labeling.apply import PandasLFApplier
 
 lfs = worker_lfs_pos + worker_lfs_neg
-lf_names = [lf.name for lf in lfs]
 
 applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
@@ -144,7 +143,7 @@ L_dev = applier.apply(df_dev)
 # %%
 from snorkel.labeling.analysis import LFAnalysis
 
-LFAnalysis(L_dev).lf_summary(Y_dev, lf_names=lf_names).head(10)
+LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head(10)
 
 # %% [markdown]
 # So the crowd labels are quite good! But how much of our dev and training
@@ -201,14 +200,13 @@ from snorkel.labeling.apply import PandasLFApplier
 
 text_lfs = [polarity_positive, polarity_negative, polarity_negative_2]
 lfs = text_lfs + worker_lfs_pos + worker_lfs_neg
-lf_names = [lf.name for lf in lfs]
 
 applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
 
 # %%
-LFAnalysis(L_dev).lf_summary(Y_dev, lf_names=lf_names).head(10)
+LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head(10)
 
 # %% [markdown]
 # Using the text-based LFs, we've expanded coverage on both our training set
