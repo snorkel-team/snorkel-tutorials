@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.2'
-#       jupytext_version: 1.1.7
+#       jupytext_version: 1.2.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -43,7 +43,7 @@ if os.path.basename(os.getcwd()) == "scene_graph":
 # - `subject_bbox`: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`
 # - `subject_category`: category of the subject
 #
-# Note that the `train_df` object has a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
+# Note that the training DataFrame will have a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
 
 # %%
 # %load_ext autoreload
@@ -188,7 +188,7 @@ label_model = LabelModel(cardinality=3, verbose=True)
 label_model.fit(L_train, seed=123, lr=0.01, log_freq=10, n_epochs=100)
 
 # %% [markdown]
-# We use F1 Micro average for the multiclass setting, which calculates metrics globally by counting the total true positives, false negatives and false positives. [source](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
+# We use [F1](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html) Micro average for the multiclass setting, which calculates metrics globally by counting the total true positives, false negatives and false positives.
 
 # %%
 label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
