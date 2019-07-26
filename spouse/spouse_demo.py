@@ -81,7 +81,7 @@ print("Person 2: ", person_names[1])
 from snorkel.labeling.preprocess import preprocessor
 
 
-@preprocessor
+@preprocessor()
 def get_text_between(cand):
     """
     Returns the text between the two person mentions in the sentence for a candidate
