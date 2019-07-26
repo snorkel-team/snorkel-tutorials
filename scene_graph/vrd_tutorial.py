@@ -290,7 +290,7 @@ trainer = Trainer(
     checkpointing=True,
     checkpointer_config={"checkpoint_dir": "checkpoint"},
 )
-trainer.train_model(model, [train_dl])
+trainer.fit(model, [train_dl])
 
 # %%
 model.score([valid_dl])
