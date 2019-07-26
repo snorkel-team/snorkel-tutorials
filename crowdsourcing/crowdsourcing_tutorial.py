@@ -260,39 +260,35 @@ Y_train_prob = label_model.predict_proba(L_train)
 # ## Use Soft Labels to Train End Model
 
 # %% [markdown]
-# For simplicity and speed, we use a simple "bag of n-grams" feature representation:
-# each data point is represented by a one-hot vector marking which words or 2-word
-# combinations are present in the comment text.
-
-# %% [markdown]
-# ### Featurization
+# ### Getting features from BERT
+# Since we have very limited training data, we cannot train a complex model like an LSTM with a lot of parameters. Instead, we use a pre-trained model, [BERT](https://github.com/google-research/bert), to generate embeddings for each our tweets, and treat the embedding values as features.
 
 # %%
-from sklearn.feature_extraction.text import CountVectorizer
+import numpy as np
+import torch
+from pytorch_transformers import BertModel, BertTokenizer
 
-train_tokens = [row.tweet_text for _, row in df_train.iterrows()]
-test_tokens = [row.tweet_text for _, row in df_test.iterrows()]
+model = BertModel.from_pretrained("bert-base-uncased")
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
-vectorizer = CountVectorizer(ngram_range=(1, 2))
-X_train = vectorizer.fit_transform(train_tokens).toarray().astype("float")
-X_test = vectorizer.transform(test_tokens).toarray().astype("float")
+
+def encode_text(text):
+    input_ids = torch.tensor([tokenizer.encode(text)])
+    return model(input_ids)[0].mean(1)[0].detach().numpy()
+
+
+train_vectors = np.array(list(df_train.tweet_text.apply(encode_text).values))
+test_vectors = np.array(list(df_test.tweet_text.apply(encode_text).values))
 
 # %% [markdown]
 # ### Model on soft labels
-# Now, we train a simple MLP model on the bag-of-words features, using labels
+# Now, we train a simple logistic regression model on the BERT features, using labels
 # obtained from our label model.
 
 # %%
-import tensorflow as tf
+from sklearn.linear_model import LogisticRegression
 
-model = tf.keras.Sequential()
-model.add(tf.keras.layers.Dense(10, activation=tf.nn.relu))
-model.add(tf.keras.layers.Dense(2, activation=tf.nn.softmax))
-model.compile("Adam", "categorical_crossentropy")
-_ = model.fit(X_train, Y_train_prob, epochs=10, verbose=0)
+sklearn_model = LogisticRegression(solver="liblinear")
+sklearn_model.fit(train_vectors, probs_to_preds(Y_train_prob))
 
-# %%
-probs = model.predict(X_test)
-preds = probs_to_preds(probs)
-acc = metric_score(Y_test, preds=preds, metric="accuracy")
-print(f"Test Accuracy when trained with soft training labels: {acc:.3f}")
+print(f"Accuracy of trained model: {sklearn_model.score(test_vectors, Y_test)}")
