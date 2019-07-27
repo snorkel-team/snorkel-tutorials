@@ -132,7 +132,7 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 # **Labeling functions (LFs) help users encode domain knowledge and other supervision sources programmatically.**
 #
 # LFs are heuristics that take as input a data point and either assign a label to it (in this case, `HAM` or `SPAM`) or abstain (don't assign any label). Labeling functions can be *noisy*: they don't have perfect accuracy and don't have to label every data point.
-# Moreover, different labeling functions can overlap (label the same data point) and even conflict (assign different labels to the same data point).
+# Moreover, different labeling functions can overlap (label the same data point) and even conflict (assign different labels to the same data point). This is expected, and we demonstrate how we deal with this later.
 #
 # Because their only requirement is that they map a data point a label (or abstain), they can wrap a wide variety of forms of supervision. Examples include, but are not limited to:
 # * *Keyword searches*: looking for specific words in a sentence
@@ -585,7 +585,7 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 
 # %% [markdown]
 # So our `LabelModel` improves over the majority vote baseline!
-# However, it is typically **not suitable as an inference-time model** to make predictions for unseen examples, due to (among other things) limited coverage of most labeling functions.
+# However, it is typically **not suitable as an inference-time model** to make predictions for unseen examples, due to (among other things) some data points having all abstain labels.
 # In the next section, we will use the output of the label model as  training labels to train a
 # discriminative classifier to see if we can improve performance further.
 # This classifier will only need the text of the comment to make predictions, making it much more suitable
