@@ -3,9 +3,13 @@
 # # Introductory Snorkel Tutorial: Spam Detection
 
 # %% [markdown]
-# In this tutorial, we will walk through the process of using `Snorkel` to classify YouTube comments as `SPAM` or `HAM` (not spam). For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
+# In this tutorial, we will walk through the process of using `Snorkel` to classify YouTube comments as `SPAM` or `HAM` (not spam).
+# For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
+# You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
 #
-# For our task, we have access to a large amount of *unlabeled data*, which can be prohibitively expensive and slow to label manually. We therefore turn to weak supervision using *labeling functions*, or noisy, programmatic heuristics, to assign labels to unlabeled training data efficiently. We also have access to a small amount of labeled data, which we only use for evaluation purposes.
+# For our task, we have access to a large amount of *unlabeled data*, which can be prohibitively expensive and slow to label manually.
+# We therefore turn to weak supervision using **_labeling functions_**, or noisy, programmatic heuristics, to assign labels to unlabeled training data efficiently.
+# We also have access to a small amount of labeled data, which we only use for evaluation purposes.
 #
 # The tutorial is divided into four parts:
 # 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
@@ -20,52 +24,60 @@
 # ### Task: Spam Detection
 
 # %% [markdown]
-# We use a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) that consists of YouTube comments from 5 videos. The task is to classify each comment as being `SPAM`, irrelevant or inappropriate messages, or `HAM`, comments relevant to the video.
+# We use a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) that consists of YouTube comments from 5 videos. The task is to classify each comment as being
+#
+# * **`SPAM`**: irrelevant or inappropriate messages, or
+# * **`HAM`**: comments relevant to the video
 #
 # For example, the following comments are `SPAM`:
 #
-#         Subscribe to me for free Android games, apps..
+#         "Subscribe to me for free Android games, apps.."
 #
-#         Please check out my vidios
+#         "Please check out my vidios"
 #
-#         Subscribe to me and I'll subscribe back!!!
+#         "Subscribe to me and I'll subscribe back!!!"
 #
 # and these are `HAM`:
 #
-#         3:46 so cute!
+#         "3:46 so cute!"
 #
-#         This looks so fun and it's a good song
+#         "This looks so fun and it's a good song"
 #
-#         This is a weird video.
+#         "This is a weird video."
 
 # %% [markdown]
 # ### Data Splits in Snorkel
 #
 # We split our data into 4 sets:
 # * **Training Set**: The largest split of the dataset. We do not have ground truth or "gold" labels for these data points; we will be generating their labels with weak supervision.
-# * **Development Set**: \[Optional\] A small labeled subset of the training data (e.g. 100 points) to guide LF iteration. See note below.
+# * \[Optional\] **Development Set**: A small labeled subset of the training data (e.g. 100 points) to guide LF iteration. See note below.
 # * **Validation Set**: A labeled set used to tune hyperparameters and/or perform early stopping while training the classifier.
 # * **Test Set**: A labeled set for final evaluation of our classifier. This set should only be used for final evaluation, _not_ error analysis.
 #
 #
 # While it is possible to develop labeling functions on the unlabeled training set only, users often find it more time-efficient to label a small dev set to provide a quick approximate signal on the accuracies and failure modes of their LFs (rather than scrolling through training examples and mentally assessing approximate accuracy).
 # Alternatively, users sometimes will have the validation set also serve as the development set.
-# Do the latter only with caution: because the labeling functions will be based on examples from the valid set, the valid set will no longer be an unbiased proxy for the test set.
+# Do the latter only with caution: because the labeling functions will be based on examples from the validation set, the validation set will no longer be an unbiased proxy for the test set.
 
 # %% [markdown]
 # ## 1. Loading Data
 
 # %% [markdown]
-# We load the Kaggle dataset and create Pandas dataframe objects for each of the sets described above. Each dataframe consists of the following fields:
-# * **author**: Username of the comment author
-# * **data**: Date and time the comment was posted
-# * **text**: Raw text content of the comment
-# * **label**: Whether the comment is `SPAM` (1), `HAM` (0), or `UNKNOWN/ABSTAIN` (-1)
-# * **video**: Video the comment is associated with
+# We load the Kaggle dataset and create Pandas DataFrame objects for each of the sets described above.
+# DataFrames are extremely popular in Python data analysis workloads, and Snorkel provides native support
+# for several DataFrame-like data structures, including Pandas, Dask, and PySpark.
+# For more information on working with Pandas DataFrames, see the [Pandas DataFrame guide](https://pandas.pydata.org/pandas-docs/stable/getting_started/dsintro.html).
+#
+# Each DataFrame consists of the following fields:
+# * **`author`**: Username of the comment author
+# * **`data`**: Date and time the comment was posted
+# * **`text`**: Raw text content of the comment
+# * **`label`**: Whether the comment is `SPAM` (1), `HAM` (0), or `UNKNOWN/ABSTAIN` (-1)
+# * **`video`**: Video the comment is associated with
 #
 # We start by loading our data.
-# The `load_spam_dataset()` method downloads the raw csv files from the internet, divides them into splits, converts them into dataframes, and shuffles them.
-# As mentioned above, the dataset contains comments from 5 of the most popular YouTube videos during a particular timeframe in 2014 and 2015.
+# The `load_spam_dataset()` method downloads the raw CSV files from the internet, divides them into splits, converts them into DataFrames, and shuffles them.
+# As mentioned above, the dataset contains comments from 5 of the most popular YouTube videos during a period between 2014 and 2015.
 # * The first four videos' comments are combined to form the `train` set. This set has no gold labels.
 # * The `dev` set is a random sample of 200 data points from the `train` set with gold labels added.
 # * The fifth video is split 50/50 between a validation set (`valid`) and `test` set.
@@ -97,10 +109,10 @@ import pandas as pd
 # Don't truncate text fields in the display
 pd.set_option("display.max_colwidth", 0)
 
-df_dev.sample(5, random_state=123)
+df_dev.sample(5, random_state=3)
 
 # %% [markdown]
-# The class distribution varies slightly from class to class, but all are approximately class-balanced.
+# The class distribution varies slightly from class to class, but all are approximately class-balanced. Note that since we don't have labels for the training set, we can't compute class distributions.
 
 # %%
 from collections import Counter
@@ -111,9 +123,8 @@ HAM = 0
 SPAM = 1
 
 for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
-    counts = Counter(df["label"].values)
-    num_points = sum(counts.values())
-    print(f"{split_name.upper():<6} {counts[SPAM] * 100 / num_points:0.1f}% SPAM")
+    spam_freq = (df["label"].values == SPAM).mean()
+    print(f"{split_name.upper():<6} {spam_freq * 100:0.1f}% SPAM")
 
 # %% [markdown]
 # ## 2. Write Labeling Functions (LFs)
@@ -152,13 +163,13 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 
 # %%
 # Display just the text and label
-df_dev[["text", "label"]].sample(10, random_state=123)
+df_dev[["text", "label"]].sample(10, random_state=3)
 
 # %% [markdown]
 # ### b) Write an LF
 
 # %% [markdown]
-# Labeling functions in Snorkel are created with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point (in this case, a row of the dataframe).
+# Labeling functions in Snorkel are created with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point (in this case, a row of the DataFrame).
 #
 # Looking at samples of our data, we see multiple messages where spammers are trying to get viewers to look at "my channel" or "my video," so we write a simple LF that labels an example as `SPAM` if it includes the word "my" and otherwise abstains.
 
@@ -177,7 +188,7 @@ lfs = [keyword_my]
 # %% [markdown]
 # To apply one or more LFs that we've written to a collection of data points, we use an `LFApplier`.
 #
-# Because our data points are represented with a Pandas dataframe in this tutorial, we use the `PandasLFApplier` class.
+# Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasLFApplier` class.
 
 # %%
 from snorkel.labeling.apply import PandasLFApplier
@@ -200,8 +211,8 @@ L_train
 # %%
 import numpy as np
 
-coverage = np.sum(L_train != ABSTAIN) / L_train.shape[0]
-print(f"Coverage: {coverage:.3f}")
+coverage = (L_train != ABSTAIN).mean()
+print(f"Coverage: {coverage * 100:.1f}%")
 
 # %% [markdown]
 # To get an estimate of its accuracy, we can label the development set with it and compare that to the few gold labels we do have.
@@ -217,7 +228,7 @@ L_dev_array = L_dev.squeeze()
 correct = L_dev_array == Y_dev
 labeled = L_dev_array != ABSTAIN
 accuracy = (correct * labeled).sum() / labeled.sum()
-print(f"Accuracy: {accuracy:.3f}")
+print(f"Accuracy: {accuracy * 100:.1f}%")
 
 # %% [markdown]
 # Alternatively, you can use the provided `metric_score()` helper method, which allows you to specify a metric to calculate and certain classes to ignore (such as ABSTAIN).
@@ -229,19 +240,19 @@ from snorkel.analysis.metrics import metric_score
 accuracy = metric_score(
     golds=Y_dev, preds=L_dev_array, metric="accuracy", filter_dict={"preds": [ABSTAIN]}
 )
-print(f"Accuracy: {accuracy:.3f}")
+print(f"Accuracy: {accuracy * 100:.1f} %")
 
 # %% [markdown]
 # You can also use the helper class `LFAnalysis()` to report the following summary statistics for multiple LFs at once:
-# * Polarity: The set of labels this LF outputs
-# * Coverage: The fraction of the dataset the LF labels
-# * Overlaps: The fraction of the dataset where this LF and at least one other LF label
-# * Conflicts: The fraction of the dataset where this LF and at least one other LF label and disagree
-# * Correct: The number of data points this LF labels correctly (if gold labels are provided)
-# * Incorrect: The number of data points this LF labels incorrectly (if gold labels are provided)
-# * Emp. Acc.: The empirical accuracy of this LF (if gold labels are provided)
+# * **Polarity**: The set of labels this LF outputs
+# * **Coverage**: The fraction of the dataset the LF labels
+# * **Overlaps**: The fraction of the dataset where this LF and at least one other LF label
+# * **Conflicts**: The fraction of the dataset where this LF and at least one other LF label and disagree
+# * **Correct**: The number of data points this LF labels correctly (if gold labels are provided)
+# * **Incorrect**: The number of data points this LF labels incorrectly (if gold labels are provided)
+# * **Emp. Acc.**: The empirical accuracy of this LF (if gold labels are provided)
 #
-# The overlaps percentage gives us a rough sense of what percentage of the dataset is only labeled by this LF (coverage minus overlaps).
+# Since we only have one LF, overlaps and conflicts will be 0.
 
 # %%
 from snorkel.labeling.analysis import LFAnalysis
@@ -379,12 +390,21 @@ def short_comment(x):
 # ### Adding Preprocessors
 
 # %% [markdown]
-# Some LFs rely on fields that aren't present in the raw data, but can be derived from it. We can enrich our data (providing more fields for the LFs to refer to) using `Preprocessors`.
+# Some LFs rely on fields that aren't present in the raw data, but can be derived from it.
+# We can enrich our data (providing more fields for the LFs to refer to) using `Preprocessor`s.
 #
 # For example, we can use the fantastic NLP tool [spaCy](https://spacy.io/) to add lemmas, part-of-speech (pos) tags, etc. to each token.
+# Snorkel provides a prebuilt preprocessor for spaCy called `SpacyPreprocessor` which adds a new field to the
+# data point containing a [spaCy `Doc` object](https://spacy.io/api/doc).
+# For more info, see the [`SpacyPreprocessor` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.labeling.preprocess.html#snorkel.labeling.preprocess.nlp.SpacyPreprocessor).
+#
+#
+# If you prefer to use a different NLP tool, you can also wrap that as a `Preprocessor` and use it in the same way.
+# For more info, see the [`preprocessor` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.labeling.preprocess.html#snorkel.labeling.preprocess.core.preprocessor).
 
 # %%
-# Download the spacy english model
+# Download the spaCy english model
+# If you see an error in the next cell, restart the kernel
 # ! python -m spacy download en_core_web_sm
 
 # %%
@@ -405,7 +425,7 @@ def has_person(x):
 
 
 # %% [markdown]
-# Because spaCy is such a common preprocessor for NLP (Natural Language Processing) applications, we also provide an alias for a labeling_function that uses spaCy. This resulting LF is identical to the one defined manually above.
+# Because spaCy is such a common preprocessor for NLP (Natural Language Processing) applications, we also provide an alias for a `labeling_function` that uses spaCy. This resulting LF is identical to the one defined manually above.
 
 # %%
 from snorkel.labeling.lf.nlp import nlp_labeling_function
@@ -421,12 +441,16 @@ def has_person_nlp(x):
 
 
 # %% [markdown]
+# **Adding new domain-specific preprocessors and LF types is a great way to contribute to Snorkel!
+# If you have an idea, feel free to reach out to the maintainers or submit a PR!**
+
+# %% [markdown]
 # ### iv. Third-party Model LFs
 
 # %% [markdown]
 # We can also utilize other models, including ones trained for other tasks that are related to, but not the same as, the one we care about.
 #
-# For example, the [TextBlob](https://textblob.readthedocs.io/en/dev/index.html) tool provides a pretrained sentiment analyzer. Our spam classification task is not the same as sentiment classification, but it turns out that SPAM and HAM comments have different distributions of sentiment scores, with HAM having more positive/subjective sentiments.
+# For example, the [TextBlob](https://textblob.readthedocs.io/en/dev/index.html) tool provides a pretrained sentiment analyzer. Our spam classification task is not the same as sentiment classification, but it turns out that `SPAM` and `HAM` comments have different distributions of sentiment scores, with `HAM` having more positive/subjective sentiments.
 
 # %%
 import matplotlib.pyplot as plt
@@ -440,19 +464,31 @@ ham_polarities = [
 ]
 
 plt.hist([spam_polarities, ham_polarities])
+plt.title("Histogram of sentiment polarity scores for SPAM and HAM")
+plt.xlabel("Sentiment polarity score")
+plt.ylabel("Count")
+plt.legend(["SPAM", "HAM"])
+plt.show()
 
 # %%
+from snorkel.labeling.preprocess import preprocessor
 from textblob import TextBlob
 
 
-@labeling_function()
+@preprocessor(memoize=True)
+def text_blob_sentiment(x):
+    x.sentiment = TextBlob(x.text).sentiment
+    return x
+
+
+@labeling_function(preprocessors=[text_blob_sentiment])
 def textblob_polarity(x):
-    return HAM if TextBlob(x.text).sentiment.polarity > 0.3 else ABSTAIN
+    return HAM if x.sentiment.polarity > 0.3 else ABSTAIN
 
 
-@labeling_function()
+@labeling_function(preprocessors=[text_blob_sentiment])
 def textblob_subjectivity(x):
-    return HAM if TextBlob(x.text).sentiment.subjectivity > 0.9 else ABSTAIN
+    return HAM if x.sentiment.subjectivity > 0.9 else ABSTAIN
 
 
 # %% [markdown]
@@ -478,9 +514,14 @@ lfs = [
 ]
 
 # %% [markdown]
-# With our full set of LFs, we can now apply these once again with `LFApplier` to get our the label matrices for the `train` and `dev` splits. We'll use the `train` split's label matrix to generate training labels with the Label Model. The `dev` split's label model is primarily helpful for looking at summary statistics.
+# With our full set of LFs, we can now apply these once again with `LFApplier` to get our the label matrices for the `train` and `dev` splits.
+# We'll use the `train` split's label matrix to generate training labels with the Label Model.
+# The `dev` split's label model is primarily helpful for looking at summary statistics.
 #
-# Note that the `pandas` format provides an easy interface that many practioners are familiar with, but it is also less optimized for scale. For larger datasets, more compute-intensive LFs, or larger LF sets, you may decide to use one of the other supported data formats such as `dask` or `spark` dataframes, and their corresponding applier objects.
+# The Pandas format provides an easy interface that many practioners are familiar with, but it is also less optimized for scale.
+# For larger datasets, more compute-intensive LFs, or larger LF sets, you may decide to use one of the other data formats
+# that Snorkel supports natively, such as Dask DataFrames or PySpark DataFrames, and their corresponding applier objects.
+# For more info, check out the [Snorkel API documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.labeling.apply.html).
 
 # %%
 applier = PandasLFApplier(lfs)
@@ -490,20 +531,17 @@ L_valid = applier.apply(df_valid)
 
 LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 
+
 # %% [markdown]
 # We see that our labeling functions vary in coverage, accuracy, and how much they overlap/conflict with one another.
 # We can view a histogram of how many weak labels the data points in our dev set have to get an idea of our total coverage.
 
 # %%
-import matplotlib.pyplot as plt
-
-
 def plot_label_frequency(L):
-    plt.hist(
-        np.asarray((L != ABSTAIN).sum(axis=1)), density=True, bins=range(L.shape[1])
-    )
+    plt.hist((L != ABSTAIN).sum(axis=1), density=True, bins=range(L.shape[1]))
     plt.xlabel("Number of labels")
     plt.ylabel("Fraction of dataset")
+    plt.show()
 
 
 plot_label_frequency(L_train)
@@ -529,9 +567,11 @@ Y_pred_train
 # %% [markdown]
 # However, as we can clearly see by looking the summary statistics of our LFs in the previous section, they are not all equally accurate, and should ideally not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine our weak labels.
 #
-# This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers.
+# This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers. For more info on the API, see the [`LabelModel` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.labeling.model.html#snorkel.labeling.model.label_model.LabelModel).
 #
-# Note that no gold labels are used during the training process; the `LabelModel` is able to learn weights for the labeling functions using only the weak label matrix as input.
+# Note that no gold labels are used during the training process.
+# The `LabelModel` is able to learn weights for the labeling functions using only the label matrix as input.
+# We also specify the `cardinality`, or number of classes.
 
 # %%
 from snorkel.labeling.model import LabelModel
@@ -540,19 +580,38 @@ label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=500, log_freq=50, seed=123)
 
 # %%
-print(
-    f"{'Majority Vote:':<14} {majority_model.score(L_valid, Y_valid)['accuracy']:0.3f}"
-)
-print(f"{'Label Model:':<14} {label_model.score(L_valid, Y_valid)['accuracy']:0.3f}")
+majority_acc = majority_model.score(L_valid, Y_valid)["accuracy"]
+print(f"{'Majority Vote Accuracy:':<25} {majority_acc * 100:.1f}%")
+
+label_model_acc = label_model.score(L_valid, Y_valid)["accuracy"]
+print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
+
+# %% [markdown]
+# So Our `LabelModel` improves over the majority vote baseline!
+# However, it is typically **not suitable as an inference-time model** to make predictions for unseen examples.
+# In the next section, we will use the output of the label model as  training labels to train a
+# discriminative classifier to see if we can improve performance further.
+# This classifier will only need the text of the comment to make predictions, making it much more suitable
+# for inference over unseen comments.
+# For more information on the properties of the label model and when to use it, see the [Snorkel guides]().
+
+# %% [markdown]
+# We can also run error analysis after the label model has been trained.
+# For example, let's take a look at false positives from the dev set, which might inspire some more LFs that vote `SPAM`.
+
+# %%
+Y_dev_prob = majority_model.predict_proba(L_dev)
+Y_dev_pred = Y_dev_prob >= 0.5
+buckets = error_buckets(Y_dev, Y_dev_pred[:, 1])
+
+df_dev_fp = df_dev[["text", "label"]].iloc[buckets[(HAM, SPAM)]]
+df_dev_fp["probability"] = Y_dev_prob[buckets[(HAM, SPAM)], 1]
+
+df_dev_fp.sample(5, random_state=3)
 
 
 # %% [markdown]
-# While our `LabelModel` does improve over the majority vote baseline, it is still somewhat **limited as a classifier** for the reasons outlined in the Snorkel 101 guide.
-#
-# In the next section, we will use these training labels to train a discriminative classifier to see if we can improve performance further.
-
-# %% [markdown]
-# Before we do, we briefly confirm that the labels the `LabelModel` produces are probabilistic in nature.
+# Let's briefly confirm that the labels the `LabelModel` produces are probabilistic in nature.
 # The following histogram shows the confidences we have that each data point has the label SPAM.
 # The points we are least certain about will have labels close to 0.5.
 
@@ -560,7 +619,8 @@ print(f"{'Label Model:':<14} {label_model.score(L_valid, Y_valid)['accuracy']:0.
 def plot_probabilities_histogram(Y):
     plt.hist(Y, bins=10)
     plt.xlabel("Probability of SPAM")
-    plt.ylabel("Number of Data Points")
+    plt.ylabel("Number of data points")
+    plt.show()
 
 
 Y_probs_train = label_model.predict_proba(L_train)
@@ -577,7 +637,7 @@ plot_probabilities_histogram(Y_probs_train[:, SPAM])
 # In this tutorial we demonstrate using classifiers from Keras and Scikit-Learn.
 
 # %% [markdown]
-# For simlicity and speed, we use a simple "bag of n-grams" feature representation: each data point is represented by a one-hot vector marking which words or 2-word combinations are present in the comment text.
+# For simplicity and speed, we use a simple "bag of n-grams" feature representation: each data point is represented by a one-hot vector marking which words or 2-word combinations are present in the comment text.
 
 # %% [markdown]
 # ### Featurization
@@ -612,9 +672,12 @@ Y_probs_train = Y_probs_train[mask]
 # ### Keras Classifier with Probabilistic Labels
 
 # %% [markdown]
-# Our Keras classifier is a simple logistic regression classifier.
+# We'll use Keras, a popular high-level API for building models in TensorFlow, to build a simple logistic regression classifier.
 # We compile it with a `categorical_crossentropy` loss so that it can handle probabilistic labels instead of integer labels.
+# Using a _noise-aware loss_ &mdash; one that uses probabilistic labels &mdash; for our discriminative model lets
+# us take full advantage of the label model's learning procedure (see our [NeurIPS 2016 paper](https://arxiv.org/abs/1605.07723)).
 # We use the common settings of an `Adam` optimizer and early stopping (evaluating the model on the validation set after each epoch and reloading the weights from when it achieved the best score).
+# For more information on Keras, see the [Keras documentation](https://keras.io/).
 
 # %%
 from snorkel.analysis.utils import probs_to_preds, preds_to_probs
@@ -655,7 +718,9 @@ Y_preds_test = probs_to_preds(Y_probs_test)
 print(f"Test Accuracy: {metric_score(Y_test, Y_preds_test, metric='accuracy')}")
 
 # %% [markdown]
-# Doing this, we observe an additional boost in accuracy over the `LabelModel` by multiple points—**the training set produced by the `LabelModel` successfully transferred our domain knowledge to the classifier, which was able to generalize beyond the noisy heuristics we provided in our LFs!**
+# **We observe an additional boost in accuracy over the `LabelModel` by multiple points!
+# By using the label model to transfer the domain knowledge encoded in our LFs to the discriminative model,
+# we were able to generalize beyond the noisy labeling heuristics**.
 
 # %% [markdown]
 # We can compare this to the score we could have gotten if we had used our small labeled dev set directly as training data instead of using it to guide the creation of LFs.
@@ -722,4 +787,12 @@ sklearn_model.score(X_test, Y_test)
 # ### Next Steps
 
 # %% [markdown]
-# If you enjoyed this tutorial and you've already checked out the Snorkel 101 Guide, check out the `snorkel-tutorials` table of contents for other tutorials that you may find interesting, including demonstrations of how to use Snorkel for scene-graph detection (images), crowdsourcing, information extraction, data augmentation, and more. (TODO: Many links)
+# If you enjoyed this tutorial and you've already checked out the Snorkel 101 Guide, check out the [`snorkel-tutorials` table of contents](https://github.com/snorkel-team/snorkel-tutorials#snorkel-tutorials) for other tutorials that you may find interesting, including demonstrations of how to use Snorkel
+#
+# * As part of a [hybrid crowdsourcing pipeline](https://github.com/snorkel-team/snorkel-tutorials/tree/master/crowdsourcing)
+# * For [scene-graph detection over images](https://github.com/snorkel-team/snorkel-tutorials/tree/master/scene_graph)
+# * For [information extraction over text](https://github.com/snorkel-team/snorkel-tutorials/tree/master/spouse)
+# * For [data augmentation](https://github.com/snorkel-team/snorkel-tutorials/tree/master/spam)
+#
+# and many more!
+# You can also visit the [Snorkel homepage](http://snorkel.org) or [Snorkel API documentation](https://snorkel.readthedocs.io) for more info!
