@@ -112,11 +112,10 @@ pd.set_option("display.max_colwidth", 0)
 df_dev.sample(5, random_state=3)
 
 # %% [markdown]
-# The class distribution varies slightly from class to class, but all are approximately class-balanced. Note that since we don't have labels for the training set, we can't compute class distributions.
+# The class distribution varies slightly from class to class, but all are approximately class-balanced.
+# You can verify this by looking at the dev set labels.
 
 # %%
-from collections import Counter
-
 # For clarity, we define constants to represent the class labels for spam, ham, and abstaining.
 ABSTAIN = -1
 HAM = 0
@@ -133,6 +132,7 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 # **Labeling functions (LFs) help users encode domain knowledge and other supervision sources programmatically.**
 #
 # LFs are heuristics that take as input a data point and either assign a label to it (in this case, `HAM` or `SPAM`) or abstain (don't assign any label). Labeling functions can be *noisy*: they don't have perfect accuracy and don't have to label every data point.
+# Moreover, different labeling functions can overlap (label the same data point) and even conflict (assign different labels to the same data point).
 #
 # Because their only requirement is that they map a data point a label (or abstain), they can wrap a wide variety of forms of supervision. Examples include, but are not limited to:
 # * *Keyword searches*: looking for specific words in a sentence
@@ -149,11 +149,10 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 # Balancing accuracy and coverage for specific labeling functions as well as the overall set of LFs developed is often a trade-off, and depending on the use case, users may tend to prefer one over the other.
 #
 # Once multiple LFs have been created, users can look at data points that have received no labels so far (or many conflicting labels) to get ideas for new LFs to write.
-# Furthermore, if there are some classes that have votes form very few LFs, users might iterate by writing additional LFs to cover those parts of the dataset.
+# Furthermore, if there are some classes that have votes from very few LFs, users might iterate by writing additional LFs to cover those parts of the dataset.
 # **Note, however, that it is not necessary for LFs to assign labels to every data point;** in fact, most of the time your LFs will not have perfect dataset-wide coverage.
 # We rely on the fact that the classifier that trains on labels from Snorkel has the power to _generalize_ and can therefore learn a good representation of the data even if the each data point in the training set does not receive a label from any LFs.
-#
-#
+# In addition, note that **it is ok to have overlaps and conflicts between labeling functions**. For example, two good labeling functions can conflict when one of them is written to fix the errors of the other. We later use a _label model_ that learns how to combine the outputs of all (potentially conflicting) labeling functions to estimate label probabilities.
 
 # %% [markdown]
 # ### a) Look at examples for ideas
@@ -166,7 +165,7 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 df_dev[["text", "label"]].sample(10, random_state=3)
 
 # %% [markdown]
-# ### b) Write an LF
+# ### b) Writing an LF
 
 # %% [markdown]
 # Labeling functions in Snorkel are created with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point (in this case, a row of the DataFrame).
@@ -209,8 +208,6 @@ L_train
 # We can easily calculate the coverage of this LF by hand (i.e., the percentage of the dataset that it labels) as follows:
 
 # %%
-import numpy as np
-
 coverage = (L_train != ABSTAIN).mean()
 print(f"Coverage: {coverage * 100:.1f}%")
 
@@ -257,7 +254,7 @@ print(f"Accuracy: {accuracy * 100:.1f} %")
 # %%
 from snorkel.labeling.analysis import LFAnalysis
 
-LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
+LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 
 # %% [markdown]
 # ### d) Balance accuracy/coverage
@@ -270,7 +267,7 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 # %%
 from snorkel.analysis.error_analysis import error_buckets
 
-buckets = error_buckets(Y_dev, L_dev_array)
+buckets = error_buckets(golds=Y_dev, preds=L_dev_array)
 
 df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]].head()
 
@@ -301,7 +298,7 @@ lfs = [keywords_my_channel]
 applier = PandasLFApplier(lfs)
 L_dev = applier.apply(df_dev)
 
-LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
+LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 
 # %% [markdown]
 # In this case, accuracy does improve a bit, but it was already fairly accurate to begin with, and "tightening" the LF like this causes the coverage drops significantly, so we'll stick with the original LF.
@@ -524,12 +521,12 @@ lfs = [
 # For more info, check out the [Snorkel API documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.labeling.apply.html).
 
 # %%
-applier = PandasLFApplier(lfs)
-L_train = applier.apply(df_train)
-L_dev = applier.apply(df_dev)
-L_valid = applier.apply(df_valid)
+applier = PandasLFApplier(lfs=lfs)
+L_train = applier.apply(df=df_train)
+L_dev = applier.apply(df=df_dev)
+L_valid = applier.apply(df=df_valid)
 
-LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
+LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 
 
 # %% [markdown]
@@ -561,7 +558,7 @@ plot_label_frequency(L_train)
 from snorkel.labeling.model import MajorityLabelVoter
 
 majority_model = MajorityLabelVoter()
-Y_pred_train = majority_model.predict(L_train)
+Y_pred_train = majority_model.predict(L=L_train)
 Y_pred_train
 
 # %% [markdown]
@@ -577,18 +574,18 @@ Y_pred_train
 from snorkel.labeling.model import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
-label_model.fit(L_train, n_epochs=500, log_freq=50, seed=123)
+label_model.fit(L_train=L_train, n_epochs=500, log_freq=50, seed=123)
 
 # %%
-majority_acc = majority_model.score(L_valid, Y_valid)["accuracy"]
+majority_acc = majority_model.score(L=L_valid, Y=Y_valid)["accuracy"]
 print(f"{'Majority Vote Accuracy:':<25} {majority_acc * 100:.1f}%")
 
-label_model_acc = label_model.score(L_valid, Y_valid)["accuracy"]
+label_model_acc = label_model.score(L=L_valid, Y=Y_valid)["accuracy"]
 print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 
 # %% [markdown]
-# So Our `LabelModel` improves over the majority vote baseline!
-# However, it is typically **not suitable as an inference-time model** to make predictions for unseen examples.
+# So our `LabelModel` improves over the majority vote baseline!
+# However, it is typically **not suitable as an inference-time model** to make predictions for unseen examples, due to (among other things) limited coverage of most labeling functions.
 # In the next section, we will use the output of the label model as  training labels to train a
 # discriminative classifier to see if we can improve performance further.
 # This classifier will only need the text of the comment to make predictions, making it much more suitable
@@ -600,9 +597,9 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 # For example, let's take a look at false positives from the dev set, which might inspire some more LFs that vote `SPAM`.
 
 # %%
-Y_dev_prob = majority_model.predict_proba(L_dev)
+Y_dev_prob = majority_model.predict_proba(L=L_dev)
 Y_dev_pred = Y_dev_prob >= 0.5
-buckets = error_buckets(Y_dev, Y_dev_pred[:, 1])
+buckets = error_buckets(golds=Y_dev, preds=Y_dev_pred[:, 1])
 
 df_dev_fp = df_dev[["text", "label"]].iloc[buckets[(HAM, SPAM)]]
 df_dev_fp["probability"] = Y_dev_prob[buckets[(HAM, SPAM)], 1]
@@ -623,7 +620,7 @@ def plot_probabilities_histogram(Y):
     plt.show()
 
 
-Y_probs_train = label_model.predict_proba(L_train)
+Y_probs_train = label_model.predict_proba(L=L_train)
 plot_probabilities_histogram(Y_probs_train[:, SPAM])
 
 # %% [markdown]
@@ -689,7 +686,7 @@ import tensorflow as tf
 keras_model = tf.keras.Sequential()
 keras_model.add(
     tf.keras.layers.Dense(
-        2,
+        units=2,
         input_dim=X_train.shape[1],
         activation=tf.nn.softmax,
         kernel_regularizer=tf.keras.regularizers.l2(0.01),
@@ -705,17 +702,19 @@ early_stopping = tf.keras.callbacks.EarlyStopping(
 )
 
 keras_model.fit(
-    X_train,
-    Y_probs_train,
+    x=X_train,
+    y=Y_probs_train,
     validation_data=(X_valid, preds_to_probs(Y_valid, 2)),
     callbacks=[early_stopping],
     epochs=20,
     verbose=0,
 )
 
-Y_probs_test = keras_model.predict(X_test)
-Y_preds_test = probs_to_preds(Y_probs_test)
-print(f"Test Accuracy: {metric_score(Y_test, Y_preds_test, metric='accuracy')}")
+Y_probs_test = keras_model.predict(x=X_test)
+Y_preds_test = probs_to_preds(probs=Y_probs_test)
+print(
+    f"Test Accuracy: {metric_score(golds=Y_test, preds=Y_preds_test, metric='accuracy')}"
+)
 
 # %% [markdown]
 # **We observe an additional boost in accuracy over the `LabelModel` by multiple points!
@@ -729,7 +728,7 @@ print(f"Test Accuracy: {metric_score(Y_test, Y_preds_test, metric='accuracy')}")
 keras_rounded_model = tf.keras.Sequential()
 keras_rounded_model.add(
     tf.keras.layers.Dense(
-        1,
+        units=1,
         input_dim=X_train.shape[1],
         activation=tf.nn.sigmoid,
         kernel_regularizer=tf.keras.regularizers.l2(0.01),
@@ -741,17 +740,19 @@ keras_rounded_model.compile(
 )
 
 keras_rounded_model.fit(
-    X_dev,
-    Y_dev,
+    x=X_dev,
+    y=Y_dev,
     validation_data=(X_valid, Y_valid),
     callbacks=[early_stopping],
     epochs=20,
     verbose=0,
 )
 
-Y_probs_test = keras_rounded_model.predict(X_test)
+Y_probs_test = keras_rounded_model.predict(x=X_test)
 Y_preds_test = np.round(Y_probs_test)
-print(f"Test Accuracy: {metric_score(Y_test, Y_preds_test, metric='accuracy')}")
+print(
+    f"Test Accuracy: {metric_score(golds=Y_test, preds=Y_preds_test, metric='accuracy')}"
+)
 
 # %% [markdown]
 # ### Scikit-Learn with Rounded Labels
@@ -761,7 +762,7 @@ print(f"Test Accuracy: {metric_score(Y_test, Y_preds_test, metric='accuracy')}")
 # This can easily be done using the helper method `probs_to_preds` (note, however, that this transformation is lossy, as we no longer have values for our confidence in each label).
 
 # %%
-Y_preds_train = probs_to_preds(Y_probs_train)
+Y_preds_train = probs_to_preds(probs=Y_probs_train)
 
 # %% [markdown]
 # For example, this allows us to use standard models from Scikit-Learn.
@@ -770,9 +771,9 @@ Y_preds_train = probs_to_preds(Y_probs_train)
 from sklearn.linear_model import LogisticRegression
 
 sklearn_model = LogisticRegression()
-sklearn_model.fit(X_train, Y_preds_train)
+sklearn_model.fit(X=X_train, y=Y_preds_train)
 
-sklearn_model.score(X_test, Y_test)
+sklearn_model.score(X=X_test, y=Y_test)
 
 # %% [markdown]
 # ## Summary
