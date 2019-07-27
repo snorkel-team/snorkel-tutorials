@@ -39,7 +39,8 @@
 # The remaining 187 examples form our training set.
 # This data set is very small, and we're primarily using it for demonstration purposes.
 # In particular, we'd expect to have access to many more unlabeled tweets in order to
-# train a high performance text model. Since the dataset is already small, we skip
+# train a high performance text model.
+# Since the dataset is already small, we skip
 # using a validation set.
 #
 # The labels above have been mapped to integers, which we show here.
