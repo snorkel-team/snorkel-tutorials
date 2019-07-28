@@ -29,12 +29,12 @@ set_seed(SEED)
 # Our data points are 2D points in a square centered on the origin.
 # Our tasks will be classifying whether these points are:
 #
-# 1. Inside a **unit circle** centered on the origin
-# 2. Inside a **unit square** centered on the origin
+# 1. Inside a **unit circle** centered on the origin (0 = False, 1 = True)
+# 2. Inside a **unit square** centered on the origin (0 = False, 1 = True)
 #
 # We'll visualize these decision boundaries in a few cells.
 #
-# _Note: In this toy example, we don't expect these specific tasks to help each other learn, but this is often a benefit of joint training in MTL settings._
+# _Note: In this toy example, we don't expect these specific tasks to help the model improve on the other task, but this is often a benefit of joint training in MTL settings._
 
 # %%
 import numpy as np
@@ -54,8 +54,8 @@ square_labels = (abs(square_data[:, 0]) < 0.5) * (abs(square_data[:, 1]) < 0.5)
 # Note that, as is the case throughout the Snorkel repo, the **label -1 is reserved for abstaining/no label**; all actual labels have non-negative integer values: 0, 1, 2, .... This provides flexibility for supervision sources to label only portions of a dataset, for example.
 
 # %% [markdown]
-# And we can view the ground truth labels of our tasks visually to confirm our intuition on what the decision boundaries look like.  
-# These two datasets occupy the same region in Euclidean space, but are disjoint sets of data points.  
+# And we can view the ground truth labels of our tasks visually to confirm our intuition on what the decision boundaries look like.
+# These two datasets occupy the same region in Euclidean space, but are disjoint sets of data points.
 # In the plots below, the purple points represent class 0 and the yellow points represent class 1.
 
 # %%
@@ -220,7 +220,6 @@ square_task = Task(
         Operation("base_mlp", [("_input_", "square_data")]),
         Operation("square_head", [("base_mlp", 0)]),
     ],
-    scorer=Scorer(metrics=["accuracy"]),
 )
 
 # %% [markdown]
@@ -297,8 +296,8 @@ inv_circle_labels = (inv_circle_data[:, 0] ** 2 + inv_circle_data[:, 1] ** 2 > R
 # - The Y_dict should map a task name to a set of labels. This will tell the model what path through the network to use when making predictions or calculating loss on batches from this dataset. At this point we haven't yet defined our
 
 # %%
-X_dict = {}  # Replace this with the correct definition
-Y_dict = {}  # Replace this with the correct definition
+X_dict = {}  # Fill me in
+Y_dict = {}  # Fill me in
 inv_dataset = DictDataset("InvCircleDataset", "train", X_dict, Y_dict)
 inv_dataloader = DictDataLoader(dataset=inv_dataset, batch_size=32)
 
@@ -315,8 +314,12 @@ all_dataloaders = dataloaders + [inv_dataloader]
 # Using the `square_task` definition as a template, fill in the arguments for an `inverse_circle_task` that consists of the same `base_mlp` module as the other tasks and a separate linear head with an output of size 2.
 
 # %%
-# Uncomment and fill in the arguments to the Task object to define the inverse_circle task.
-# inv_circle_task = Task()
+# Uncomment and fill in the arguments to creat a Task object for the inverse_circle task.
+# inv_circle_task = Task(
+#     name="",  # Fill me in
+#     module_pool=nn.ModuleDict({}),  # Fill me in
+#     task_flow=[],  # Fill me in
+# )
 
 # %% [markdown]
 # ### Create the model
@@ -325,8 +328,8 @@ all_dataloaders = dataloaders + [inv_dataloader]
 # Once we have our task objects, creating the new multi-task model is as easy as adding the new task to the list of tasks at model initialization time.
 
 # %%
-# Uncomment and run the following line.
-# model = SnorkelClassifier([circle_task, square_task, inv_circle_task])
+# Add your new task to the list of tasks for creating the MTL model
+model = SnorkelClassifier([circle_task, square_task])  # Fill me in
 
 # %% [markdown]
 # ### Train the model
@@ -335,8 +338,8 @@ all_dataloaders = dataloaders + [inv_dataloader]
 # We can use the same trainer and training settings as before.
 
 # %%
-# trainer.fit(model, all_dataloaders)
-# model.score(all_dataloaders)
+trainer.fit(model, all_dataloaders)
+model.score(all_dataloaders)
 
 # %% [markdown]
 # ### Validation
@@ -346,7 +349,8 @@ all_dataloaders = dataloaders + [inv_dataloader]
 # The following assert statement should also pass if you uncomment and run it.
 
 # %%
-# assert len(model.module_pool) == 4  # 1 shared module plus 3 separate task heads
+assert len(model.tasks) == 3
+assert len(model.module_pool) == 4  # 1 shared module plus 3 separate task heads
 
 # %% [markdown]
 # ## Summary
