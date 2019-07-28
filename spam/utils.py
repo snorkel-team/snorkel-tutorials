@@ -13,7 +13,7 @@ def load_spam_dataset():
     # TODO:
     # Add reference to dataset
     # Send email to dataset owner: tuliocasagrande < AT > acm.org
-    subprocess.call("bash download_data.sh", shell=True)
+    subprocess.run(["bash", "download_data.sh"], check=True)
     filenames = sorted(glob.glob("data/Youtube*.csv"))
 
     dfs = []
@@ -40,7 +40,3 @@ def load_spam_dataset():
     )
 
     return df_train, df_dev, df_valid, df_test
-
-
-if __name__ == "__main__":
-    load_spam_dataset()
