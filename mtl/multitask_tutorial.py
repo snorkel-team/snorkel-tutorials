@@ -54,7 +54,9 @@ square_labels = (abs(square_data[:, 0]) < 0.5) * (abs(square_data[:, 1]) < 0.5)
 # Note that, as is the case throughout the Snorkel repo, the **label -1 is reserved for abstaining/no label**; all actual labels have non-negative integer values: 0, 1, 2, .... This provides flexibility for supervision sources to label only portions of a dataset, for example.
 
 # %% [markdown]
-# And we can view the ground truth labels of our tasks visually to confirm our intuition on what the decision boundaries look like.
+# And we can view the ground truth labels of our tasks visually to confirm our intuition on what the decision boundaries look like.  
+# These two datasets occupy the same region in Euclidean space, but are disjoint sets of data points.  
+# In the plots below, the purple points represent class 0 and the yellow points represent class 1.
 
 # %%
 import matplotlib.pyplot as plt
@@ -63,11 +65,11 @@ fig, axs = plt.subplots(1, 2)
 
 axs[0].scatter(circle_data[:, 0], circle_data[:, 1], c=circle_labels)
 axs[0].set_aspect("equal", "box")
-axs[0].set_title("Task0", fontsize=10)
+axs[0].set_title("Circle Dataset", fontsize=10)
 
 axs[1].scatter(square_data[:, 0], square_data[:, 1], c=square_labels)
 axs[1].set_aspect("equal", "box")
-axs[1].set_title("Task1", fontsize=10)
+axs[1].set_title("Square Dataset", fontsize=10)
 
 plt.show()
 
@@ -141,7 +143,7 @@ for split in ["train", "valid", "test"]:
 # ## Define Model
 
 # %% [markdown]
-# Now we'll define the `SnorkelClassifier`, which is build from a list of `Tasks`.
+# Now we'll define the `SnorkelClassifier`, a flexible multi-task classifier written in PyTorch that is built from a list of `Tasks`.
 
 # %% [markdown]
 # ### Tasks
@@ -298,7 +300,7 @@ inv_circle_labels = (inv_circle_data[:, 0] ** 2 + inv_circle_data[:, 1] ** 2 > R
 X_dict = {}  # Replace this with the correct definition
 Y_dict = {}  # Replace this with the correct definition
 inv_dataset = DictDataset("InvCircleDataset", "train", X_dict, Y_dict)
-inv_dataloader = DictDataLoader(inv_dataset, batch_size=32)
+inv_dataloader = DictDataLoader(dataset=inv_dataset, batch_size=32)
 
 # %% [markdown]
 # We add this new dataloader to the dataloaders for the other tasks.
