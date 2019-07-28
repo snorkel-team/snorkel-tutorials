@@ -19,8 +19,8 @@ To run a tutorial, clone this repository and run the following commands (replaci
 
 ```
 # Install requirements (both shared and tutorial-specific)
-pip install -r requirements.txt
-pip install -r spam/requirements.txt
+pip3 install -r requirements.txt
+pip3 install -r spam/requirements.txt
 
 # Launch the Jupyter notebook interface
 jupyter notebook
