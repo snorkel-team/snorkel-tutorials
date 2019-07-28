@@ -106,8 +106,6 @@ Y_test = df_test["label"].values
 # Let's view a few examples.
 
 # %%
-import pandas as pd
-
 df_dev.sample(5, random_state=3)
 
 # %% [markdown]
