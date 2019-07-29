@@ -38,6 +38,24 @@ Then execute the cells in sequence.
 Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam_tutorial.py`).
 
 
+## Running with Docker
+We've included a Docker setup for our tutorials to make setup easy.
+First, make sure you have [Docker installed](https://docs.docker.com/install/) on your machine.
+To build and run a Docker image for a tutorial, use `scripts/launch_docker.py` with the `--build` flag.
+For example, run the following for the `spam` tutorial:
+
+```bash
+python3 scripts/launch_docker.py spam --build
+```
+
+This will make a Jupyter notebook server available on port 8888.
+You can change the port with the `--port` option.
+Once an image has been built, you can run it without the `--build` flag:
+
+```bash
+python3 scripts/launch_docker.py spam
+```
+
 ## <a name="tutorials-index"> Tutorials Index </a>
 Here we provide an index pointing to different available tutorials by their task type, techniques, and integrations.
 * Task
