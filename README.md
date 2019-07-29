@@ -15,8 +15,15 @@ We recommend that all users **start with the `spam` tutorial** for a gentle intr
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 
 ## Getting Started
-To run a tutorial, clone this repository and run the following commands (replacing `spam` with the name of the tutorial you want to run, if applicable). We recommend doing this in a virtual environment with e.g., `virtualenv` or `conda`.
+Running a tutorial has four required steps:
 
+1. Cloning this repo
+1. Installing repo-wide requirements
+1. Installing tutorial-specific requirements
+1. Launching a Jupyter notebook server or executing as a script
+
+We recommend installing requirements in a virtual environment using [`virtualenv`](https://virtualenv.pypa.io/en/latest/) or [`conda`](https://docs.conda.io/en/latest/).
+For example, if you use pip, first activate your virtualenv if you're using one, then run:
 ```
 # Install requirements (both shared and tutorial-specific)
 pip3 install -r requirements.txt
@@ -28,7 +35,7 @@ jupyter notebook
 Then, in the browser tab that opens, navigate to a `.ipynb` file you would like to run, such as `snorkel-tutorials/spam/spam_tutorial.ipynb`, and click to open it. 
 Then execute the cells in sequence.
 
-Alternatively, you can run the tutorial as a script by calling python on the corresponding `.py` file directly (e.g. `python spam_tutorial.py`).
+Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam_tutorial.py`).
 
 
 ## <a name="tutorials-index"> Tutorials Index </a>
