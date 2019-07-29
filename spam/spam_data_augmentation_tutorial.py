@@ -3,43 +3,18 @@
 # # Snorkel Transformation Functions Tutorial
 
 # %% [markdown]
-# In this tutorial, we will walk through the process of using `Snorkel Transformation Functions (TFs)` to classify YouTube comments as `SPAM` or `HAM` (not spam).
+# In this tutorial, we will walk through the process of using `Snorkel Transformation Functions (TFs)` to classify YouTube comments as `SPAM` or `HAM` (not spam). For more details on the task, check out the main labeling functions [tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/spam_tutorial.ipynb).
 # For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
 # You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
 #
 # For our task, we have access to a some labeled data.
-# We use **_Transformation Functions_**, to perform data augmentation to get additional training data.
+# We use **_Transformation Functions_** to perform data augmentation to get additional training data.
 #
-# The tutorial is divided into three parts:
+# The tutorial is divided into four parts:
 # 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
 # 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training examples to generate new training examples.
 # 3. **Applying Transformation Functions**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
 # 4. **Training An End Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
-
-# %% [markdown]
-# ### Task: Spam Detection
-
-# %% [markdown]
-# We use a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) that consists of YouTube comments from 5 videos. The task is to classify each comment as being
-#
-# * **`SPAM`**: irrelevant or inappropriate messages, or
-# * **`HAM`**: comments relevant to the video
-#
-# For example, the following comments are `SPAM`:
-#
-#         "Subscribe to me for free Android games, apps.."
-#
-#         "Please check out my vidios"
-#
-#         "Subscribe to me and I'll subscribe back!!!"
-#
-# and these are `HAM`:
-#
-#         "3:46 so cute!"
-#
-#         "This looks so fun and it's a good song"
-#
-#         "This is a weird video."
 
 # %% [markdown]
 # ### Data Splits in Snorkel
@@ -54,23 +29,11 @@
 
 # %% [markdown]
 # We load the Kaggle dataset and create Pandas DataFrame objects for each of the sets described above.
-# DataFrames are extremely popular in Python data analysis workloads, and Snorkel provides native support
-# for several DataFrame-like data structures, including Pandas, Dask, and PySpark.
-# For more information on working with Pandas DataFrames, see the [Pandas DataFrame guide](https://pandas.pydata.org/pandas-docs/stable/getting_started/dsintro.html).
-#
-# Each DataFrame consists of the following fields:
-# * **`author`**: Username of the comment author
-# * **`data`**: Date and time the comment was posted
+# The two main columns in the DataFrames are:
 # * **`text`**: Raw text content of the comment
 # * **`label`**: Whether the comment is `SPAM` (1), `HAM` (0), or `UNKNOWN/ABSTAIN` (-1)
-# * **`video`**: Video the comment is associated with
 #
-# We start by loading our data.
-# The `load_spam_dataset()` method downloads the raw CSV files from the internet, divides them into splits, converts them into DataFrames, and shuffles them.
-# As mentioned above, the dataset contains comments from 5 of the most popular YouTube videos during a period between 2014 and 2015.
-# * The first four videos' comments are combined to form the `train` set. This set has no gold labels.
-# * The `dev` set is a random sample of 200 data points from the `train` set with gold labels added.
-# * The fifth video is split 50/50 between a validation set (`valid`) and `test` set.
+# For more details, check out the labeling functions [tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/spam_tutorial.ipynb).
 
 # %%
 # %load_ext autoreload
@@ -105,46 +68,20 @@ df_train.head()
 # Our task involves processing text. Some common ways to augment text includes replacing words with their synonyms, or replacing names entities with other entities. Applying these operations to a comment shouldn't change whether it is `SPAM` or not.
 #
 # Transformation functions in Snorkel are created with the `@transformation_function()` decorator, which wraps a function for taking a single data point and returning a transformed version of the data point.
-
-# %% [markdown]
-# We start with a transformation function that uses `wordnet` from [NLTK](https://www.nltk.org/) to replace words with their synonyms, and one that drops the last sentence of multi-sentence comments.
+#
+# We start with a simple transformation function that changes a random character in the text to simulate a typo.
 
 # %%
+import string
 from snorkel.augmentation.tf import transformation_function
-import numpy as np
-import nltk
-from nltk.corpus import wordnet as wn
-
-nltk.download("wordnet")
-
-
-def get_synonyms(word):
-    synsets = wn.synsets(word)
-    if not synsets:
-        return []
-    else:
-        return [lemma.name() for lemma in synsets[0].lemmas()]
 
 
 @transformation_function()
-def replace_with_synonyms(x, replace_prob=0.05):
-    new_words = []
-    for word in x.text.split():
-        if np.random.rand() < replace_prob:
-            synonyms = get_synonyms(word)
-            word = synonyms[0] if synonyms else word
-        new_words.append(word)
-    x.text = " ".join(new_words)
+def change_character(x):
+    idx = np.random.choice(range(len(x.text) - 1))
+    char = np.random.choice(list(string.ascii_lowercase))
+    x.text = x.text[:idx] + char + x.text[idx + 1 :]
     return x
-
-
-# Dropping the last sentence of a multi-sentence comment shouldn't change it's spam / ham nature.
-@transformation_function()
-def drop_last_sentence(x):
-    sentences = x.text.split(".")
-    if len(sentences) > 1:
-        x.text = ". ".join(sentences[:-1])
-        return x
 
 
 # %% [markdown]
@@ -170,7 +107,10 @@ from snorkel.labeling.preprocess.nlp import SpacyPreprocessor
 # stores the new enriched representation in doc_field
 spacy = SpacyPreprocessor(text_field="text", doc_field="doc", memoize=True)
 
-# We use named entities recognized by spacy to replace them with different entities of the same type.
+# %%
+import numpy as np
+
+# TFs for replacing a random named entity with a different entity of the same type.
 @transformation_function(pre=[spacy])
 def change_person(x):
     persons = [str(ent) for ent in x.doc.ents if ent.label_ == "PERSON"]
@@ -191,6 +131,88 @@ def change_date(x):
         return x
 
 
+# Drop the last sentence of a multi-sentence comment, as this shouldn't change it's spam / ham nature.
+@transformation_function(pre=[spacy])
+def drop_last_sentence(x):
+    sentences = [str(span) for span in x.doc.sents]
+    if len(sentences) > 1:
+        x.text = ". ".join(sentences[:-1])
+        return x
+
+
+# Remove a random stop word.
+@transformation_function(pre=[spacy])
+def drop_stop_word(x):
+    words = [token.text for token in x.doc]
+    stop_word_idxs = [i for i, token in enumerate(x.doc) if token.is_stop]
+    if len(stop_word_idxs) < 2:
+        return x
+    to_drop = np.random.choice(stop_word_idxs[:-1])
+    x.text = " ".join(words[:to_drop] + words[1 + to_drop :])
+    return x
+
+
+# Swap two nouns at random.
+@transformation_function(pre=[spacy])
+def swap_nouns(x):
+    words = [token.text for token in x.doc]
+    noun_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "NOUN"]
+    if len(noun_idxs) < 3:
+        return x
+    idx1, idx2 = sorted(np.random.choice(noun_idxs[:-1], 2))
+    x.text = " ".join(
+        words[:idx1]
+        + [words[idx2]]
+        + words[1 + idx1 : idx2]
+        + [words[idx1]]
+        + words[1 + idx2 :]
+    )
+    return x
+
+
+# %% [markdown]
+# We add some transformation functions that use `wordnet` from [NLTK](https://www.nltk.org/) to replace different parts of speech with their synonyms.
+
+# %%
+import nltk
+from nltk.corpus import wordnet as wn
+
+nltk.download("wordnet")
+
+
+def get_synonym(word, pos=None):
+    synsets = wn.synsets(word, pos=pos)
+    if not synsets:
+        return word
+    else:
+        words = [lemma.name() for lemma in synsets[0].lemmas()]
+        return words[0] if words else word
+
+
+@transformation_function(pre=[spacy])
+def replace_verb_with_synonym(x):
+    words = [token.text for token in x.doc]
+    verb_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "VERB"]
+    if len(verb_idxs) < 2:
+        return x
+    to_replace = np.random.choice(verb_idxs[:-1])
+    synonym = get_synonym(words[to_replace], pos="v")
+    x.text = " ".join(words[:to_replace] + [synonym] + words[1 + to_replace :])
+    return x
+
+
+@transformation_function(pre=[spacy])
+def replace_noun_with_synonym(x):
+    words = [token.text for token in x.doc]
+    noun_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "NOUN"]
+    if len(noun_idxs) < 2:
+        return x
+    to_replace = np.random.choice(noun_idxs[:-1])
+    synonym = get_synonym(words[to_replace], pos="n")
+    x.text = " ".join(words[:to_replace] + [synonym] + words[1 + to_replace :])
+    return x
+
+
 # %% [markdown]
 # ## 3. Applying Transformation Functions
 
@@ -203,7 +225,16 @@ def change_date(x):
 from snorkel.augmentation.apply import PandasTFApplier
 from snorkel.augmentation.policy import RandomPolicy
 
-tfs = [change_person, change_date, drop_last_sentence, replace_with_synonyms]
+tfs = [
+    change_character,
+    change_person,
+    change_date,
+    drop_last_sentence,
+    drop_stop_word,
+    swap_nouns,
+    replace_verb_with_synonym,
+    replace_noun_with_synonym,
+]
 
 policy = RandomPolicy(len(tfs), sequence_length=3, n_per_original=2)
 tf_applier = PandasTFApplier(tfs, policy)
@@ -215,7 +246,7 @@ print(f"Original training set size: {len(df_train)}")
 print(f"Augmented training set size: {len(df_train_augmented)}")
 
 # %% [markdown]
-# We have more than doubled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset does not exactly triple in size, because some TFs keep the example unchanged (e.g. `change_person` when applied to a sentence with no persons).
+# We have nearly tripled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because some TFs keep the example unchanged (e.g. `change_person` when applied to a sentence with no persons).
 
 # %% [markdown]
 # ## 4. Training an End Model
@@ -259,12 +290,12 @@ def train_and_test(
 
     test_tokens = np.array(list(map(map_pad_or_truncate, df_test.text)))
     test_probs = lstm_model.predict(test_tokens)
-    return ((test_probs[:, 0] > 0.5) == (Y_test == 1)).mean()
+    test_preds = test_probs[:, 0] > 0.5
+    return (test_preds == Y_test).mean()
 
 
-print(
-    f"Test Accuracy when training on original dataset: {train_and_test(df_train, Y_train)}"
-)
-print(
-    f"Test Accuracy when training on augmented dataset: {train_and_test(df_train_augmented, Y_train_augmented)}"
-)
+test_accuracy_original = train_and_test(df_train, Y_train)
+test_accuracy_augmented = train_and_test(df_train_augmented, Y_train_augmented)
+
+print(f"Test Accuracy when training on original dataset: {test_accuracy_original}")
+print(f"Test Accuracy when training on augmented dataset: {test_accuracy_augmented}")
