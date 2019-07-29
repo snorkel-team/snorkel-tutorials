@@ -45,7 +45,7 @@ To build and run a Docker image for a tutorial, use `scripts/launch_docker.py` w
 For example, run the following for the `spam` tutorial:
 
 ```bash
-python3 scripts/launch_docker.py spam --build
+python3 scripts/docker_launch.py spam --build
 ```
 
 This will make a Jupyter notebook server available on port 8888.
@@ -53,7 +53,7 @@ You can change the port with the `--port` option.
 Once an image has been built, you can run it without the `--build` flag:
 
 ```bash
-python3 scripts/launch_docker.py spam
+python3 scripts/docker_launch.py spam
 ```
 
 ## <a name="tutorials-index"> Tutorials Index </a>

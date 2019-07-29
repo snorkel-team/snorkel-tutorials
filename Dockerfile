@@ -6,10 +6,10 @@ COPY . /app
 ARG TUTORIAL
 RUN wget -O snorkel-requirements.txt \
     https://raw.githubusercontent.com/HazyResearch/snorkel/redux/requirements.txt
-RUN pip3 install -r $TUTORIAL/requirements.txt
-RUN pip3 install -r requirements.txt
-RUN pip3 install -r snorkel-requirements.txt
-RUN python3 -m spacy download en_core_web_sm
+RUN pip3 install -r $TUTORIAL/requirements.txt \
+    && pip3 install -r requirements.txt \
+    && pip3 install -r snorkel-requirements.txt \
+    && python3 -m spacy download en_core_web_sm
 
 EXPOSE 8888
 
