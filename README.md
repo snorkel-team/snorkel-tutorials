@@ -11,30 +11,31 @@ The Snorkel tutorials are grouped by application, with some applications having 
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
 
-## Getting Started
-Start with the `spam` tutorial for a gentle introduction to the concepts and classes of Snorkel.
+We recommend that all users **start with the `spam` tutorial** for a gentle introduction to the concepts and classes of Snorkel.  
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 
-To run a tutorial in a jupyter notebook, run the following commands, which create a virtual environment, install requirements, create an ipython kernel, and launch Jupyter:
-```bash
-TUTORIAL="spam"  # Change this to the name of the directory for the tutorial you want
+## Getting Started
+Running a tutorial has four required steps:
 
-# Create virtual env
-VIRTUALENV=".env_${TUTORIAL}"
-virtualenv $VIRTUALENV
-source $VIRTUALENV/bin/activate  # Activate the created virtual environment
-pip3 install -r requirements.txt  # Requirements shared among all tutorials
-cd $TUTORIAL
-pip3 install -r requirements.txt  # Requirements specific to this tutorial
+1. Cloning this repo
+1. Installing repo-wide requirements
+1. Installing tutorial-specific requirements
+1. Launching a Jupyter notebook server or executing as a script
 
-# Launch Jupyter
-jupyter notebook
-
-# To deactivate the virtual environment when you are done, run `deactivate`.
+We recommend installing requirements in a virtual environment using [`virtualenv`](https://virtualenv.pypa.io/en/latest/) or [`conda`](https://docs.conda.io/en/latest/).
+For example, if you use pip, first activate your virtualenv if you're using one, then run:
 ```
-Then, in the browser tab that opens, select the notebook you would like to run.
+# Install requirements (both shared and tutorial-specific)
+pip3 install -r requirements.txt
+pip3 install -r spam/requirements.txt
 
-Alternatively, to run the tutorial as a script, skip the Jupyter launch command and run the tutorial's `.py` file directly (e.g. `python spam_tutorial.py`).
+# Launch the Jupyter notebook interface
+jupyter notebook
+```
+Then, in the browser tab that opens, navigate to a `.ipynb` file you would like to run, such as `snorkel-tutorials/spam/spam_tutorial.ipynb`, and click to open it. 
+Then execute the cells in sequence.
+
+Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam_tutorial.py`).
 
 
 ## <a name="tutorials-index"> Tutorials Index </a>
