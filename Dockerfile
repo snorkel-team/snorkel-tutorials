@@ -18,7 +18,5 @@ RUN wget -O snorkel-requirements.txt \
     && pip3 install -r snorkel-requirements.txt \
     && python3 -m spacy download en_core_web_sm
 
-EXPOSE 8888
-
-ENV ENV_TUTORIAL=$TUTORIAL
-ENTRYPOINT jupyter notebook --ip=0.0.0.0 --no-browser --allow-root $ENV_TUTORIAL
+WORKDIR $TUTORIAL
+ENTRYPOINT ["jupyter", "notebook", "--ip=0.0.0.0", "--no-browser", "--allow-root"]
