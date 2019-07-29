@@ -15,30 +15,12 @@ We recommend that all users **start with the `spam` tutorial** for a gentle intr
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 
 ## Getting Started
-Running a tutorial has four required steps:
 
-1. Cloning this repo
-1. Installing repo-wide requirements
-1. Installing tutorial-specific requirements
-1. Launching a Jupyter notebook server or executing as a script
+If you're looking to quickly get started with a tutorial, we recommend using our [Docker setup](#docker).
+Otherwise, you can follow our [installation steps](#install) below.
 
-We recommend installing requirements in a virtual environment using [`virtualenv`](https://virtualenv.pypa.io/en/latest/) or [`conda`](https://docs.conda.io/en/latest/).
-For example, if you use pip, first activate your virtualenv if you're using one, then run:
-```
-# Install requirements (both shared and tutorial-specific)
-pip3 install -r requirements.txt
-pip3 install -r spam/requirements.txt
+### <a name="docker"> Running with Docker </a>
 
-# Launch the Jupyter notebook interface
-jupyter notebook
-```
-Then, in the browser tab that opens, navigate to a `.ipynb` file you would like to run, such as `snorkel-tutorials/spam/spam_tutorial.ipynb`, and click to open it. 
-Then execute the cells in sequence.
-
-Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam_tutorial.py`).
-
-
-## Running with Docker
 We've included a Docker setup for our tutorials to make setup easy.
 First, make sure you have [Docker installed](https://docs.docker.com/install/) on your machine.
 To build and run a Docker image for a tutorial, use `scripts/docker_launch.py` with the `--build` flag.
@@ -48,13 +30,43 @@ For example, run the following for the `spam` tutorial:
 python3 scripts/docker_launch.py spam --build
 ```
 
-This will make a Jupyter notebook server available on port 8888.
-You can change the port with the `--port` option.
+This will make a Jupyter notebook server available on port 8888
+(you can change the port with the `--port` command line option)
+and print out a link you can follow to access the browser interface.
+In your browser, open a `.ipynb` file you would like to run &mdash;
+such as `spam_tutorial.ipynb` &mdash; and execute the cells in sequence.
+
 Once an image has been built, you can run it without the `--build` flag:
 
 ```bash
 python3 scripts/docker_launch.py spam
 ```
+
+### <a name="install"> Installing yourself </a>
+
+Running a tutorial has four required steps:
+
+1. Cloning this repo
+1. Installing repo-wide requirements
+1. Installing tutorial-specific requirements
+1. Launching a Jupyter notebook server or executing as a script
+
+We recommend installing requirements in a virtual environment using [`virtualenv`](https://virtualenv.pypa.io/en/latest/) or [`conda`](https://docs.conda.io/en/latest/).
+For example, if you use pip, first activate your virtualenv if you're using one, then run:
+
+```bash
+# Install requirements (both shared and tutorial-specific)
+pip3 install -r requirements.txt
+pip3 install -r spam/requirements.txt
+
+# Launch the Jupyter notebook interface
+jupyter notebook
+```
+Then in the browser tab that opens, navigate to a `.ipynb` file you would like to run &mdash;
+such as `spam/spam_tutorial.ipynb` &mdash; and execute the cells in sequence.
+
+Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam_tutorial.py`).
+
 
 ## <a name="tutorials-index"> Tutorials Index </a>
 Here we provide an index pointing to different available tutorials by their task type, techniques, and integrations.
