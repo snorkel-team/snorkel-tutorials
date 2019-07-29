@@ -11,30 +11,61 @@ The Snorkel tutorials are grouped by application, with some applications having 
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
 
-## Getting Started
-Start with the `spam` tutorial for a gentle introduction to the concepts and classes of Snorkel.
+We recommend that all users **start with the `spam` tutorial** for a gentle introduction to the concepts and classes of Snorkel.  
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 
-To run a tutorial in a jupyter notebook, run the following commands, which create a virtual environment, install requirements, create an ipython kernel, and launch Jupyter:
+## Getting Started
+
+Step one is cloning this repo.
+If you're looking to quickly get started with a tutorial, we recommend using our [Docker setup](#docker).
+If you want to install things yourself, you can follow our [installation steps](#install) below instead.
+
+### <a name="docker"> Running with Docker </a>
+
+We've included a Docker setup for our tutorials to make setup easy.
+First, make sure you have [Docker installed](https://docs.docker.com/install/) on your machine.
+To build and run a Docker image for a tutorial, use `scripts/docker_launch.py` with the `--build` flag.
+For example, run the following for the `spam` tutorial:
+
 ```bash
-TUTORIAL="spam"  # Change this to the name of the directory for the tutorial you want
-
-# Create virtual env
-VIRTUALENV=".env_${TUTORIAL}"
-virtualenv $VIRTUALENV
-source $VIRTUALENV/bin/activate  # Activate the created virtual environment
-pip3 install -r requirements.txt  # Requirements shared among all tutorials
-cd $TUTORIAL
-pip3 install -r requirements.txt  # Requirements specific to this tutorial
-
-# Launch Jupyter
-jupyter notebook
-
-# To deactivate the virtual environment when you are done, run `deactivate`.
+python3 scripts/docker_launch.py spam --build
 ```
-Then, in the browser tab that opens, select the notebook you would like to run.
 
-Alternatively, to run the tutorial as a script, skip the Jupyter launch command and run the tutorial's `.py` file directly (e.g. `python spam_tutorial.py`).
+This will make a Jupyter notebook server available on port 8888
+(you can change the port with the `--port` command line option)
+and print out a link you can follow to access the browser interface.
+In your browser, open a `.ipynb` file you would like to run &mdash;
+such as `spam_tutorial.ipynb` &mdash; and execute the cells in sequence.
+
+Once an image has been built, you can run it without the `--build` flag:
+
+```bash
+python3 scripts/docker_launch.py spam
+```
+
+### <a name="install"> Installing yourself </a>
+
+Running a tutorial has three required steps if you're installing yourself:
+
+1. Installing repo-wide requirements
+1. Installing tutorial-specific requirements
+1. Launching a Jupyter notebook server or executing as a script
+
+We recommend installing requirements in a virtual environment using [`virtualenv`](https://virtualenv.pypa.io/en/latest/) or [`conda`](https://docs.conda.io/en/latest/).
+For example, if you use pip, first activate your virtualenv if you're using one, then run:
+
+```bash
+# Install requirements (both shared and tutorial-specific)
+pip3 install -r requirements.txt
+pip3 install -r spam/requirements.txt
+
+# Launch the Jupyter notebook interface
+jupyter notebook
+```
+Then in the browser tab that opens, navigate to a `.ipynb` file you would like to run &mdash;
+such as `spam/spam_tutorial.ipynb` &mdash; and execute the cells in sequence.
+
+Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam_tutorial.py`).
 
 
 ## <a name="tutorials-index"> Tutorials Index </a>
