@@ -41,7 +41,7 @@ Alternatively, you can run the tutorial as a script by calling `python3` on the 
 ## Running with Docker
 We've included a Docker setup for our tutorials to make setup easy.
 First, make sure you have [Docker installed](https://docs.docker.com/install/) on your machine.
-To build and run a Docker image for a tutorial, use `scripts/launch_docker.py` with the `--build` flag.
+To build and run a Docker image for a tutorial, use `scripts/docker_launch.py` with the `--build` flag.
 For example, run the following for the `spam` tutorial:
 
 ```bash
