@@ -16,8 +16,9 @@ All other tutorials assume that you have already completed that tutorial and are
 
 ## Getting Started
 
+Step one is cloning this repo.
 If you're looking to quickly get started with a tutorial, we recommend using our [Docker setup](#docker).
-Otherwise, you can follow our [installation steps](#install) below.
+If you want to install things yourself, you can follow our [installation steps](#install) below instead.
 
 ### <a name="docker"> Running with Docker </a>
 
@@ -44,9 +45,8 @@ python3 scripts/docker_launch.py spam
 
 ### <a name="install"> Installing yourself </a>
 
-Running a tutorial has four required steps:
+Running a tutorial has three required steps if you're installing yourself:
 
-1. Cloning this repo
 1. Installing repo-wide requirements
 1. Installing tutorial-specific requirements
 1. Launching a Jupyter notebook server or executing as a script
