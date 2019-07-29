@@ -3,14 +3,15 @@
 # # Multi-Task Learning (MTL) Basics Tutorial
 
 # %% [markdown]
-# Multi-task learning is becoming a standard tool for the modern ML practioner. 
+# Multi-task learning is becoming a standard tool for the modern ML practioner.
+# (See Sebastian Ruder's [survey](http://ruder.io/multi-task/) from 2017 for a nice overview).
 # It often leads to computational gains (one model performing many tasks takes up less memory and storage) as well as performance gains (learning to do well on a related _auxiliary_ task can improve the model's ability on the _primary_ task).
 # A major requirement of multi-task learning in general is the ability to easily *add new datasets, label sets, tasks, and metrics* (and just as easily remove them). Thus, in the Snorkel multi-task model design, each of these concepts have been decoupled.
 
 # %% [markdown]
 # The purpose of this tutorial is to introduce the basic interfaces and flow of the multi-task learning tools within Snorkel (we assume that you have prior experience with MTL, so we don't motivate or explain multi-task learning at large here).
 #
-# In this notebook, we'll look at a simple MTL model with only two tasks, each having distinct data and only one set of ground truth labels ("gold" labels). We'll also use data where the raw data is directly usable as features, for simplicity (i.e., unlike text data, where we would first need to tokenize and transform the data into token ids). 
+# In this notebook, we'll look at a simple MTL model with only two tasks, each having distinct data and only one set of ground truth labels ("gold" labels). We'll also use data where the raw data is directly usable as features, for simplicity (i.e., unlike text data, where we would first need to tokenize and transform the data into token ids).
 # At the end, you'll fill in the missing details to add a third task to the model.
 
 # %% [markdown]
@@ -38,23 +39,26 @@ set_seed(SEED)
 # We'll visualize these decision boundaries in a few cells.
 #
 # _Note: In this toy example, we don't expect these specific tasks to help the model improve on the other task, but this is often a benefit of joint training in MTL settings._
-
 # %%
+import os
+
+# Make sure we're running from the spam/ directory
+if os.path.basename(os.getcwd()) == "snorkel-tutorials":
+    os.chdir("mtl")
+# %%
+from utils import make_circle_data, make_square_data
 import numpy as np
 
-N = 500  # Data points per dataset
+N = 1000  # Data points per dataset
 R = 1  # Unit distance
 
-# Dataset 0 ("circle")
-circle_data = np.random.uniform(0, 1, size=(N, 2)) * 2 - 1
-circle_labels = circle_data[:, 0] ** 2 + circle_data[:, 1] ** 2 < R
+circle_data_splits, circle_label_splits = make_circle_data(N, R)
+square_data_splits, square_label_splits = make_square_data(N, R)
 
-# Dataset 1 ("square")
-square_data = np.random.uniform(0, 1, size=(N, 2)) * 2 - 1
-square_labels = (abs(square_data[:, 0]) < 0.5) * (abs(square_data[:, 1]) < 0.5)
-
-# %% [markdown]
-# Note that, as is the case throughout the Snorkel repo, the **label -1 is reserved for abstaining/no label**; all actual labels have non-negative integer values: 0, 1, 2, .... This provides flexibility for supervision sources to label only portions of a dataset, for example.
+# %%
+print(f"Data splits: {list(circle_data_splits.keys())}")
+print(f"Training data shape: {circle_data_splits['train'].shape}")
+print(f"Label space: {set(circle_label_splits['train'])}")
 
 # %% [markdown]
 # And we can view the ground truth labels of our tasks visually to confirm our intuition on what the decision boundaries look like.
@@ -66,49 +70,28 @@ import matplotlib.pyplot as plt
 
 fig, axs = plt.subplots(1, 2)
 
-axs[0].scatter(circle_data[:, 0], circle_data[:, 1], c=circle_labels)
+scatter = axs[0].scatter(
+    circle_data_splits["train"][:, 0],
+    circle_data_splits["train"][:, 1],
+    c=circle_label_splits["train"],
+)
 axs[0].set_aspect("equal", "box")
 axs[0].set_title("Circle Dataset", fontsize=10)
+axs[0].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-axs[1].scatter(square_data[:, 0], square_data[:, 1], c=square_labels)
+scatter = axs[1].scatter(
+    square_data_splits["train"][:, 0],
+    square_data_splits["train"][:, 1],
+    c=square_label_splits["train"],
+)
 axs[1].set_aspect("equal", "box")
 axs[1].set_title("Square Dataset", fontsize=10)
+axs[1].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
 plt.show()
 
 # %% [markdown]
-# Here, we wrap the `train_test_split` function to split the data into train/valid/test splits.
-
-# %%
-from sklearn.model_selection import train_test_split
-
-
-def split_data(data, labels, seed=123):
-    """Split data twice using sklearn train_test_split helper."""
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        data, labels, test_size=0.2, random_state=SEED
-    )
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_train, y_train, test_size=0.1, random_state=SEED
-    )
-
-    return (
-        {"train": X_train, "valid": X_val, "test": X_test},
-        {"train": y_train, "valid": y_val, "test": y_test},
-    )
-
-
-# %% [markdown]
-# We'll now divide the synthetic `circle_data` and `square_data` into train/valid/test splits using our helper function `split_data()`.
-
-# %%
-circle_data_splits, circle_label_splits = split_data(
-    circle_data, circle_labels, seed=SEED
-)
-square_data_splits, square_label_splits = split_data(
-    square_data, square_labels, seed=SEED
-)
+# Note that, as is the case throughout the Snorkel repo, all ground truth labels have non-negative integer values: 0, 1, 2, etc. **The label -1 is reserved for abstaining/no label.** This ability to abstain provides flexibility for supervision sources to label only portions of a dataset (abstaining on the rest), for example.
 
 # %% [markdown]
 # ## Make DataLoaders
@@ -154,9 +137,9 @@ for split in ["train", "valid", "test"]:
 # %% [markdown]
 # A `Task` represents a path through a neural network. In `SnorkelClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each example will make a forward pass.
 #
-# To specify this sequence of modules, each `Task` defines a **module pool** (a set of modules that it relies on) and a **task flow**—a sequence of `Operation`s. Each `Operation` defines a module and the inputs to feed to that module. These inputs are described with a list of tuples, where each tuple is either (`_input_`, \[field_name\]), or the name of a previous operation and the index of its output to use (most modules have only a single output, so the second element of these tuples is almost always 0).
+# To specify this sequence of modules, each `Task` defines a **module pool** (a set of modules that it relies on) and a **task flow**—a sequence of `Operation`s. Each `Operation` defines a module and the inputs to feed to that module. These inputs are described with a list of tuples, where each tuple has the name of a previous operation (or the keyword `_input_` to denote the original input) and either the name of a field (e.g., if the output of that operation is a `dict`) or an index (e.g., if the output of that operation is a `list` or `tuple`). Most PyTorch modules output a single tensor, so most of the time, the second element of this tuple is 0.
 #
-# For example, below we define the module pool and task flow for the circle task:
+# As an example, below we define the module pool and task flow for the circle task:
 
 # %%
 import torch.nn as nn
@@ -183,7 +166,7 @@ op2 = Operation(
 task_flow = [op1, op2]
 
 # %% [markdown]
-# A dictionary containing the outputs of all operations will then go into a `loss_func()` to calculate the loss (e.g., cross-entropy) during training or an `output_func()` (e.g., softmax) to convert the logits into a prediction. 
+# A dictionary containing the outputs of all operations will then go into a `loss_func()` to calculate the loss (e.g., cross-entropy) during training or an `output_func()` (e.g., softmax) to convert the logits into a prediction.
 # Both of these functions accept as an argument the name of the operation whose output they should use to calculate their respective values; in this case, that will be the `circle_head` operation.
 # We indicate that here with the `partial` helper method, which can set the value of that keyword argument before the function is actually called.
 # (As you'll see below, for common classification tasks, the default values for these arguments often suffice).
@@ -250,7 +233,7 @@ model = SnorkelClassifier([circle_task, square_task])
 # %%
 from snorkel.classification import Trainer
 
-trainer_config = {"progress_bar": True, "n_epochs": 10, "lr": 0.02}
+trainer_config = {"progress_bar": False, "n_epochs": 10, "lr": 0.02}
 
 trainer = Trainer(**trainer_config)
 trainer.fit(model, dataloaders)
@@ -275,9 +258,8 @@ model.score(dataloaders)
 # %% [markdown]
 # To check your understanding of how to use the multi-task `SnorkelClassifier`, see if you can add a task to this multi-task model.
 #
-# In this case, we'll pretend that we have training data for this third task, but no test data; that is, its only purpose is to provide additional training signal that might be helpful for the other two tasks.
-#
-# We'll generate the data for you: let's call it the `inv_circle_task`, since it will have the same distribution as our circle data, but with the inverted (flipped) labels.
+# We'll generate the data for you (again, with a train, valid, and test split).
+# Let's call it the `inv_circle_task`, since it will have the same distribution as our circle data, but with the inverted (flipped) labels.
 # Intuitively, a model that is very good at telling whether a point is within a certain region should also be very good at telling if it's outside the region.
 #
 # By sharing some layers (the `base_mlp`), this new task will help the model to learn a representation that benefits the `circle_task` as well.
@@ -287,10 +269,44 @@ model.score(dataloaders)
 # ### Create the data
 
 # %%
-# We flip the inequality when generating the labels so that our positive class is now _outside_ the circle.
+from utils import make_inv_circle_data
 
-inv_circle_data = torch.FloatTensor(np.random.uniform(0, 1, size=(N, 2)) * 2 - 1)
-inv_circle_labels = (inv_circle_data[:, 0] ** 2 + inv_circle_data[:, 1] ** 2 > R).long()
+# We flip the inequality when generating the labels so that our positive class is now _outside_ the circle.
+inv_circle_data_splits, inv_circle_label_splits = make_inv_circle_data(N, R)
+
+# %%
+import matplotlib.pyplot as plt
+
+fig, axs = plt.subplots(1, 3)
+
+scatter = axs[0].scatter(
+    circle_data_splits["train"][:, 0],
+    circle_data_splits["train"][:, 1],
+    c=circle_label_splits["train"],
+)
+axs[0].set_aspect("equal", "box")
+axs[0].set_title("Circle Dataset", fontsize=10)
+axs[0].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
+
+scatter = axs[1].scatter(
+    inv_circle_data_splits["train"][:, 0],
+    inv_circle_data_splits["train"][:, 1],
+    c=inv_circle_label_splits["train"],
+)
+axs[1].set_aspect("equal", "box")
+axs[1].set_title("Inverted Circle Dataset", fontsize=10)
+axs[1].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
+
+scatter = axs[2].scatter(
+    square_data_splits["train"][:, 0],
+    square_data_splits["train"][:, 1],
+    c=square_label_splits["train"],
+)
+axs[2].set_aspect("equal", "box")
+axs[2].set_title("Square Dataset", fontsize=10)
+axs[2].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
+
+plt.show()
 
 # %% [markdown]
 # ### Create the DictDataLoader
@@ -301,8 +317,8 @@ inv_circle_labels = (inv_circle_data[:, 0] ** 2 + inv_circle_data[:, 1] ** 2 > R
 # - The Y_dict should map a task name to a set of labels. This will tell the model what path through the network to use when making predictions or calculating loss on batches from this dataset. At this point we haven't yet defined our
 
 # %%
-X_dict = {}  # Fill me in
-Y_dict = {}  # Fill me in
+X_dict = {}  # Update this line
+Y_dict = {}  # Update this line
 inv_dataset = DictDataset("InvCircleDataset", "train", X_dict, Y_dict)
 inv_dataloader = DictDataLoader(dataset=inv_dataset, batch_size=32)
 
@@ -321,9 +337,9 @@ all_dataloaders = dataloaders + [inv_dataloader]
 # %%
 # Uncomment and fill in the arguments to creat a Task object for the inverse_circle task.
 # inv_circle_task = Task(
-#     name="",  # Fill me in
-#     module_pool=nn.ModuleDict({}),  # Fill me in
-#     task_flow=[],  # Fill me in
+#     name="",  # Update this line
+#     module_pool=nn.ModuleDict({}),  # Update this line
+#     task_flow=[],  # Update this line
 # )
 
 # %% [markdown]
@@ -334,7 +350,7 @@ all_dataloaders = dataloaders + [inv_dataloader]
 
 # %%
 # Add your new task to the list of tasks for creating the MTL model
-model = SnorkelClassifier([circle_task, square_task])  # Fill me in
+model = SnorkelClassifier([circle_task, square_task])  # Update this line
 
 # %% [markdown]
 # ### Train the model
@@ -350,12 +366,12 @@ model.score(all_dataloaders)
 # ### Validation
 
 # %% [markdown]
-# If you successfully added the appropriate task, the previous command should have succesfully trained and reported scores in the high 90s for all datasets and splits, including for the new `inv_circle_task`.
-# The following assert statement should also pass if you uncomment and run it.
+# If you successfully added the appropriate task, the previous command should have succesfully trained and reported scores in the mid to high 90s for all datasets and splits, including for the splits belonging to the new `inv_circle_task`.
+# The following assert statements should also pass if you uncomment and run it.
 
 # %%
-assert len(model.tasks) == 3
-assert len(model.module_pool) == 4  # 1 shared module plus 3 separate task heads
+# assert len(model.tasks) == 3
+# assert len(model.module_pool) == 4  # 1 shared module plus 3 separate task heads
 
 # %% [markdown]
 # ## Summary
