@@ -3,12 +3,15 @@
 # # Multi-Task Learning (MTL) Basics Tutorial
 
 # %% [markdown]
-# Multi-task learning is becoming a standard tool for the modern ML practioner. A major requirement of this approach is the ability to easily *add new datasets, label sets, tasks, and metrics* (and just as easily remove them). Thus, in the Snorkel multi-task model design, each of these concepts have been decoupled.
+# Multi-task learning is becoming a standard tool for the modern ML practioner. 
+# It often leads to computational gains (one model performing many tasks takes up less memory and storage) as well as performance gains (learning to do well on a related _auxiliary_ task can improve the model's ability on the _primary_ task).
+# A major requirement of multi-task learning in general is the ability to easily *add new datasets, label sets, tasks, and metrics* (and just as easily remove them). Thus, in the Snorkel multi-task model design, each of these concepts have been decoupled.
 
 # %% [markdown]
-# The purpose of this tutorial is to introduce the basic interfaces and flow of the multi-task learning tools within Snorkel (we assume that you have prior experience with MTL, so we don't motivate or explain multi-task learning at large here.
+# The purpose of this tutorial is to introduce the basic interfaces and flow of the multi-task learning tools within Snorkel (we assume that you have prior experience with MTL, so we don't motivate or explain multi-task learning at large here).
 #
-# In this notebook, we'll look at a simple MTL model with only two tasks, each having distinct data and only one set of ground truth labels ("gold" labels). We'll also use data where the raw data is directly usable as features, for simplicity (i.e., unlike text data, where we would first need to tokenize and transform the data into token ids).
+# In this notebook, we'll look at a simple MTL model with only two tasks, each having distinct data and only one set of ground truth labels ("gold" labels). We'll also use data where the raw data is directly usable as features, for simplicity (i.e., unlike text data, where we would first need to tokenize and transform the data into token ids). 
+# At the end, you'll fill in the missing details to add a third task to the model.
 
 # %% [markdown]
 # ## Environment Setup
@@ -180,7 +183,10 @@ op2 = Operation(
 task_flow = [op1, op2]
 
 # %% [markdown]
-# The output of the final module in that sequence will then go into a `loss_func()` to calculate the loss (e.g., cross-entropy) during training or an `output_func()` (e.g., softmax) to convert the logits into a prediction. Each of these functions accepts as the first argument the final `module_name` to indicate inputs—we indicate this with the `partial(fn, module_name)` syntax.
+# A dictionary containing the outputs of all operations will then go into a `loss_func()` to calculate the loss (e.g., cross-entropy) during training or an `output_func()` (e.g., softmax) to convert the logits into a prediction. 
+# Both of these functions accept as an argument the name of the operation whose output they should use to calculate their respective values; in this case, that will be the `circle_head` operation.
+# We indicate that here with the `partial` helper method, which can set the value of that keyword argument before the function is actually called.
+# (As you'll see below, for common classification tasks, the default values for these arguments often suffice).
 #
 # Each `Task` also specifies which metrics it supports, which are bundled together in a `Scorer` object. For this tutorial, we'll just look at accuracy.
 
@@ -196,8 +202,8 @@ circle_task = Task(
     name="circle_task",
     module_pool=module_pool,
     task_flow=task_flow,
-    loss_func=partial(ce_loss, "circle_head"),
-    output_func=partial(softmax, "circle_head"),
+    loss_func=partial(ce_loss, op_name="circle_head"),
+    output_func=partial(softmax, op_name="circle_head"),
     scorer=Scorer(metrics=["accuracy"]),
 )
 
