@@ -228,7 +228,6 @@ print(f"Augmented training set size: {len(df_train_augmented)}")
 
 # %%
 import tensorflow as tf
-from snorkel.analysis.utils import set_seed
 
 
 def train_and_test(
