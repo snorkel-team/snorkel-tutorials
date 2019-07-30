@@ -4,12 +4,14 @@
 
 # %% [markdown]
 # In this tutorial, we will walk through the process of using Snorkel to build a training set for classifying YouTube comments as `SPAM` or `HAM` (not spam).
+# The goal of this tutorial is to illustrate the basic components and concepts of Snorkel in a simple way, but also to dive into the actual process of iteratively developing real applications in Snorkel.
 # For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
 # You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
 #
 # For our task, we have access to a large amount of *unlabeled data* in the form of YouTube comments with some metadata.
 # Our goal is to train a classifier over the comment data that can predict whether a comment is spam or not.
-# To do that, we need to label our data, but doing so manually is a slow and often prohibitively expensive process.
+# To do that, we need to label our data, but doing so for real world applications can be prohibitively slow and expensive, often taking person-weeks or months of hand-labeling.
+#
 # We therefore turn to weak supervision using **_labeling functions_**, or noisy, programmatic heuristics, to assign labels to unlabeled training data efficiently.
 # We also have access to a small amount of labeled data, which we only use for evaluation purposes.
 #
@@ -163,22 +165,8 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 #
 # 1. Look at examples to generate ideas for LFs
 # 1. Write an initial version of an LF
-# 1. Estimate its performance by looking at examples in the training set or development set
+# 1. Spot check its performance by looking at its output on examples in the training set (or development set if available)
 # 1. Refine and debug to improve coverage or accuracy as necessary
-#
-# Labeling function development is a creative process.
-# However, there are a few principles that we highly recommend using when developing labeling functions.
-#
-# * **Use the unlabeled training set for ideation whenever possible.** Reserve labeled examples for evaluation in order to avoid overfitting LFs or models.
-# * **Develop labeling functions in isolation.** Avoid using a "boosting" approach, trying to develop LFs specifically to interact with behavior of existing LFs. If you use the existing LFs to identify uncovered areas of the data, generalize the observed pattern rather than writing an LF to cover those exact examples.
-# * **Prioritize accuracy over coverage, except when accuracy is very high.** Very accurate LFs often result in higher performance models than ones with more coverage. However, coverage is often more difficult to obtain. So choose a 90% accuracy and 30% coverage version of an LF over a 95% accuracy and 10% coverage version. But choose an 80% accuracy LF and 20% coverage version of an LF over a 65% accuracy and 40% coverage version.
-# * **Try to cover as many data points as possible, but avoid overfitting.** In order to extract the most value out of your training set, regularly identify areas of the training set that haven't been covered yet and create new LFs that cover them. Don't obssess over covering the entire data set, as LFs written to cover outliers won't generalize.
-# * **Aim to have overlaps.** We'll train a _label model_ to denoise and combine the outputs of our LFs. The label model learns from overlaps and conflicts between LFs, so it's helpful if multiple LFs cover certain areas of the data set.
-#
-# Of course, rules are meant to be broken.
-# For example, we can sometimes increase performance by adding LFs that label only if certain others don't.
-# And in some advanced problems, a 95% accurancy and 10% coverage LF may in fact be preferable to a 90% accurancy and 30% coverage one.
-# Use the principles above to guide your process, but don't treat them as hard-and-fast rules.
 #
 # Our goal for LF development is to create a high quality set of training labels for our unlabeled data set,
 # not to label everything or directly create a model for inference using the LFs.
@@ -188,10 +176,10 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 # We'll walk through the development of two LFs using basic analysis tools in Snorkel, then provide a full set of LFs that we developed for this tutorial.
 
 # %% [markdown]
-# ### a) Initial ideation: look at training examples
+# ### a) Exploring the development set for initial ideas
 
 # %% [markdown]
-# Following recommended practice above, we'll start by looking at the `train` set to generate some ideas for LFs.
+# We'll start by looking at the `train` set to generate some ideas for LFs.
 
 # %%
 df_train[["author", "text", "video"]].sample(20, random_state=2)
@@ -205,7 +193,6 @@ df_train[["author", "text", "video"]].sample(20, random_state=2)
 
 # %% [markdown]
 # Labeling functions in Snorkel are created with the `@labeling_function()` decorator, which wraps a function for evaluating on a single data point (in this case, a row of the DataFrame).
-# Decorators are a convenient Python mechanism for automatically extending the behavior of the decorated function, and you can learn more [here](https://realpython.com/primer-on-python-decorators/).
 #
 # Let's start developing an LF to catch instances of commenters trying to get people to "check out" their channel, video, or website.
 # We'll start by just looking for the exact string `"check out"` in the text, and compare that to looking for just `"check"` in the text.
@@ -220,21 +207,13 @@ def check(x):
     return SPAM if "check" in x.text.lower() else ABSTAIN
 
 
-check
-
-
 # %%
 @labeling_function()
 def check_out(x):
     return SPAM if "check out" in x.text.lower() else ABSTAIN
 
 
-check_out
-
 # %% [markdown]
-# It looks like our LFs can have something called a Preprocessor.
-# More on that later.
-#
 # To apply one or more LFs that we've written to a collection of data points, we use an `LFApplier`. Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasLFApplier`.
 
 # %%
@@ -288,7 +267,7 @@ LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 
 # %% [markdown]
 # So even these very simple rules do quite well!
-# Following our principle above, we might want to pick the `check` rule, since both have high precision and `check` has higher coverage.
+# We might want to pick the `check` rule, since both have high precision and `check` has higher coverage.
 # But let's look at our data to be sure.
 #
 # The helper method `error_buckets()` groups examples by their predicted label and true label. For example, `buckets[(SPAM, HAM)]` contains the indices of data points that the LF labeled `SPAM` that actually belong to class `HAM`. This may give ideas for where the LF could be made more specific.
