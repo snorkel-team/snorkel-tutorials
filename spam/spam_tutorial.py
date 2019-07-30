@@ -18,7 +18,7 @@
 #
 # 2. **Writing Labeling Functions**: We write Python programs that take as input a data point and assign labels (or abstain) using heuristics, pattern matching, and third-party models.
 #
-# 3. **Combining Labeling Functions with the Label Model**: We use the outputs of the labeling functions over the training set as input to the label model, which assigns probabilistic labels to the training set.
+# 3. **Combining Labeling Function Outputs with the Label Model**: We use the outputs of the labeling functions over the training set as input to the label model, which assigns probabilistic labels to the training set.
 #
 # 4. **Training a Classifier**: We train a classifier that can predict labels for *any* YouTube comment (not just the ones labeled by the labeling functions) using the probabilistic training labels from step 3.
 
@@ -85,7 +85,15 @@
 # * The fifth video is split 50/50 between a validation set (`valid`) and `test` set.
 
 # %%
+# %matplotlib inline
+
 import os
+
+# For reproducibility
+os.environ["PYTHONHASHSEED"] = "0"
+
+# Turn off TensorFlow logging messages
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
@@ -248,7 +256,7 @@ L_train
 # ### c) Evaluate performance on training and development sets
 
 # %% [markdown]
-# We can easily calculate the coverage of these LF (i.e., the percentage of the dataset that it labels) as follows:
+# We can easily calculate the coverage of these LFs (i.e., the percentage of the dataset that they label) as follows:
 
 # %%
 coverage_check, coverage_check_out = (L_train != ABSTAIN).mean(axis=0)
@@ -376,10 +384,11 @@ df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
 # **A brief intro to `Preprocessor`s**
 #
 # Just like a `LabelingFunction` is constructed from a black-box Python function that maps a data point to an integer label,
-# a `Preprocessor` is a black-box Python function that maps a data point to a new data point.
+# a `Preprocessor` is constructed from a black-box Python function that maps a data point to a new data point.
 # `LabelingFunction`s can use `Preprocessor`s, which lets us write LFs over transformed or enhanced data points.
-# We use the `@preprocessor(...)` decorator to add extra functionality to preprocessing functions, such as memoization (i.e. input/output caching, so it doesn't re-execute for each LF that uses it).
-#
+# We add the `@preprocessor(...)` decorator to preprocessing functions to create `Preprocessor`s.
+# `Preprocessor`s also have extra functionality, such as memoization
+# (i.e. input/output caching, so it doesn't re-execute for each LF that uses it).
 #
 # We'll start by creating a `Preprocessor` that runs `TextBlob` on our comments, then extracts the polarity and subjectivity scores.
 
@@ -544,7 +553,7 @@ keyword_song = make_keyword_lf(["song"], label=HAM)
 
 # %% [markdown]
 # If we want a little more control over a keyword search, we can look for regular expressions instead.
-# The LF we developed above (`check_out_regex`) is an example of this.
+# The LF we developed above (`regex_check_out`) is an example of this.
 
 # %% [markdown]
 # ### iii.  Heuristic LFs
@@ -682,7 +691,7 @@ plot_label_frequency(L_train)
 
 # %% [markdown]
 # We see that over half of our `train` dataset data points have 2 or fewer labels from LFs.
-# Fortunately, the signal we do have can be used to train a classifier with a generic feature set, allowing it to generalize beyond what we've specified via our LFs.
+# Fortunately, the signal we do have can be used to train a classifier over the comment text directly, allowing it to generalize beyond what we've specified via our LFs.
 
 # %% [markdown]
 # ## 3. Combining Labeling Function Outputs with the Label Model
@@ -699,7 +708,7 @@ Y_pred_train = majority_model.predict(L=L_train)
 Y_pred_train
 
 # %% [markdown]
-# However, as we can clearly see by looking the summary statistics of our LFs in the previous section, they are not all equally accurate, and should ideally not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine the outputs of the LFs.
+# However, as we can clearly see by looking the summary statistics of our LFs in the previous section, they are not all equally accurate, and should not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine the outputs of the LFs.
 #
 # This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers. For more info on the API, see the [`LabelModel` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.labeling.model.html#snorkel.labeling.model.label_model.LabelModel).
 #
@@ -815,10 +824,31 @@ X_test = vectorizer.transform(words_test)
 # We use the common settings of an `Adam` optimizer and early stopping (evaluating the model on the validation set after each epoch and reloading the weights from when it achieved the best score).
 # For more information on Keras, see the [Keras documentation](https://keras.io/).
 
+# %% [markdown]
+# This next cell makes our Keras results reproducible. You can ignore it.
+
+# %%
+import numpy as np
+import random
+import tensorflow as tf
+
+seed = 1
+np.random.seed(seed)
+random.seed(seed)
+
+session_conf = tf.compat.v1.ConfigProto(
+    intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
+)
+
+from tensorflow.keras import backend as K
+
+tf.set_random_seed(seed)
+sess = tf.compat.v1.Session(graph=tf.get_default_graph(), config=session_conf)
+K.set_session(sess)
+
 # %%
 from snorkel.analysis.utils import probs_to_preds, preds_to_probs
 from snorkel.analysis.metrics import metric_score
-import tensorflow as tf
 
 # Our model is a simple linear layer mapping from feature
 # vectors to the number of labels in our problem (2).
@@ -831,7 +861,7 @@ keras_model.add(
         kernel_regularizer=tf.keras.regularizers.l2(0.001),
     )
 )
-optimizer = tf.keras.optimizers.Adam(lr=0.001)
+optimizer = tf.keras.optimizers.Adam(lr=0.01)
 keras_model.compile(
     optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
 )
@@ -863,8 +893,6 @@ print(f"Test Accuracy: {test_acc * 100:.1f}%")
 # We can compare this to the score we could have gotten if we had used our small labeled `dev` set directly as training data instead of using it to guide the creation of LFs.
 
 # %%
-import numpy as np
-
 keras_dev_model = tf.keras.Sequential()
 keras_dev_model.add(
     tf.keras.layers.Dense(
@@ -909,7 +937,7 @@ Y_preds_train_filtered = probs_to_preds(probs=Y_probs_train_filtered)
 # %%
 from sklearn.linear_model import LogisticRegression
 
-sklearn_model = LogisticRegression(C=0.001)
+sklearn_model = LogisticRegression(C=0.001, solver="liblinear")
 sklearn_model.fit(X=X_train, y=Y_preds_train_filtered)
 
 print(f"Test Accuracy: {sklearn_model.score(X=X_test, y=Y_test) * 100:.1f}%")
