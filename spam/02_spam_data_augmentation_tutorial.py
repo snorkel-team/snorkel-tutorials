@@ -92,22 +92,24 @@ import names
 import numpy as np
 from snorkel.augmentation.tf import transformation_function
 
+replacement_names = [names.get_full_name() for _ in range(20)]
+
 # TFs for replacing a random named entity with a different entity of the same type.
 @transformation_function(pre=[spacy])
 def change_person(x):
     persons = [ent.text for ent in x.doc.ents if ent.label_ == "PERSON"]
     if persons:
         to_replace = np.random.choice(persons)
-        replacement_name = names.get_full_name()
+        replacement_name = np.random.choice(replacement_names)
         x.text = x.text.replace(to_replace, replacement_name)
         return x
 
 
-# Swap two nouns at random.
+# Swap two adjectives at random.
 @transformation_function(pre=[spacy])
-def swap_nouns(x):
+def swap_adjectives(x):
     words = [token.text for token in x.doc]
-    idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "NOUN"]
+    idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "ADJ"]
     if len(idxs) < 3:
         return None
     idx1, idx2 = sorted(np.random.choice(idxs[:-1], 2))
@@ -182,7 +184,7 @@ def replace_adjective_with_synonym(x):
 # %%
 tfs = [
     change_person,
-    swap_nouns,
+    swap_adjectives,
     replace_verb_with_synonym,
     replace_noun_with_synonym,
     replace_adjective_with_synonym,
@@ -224,15 +226,23 @@ print(f"Augmented training set size: {len(df_train_augmented)}")
 # %% [markdown]
 # ## 4. Training an End Model
 #
-# Our final step is to use the augmented data to train a model. We train an LSTM (Long Short Term Memory) model, which is a commonly used architecture for text processing tasks.
+# Our final step is to use the augmented data to train a model. We train an LSTM (Long Short Term Memory) model, which is a very standard architecture for text processing tasks. We start with with boilerplate code for creating an LSTM model.
 
 # %%
 import tensorflow as tf
 
 
-def train_and_test(
-    train_set, train_labels, num_buckets=30000, embed_dim=16, rnn_state_size=64
-):
+def get_lstm_model(num_buckets, embed_dim=16, rnn_state_size=64):
+    lstm_model = tf.keras.Sequential()
+    lstm_model.add(tf.keras.layers.Embedding(num_buckets, embed_dim))
+    lstm_model.add(tf.keras.layers.LSTM(rnn_state_size, activation=tf.nn.relu))
+    lstm_model.add(tf.keras.layers.Dense(1, activation=tf.nn.sigmoid))
+    lstm_model.compile("Adagrad", "binary_crossentropy", metrics=["accuracy"])
+    return lstm_model
+
+
+# %%
+def train_and_test(train_set, train_labels, num_buckets=30000):
     def map_pad_or_truncate(string, max_length=30):
         ids = tf.keras.preprocessing.text.hashing_trick(
             string, n=num_buckets, hash_function="md5"
@@ -240,15 +250,7 @@ def train_and_test(
         return ids[:max_length] + [0] * (max_length - len(ids))
 
     train_tokens = np.array(list(map(map_pad_or_truncate, train_set.text)))
-    lstm_model = tf.keras.Sequential()
-    lstm_model.add(tf.keras.layers.Embedding(num_buckets, embed_dim))
-    lstm_model.add(tf.keras.layers.LSTM(rnn_state_size, activation=tf.nn.relu))
-    lstm_model.add(tf.keras.layers.Dense(1, activation=tf.nn.sigmoid))
-    lstm_model.compile("Adagrad", "binary_crossentropy", metrics=["accuracy"])
-
-    early_stopping = tf.keras.callbacks.EarlyStopping(
-        monitor="val_acc", patience=10, verbose=1, restore_best_weights=True
-    )
+    lstm_model = get_lstm_model(num_buckets)
 
     valid_tokens = np.array(list(map(map_pad_or_truncate, df_valid.text)))
 
@@ -257,7 +259,11 @@ def train_and_test(
         train_labels,
         epochs=50,
         validation_data=(valid_tokens, Y_valid),
-        callbacks=[early_stopping],
+        callbacks=[
+            tf.keras.callbacks.EarlyStopping(
+                monitor="val_acc", patience=10, verbose=1, restore_best_weights=True
+            )
+        ],
         verbose=0,
     )
 
