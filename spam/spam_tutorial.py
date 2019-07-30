@@ -18,7 +18,7 @@
 #
 # 2. **Writing Labeling Functions**: We write Python programs that take as input a data point and assign labels (or abstain) using heuristics, pattern matching, and third-party models.
 #
-# 3. **Combining Labeling Functions with the Label Model**: We use the outputs of the labeling functions over the training set as input to the label model, which assings probabilistic labels to the training set.
+# 3. **Combining Labeling Functions with the Label Model**: We use the outputs of the labeling functions over the training set as input to the label model, which assigns probabilistic labels to the training set.
 #
 # 4. **Training a Classifier**: We train a classifier that can predict labels for *any* YouTube comment (not just the ones labeled by the labeling functions) using the probabilistic training labels from step 3.
 
@@ -106,11 +106,16 @@ Y_test = df_test["label"].values
 # Let's view a few examples.
 
 # %%
+import pandas as pd
+
+# Don't truncate text fields in the display
+pd.set_option("display.max_colwidth", 0)
+
 df_dev.sample(5, random_state=3)
 
 # %% [markdown]
 # The class distribution varies slightly from class to class, but all are approximately class-balanced.
-# You can verify this by looking at the dev set labels.
+# You can verify this by looking at the `dev` set labels.
 
 # %%
 # For clarity, we define constants to represent the class labels for spam, ham, and abstaining.
@@ -146,11 +151,11 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 
 # %% [markdown]
 # Typical LF development cycles include multiple iterations of ideation, refining, evaluation, and debugging.
-# A typical cycle consists of the following steps
+# A typical cycle consists of the following steps:
 #
 # 1. Look at examples to generate ideas for LFs
 # 1. Write an initial version of an LF
-# 1. Estimate its performance by looking at examples in the training set or dev set
+# 1. Estimate its performance by looking at examples in the training set or development set
 # 1. Refine and debug to improve coverage or accuracy as necessary
 #
 # Labeling function development is a creative process.
@@ -158,14 +163,18 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 #
 # * **Use the unlabeled training set for ideation whenever possible.** Reserve labeled examples for evaluation in order to avoid overfitting LFs or models.
 # * **Develop labeling functions in isolation.** Avoid using a "boosting" approach, trying to develop LFs specifically to interact with behavior of existing LFs. If you use the existing LFs to identify uncovered areas of the data, generalize the observed pattern rather than writing an LF to cover those exact examples.
-# * **Prioritize accuracy over coverage, up to very high accuracy.** Very accurate LFs often result in higher performance models than ones with more coverage. However, coverage is often more difficult to obtain. So choose a 90% accuracy and 30% coverage version of an LF over a 95% accuracy and 10% coverage version. But choose an 80% accuracy LF and 20% coverage version of an LF over a 65% accuracy and 40% coverage version.
+# * **Prioritize accuracy over coverage, except when accuracy is very high.** Very accurate LFs often result in higher performance models than ones with more coverage. However, coverage is often more difficult to obtain. So choose a 90% accuracy and 30% coverage version of an LF over a 95% accuracy and 10% coverage version. But choose an 80% accuracy LF and 20% coverage version of an LF over a 65% accuracy and 40% coverage version.
 # * **Try to cover as many data points as possible, but avoid overfitting.** In order to extract the most value out of your training set, regularly identify areas of the training set that haven't been covered yet and create new LFs that cover them. Don't obssess over covering the entire data set, as LFs written to cover outliers won't generalize.
-# * **Aim to have overlaps and conflicts.** We'll train a _label model_ to denoise and combine the outputs of our LFs. The label model learns from overlaps and conflicts between LFs, so it's helpful if multiple LFs cover certain areas of the data set.
+# * **Aim to have overlaps.** We'll train a _label model_ to denoise and combine the outputs of our LFs. The label model learns from overlaps and conflicts between LFs, so it's helpful if multiple LFs cover certain areas of the data set.
 #
+# Of course, rules are meant to be broken.
+# For example, we can sometimes increase performance by adding LFs that label only if certain others don't.
+# And in some advanced problems, a 95% accurancy and 10% coverage LF may in fact be preferable to a 90% accurancy and 30% coverage one.
+# Use the principles above to guide your process, but don't treat them as hard-and-fast rules.
 #
-# Our goal for LF development is to create a high quality set of training labels for our unlabeled data set.
-# It's not to label everything or directly create a model for inference using the LFs.
-# The training labels are used to train a separate discriminative model (in this case, that just uses the comment text) in order to generalize to new, unseen examples.
+# Our goal for LF development is to create a high quality set of training labels for our unlabeled data set,
+# not to label everything or directly create a model for inference using the LFs.
+# The training labels are used to train a separate discriminative model (in this case, one which just uses the comment text) in order to generalize to new, unseen examples.
 # Using this model, we can make predictions for data points that our LFs don't cover.
 #
 # We'll walk through the development of two LFs using basic analysis tools in Snorkel, then provide a full set of LFs that we developed for this tutorial.
@@ -174,7 +183,7 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 # ### a) Initial ideation: look at training examples
 
 # %% [markdown]
-# Following recommended practice above, we'll start by looking at the training set to generate some ideas for LFs.
+# Following recommended practice above, we'll start by looking at the `train` set to generate some ideas for LFs.
 
 # %%
 df_train[["author", "text", "video"]].sample(20, random_state=2)
@@ -236,7 +245,7 @@ L_dev = applier.apply(df=df_dev)
 L_train
 
 # %% [markdown]
-# ### c) Evaluate performance on training and dev sets
+# ### c) Evaluate performance on training and development sets
 
 # %% [markdown]
 # We can easily calculate the coverage of these LF (i.e., the percentage of the dataset that it labels) as follows:
@@ -258,7 +267,7 @@ print(f"check_out coverage: {coverage_check_out * 100:.1f}%")
 # * **Incorrect**: The number of data points this LF labels incorrectly (if gold labels are provided)
 # * **Empirical Accuracy**: The empirical accuracy of this LF (if gold labels are provided)
 #
-# For _Correct_, _Incorrect_, and _Empirical Accuracy_, we don't want to penalize the LF for examples where it abstained.
+# For *Correct*, *Incorrect*, and *Empirical Accuracy*, we don't want to penalize the LF for examples where it abstained.
 # We calculate these statistics only over those examples where the LF output a label.
 
 # %%
@@ -279,12 +288,12 @@ LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 # %%
 from snorkel.analysis.error_analysis import error_buckets
 
-buckets = error_buckets(golds=Y_dev, preds=L_dev[:, 1])
+buckets = error_buckets(Y_dev, L_dev[:, 1])
 df_dev.iloc[buckets[(SPAM, HAM)]]
 
 # %% [markdown]
-# `check` is still looking good, since the false positive is specific to only a few of the most popular videos on YouTube (ones with billions of views).
-# Now let's take a look at some places that `check` labeled `SPAM` on the training set to see if it matches our intuition or if we can identify some false positives.
+# So `check` produced a false positive that might occur for any very popular video on YouTube.
+# Now let's take a look at some places that `check` labeled `SPAM` on the `train` set to see if it matches our intuition or if we can identify some false positives.
 
 # %%
 df_train.iloc[L_train[:, 1] == SPAM].sample(10, random_state=1)
@@ -294,7 +303,7 @@ df_train.iloc[L_train[:, 1] == SPAM].sample(10, random_state=1)
 # Let's see where `check_out` abstained, but `check` labeled.
 
 # %%
-buckets = error_buckets(golds=L_train[:, 0], preds=L_train[:, 1])
+buckets = error_buckets(L_train[:, 0], L_train[:, 1])
 df_train.iloc[buckets[(SPAM, ABSTAIN)]].sample(10, random_state=1)
 
 # %% [markdown]
@@ -333,12 +342,12 @@ LFAnalysis(L=L_train, lfs=lfs).lf_summary()
 LFAnalysis(L_dev, lfs).lf_summary(Y_dev)
 
 # %% [markdown]
-# We've split the difference in training set coverage, and increased our accuracy on the dev set to 100%!
+# We've split the difference in `train` set coverage, and increased our accuracy on the `dev` set to 100%!
 # This looks promising.
 # Let's verify that we corrected our false positive from before.
 
 # %%
-buckets = error_buckets(golds=L_dev[:, 1], preds=L_dev[:, 2])
+buckets = error_buckets(L_dev[:, 1], L_dev[:, 2])
 df_dev.iloc[buckets[(ABSTAIN, SPAM)]]
 
 # %% [markdown]
@@ -347,7 +356,7 @@ df_dev.iloc[buckets[(ABSTAIN, SPAM)]]
 # Adding false positives will increase coverage.
 
 # %%
-buckets = error_buckets(golds=L_train[:, 1], preds=L_train[:, 2])
+buckets = error_buckets(L_train[:, 1], L_train[:, 2])
 df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
 
 # %% [markdown]
@@ -364,11 +373,14 @@ df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
 # For example, the [TextBlob](https://textblob.readthedocs.io/en/dev/index.html) tool provides a pretrained sentiment analyzer. Our spam classification task is not the same as sentiment classification, but it turns out that `SPAM` and `HAM` comments have different distributions of sentiment scores.
 # We'll focus on writing LFs for `HAM`, since we identified `SPAM` comments above.
 #
-# First, we'll introduce Snorkel `Preprocessor`s.
+# **A brief intro to `Preprocessor`s**
+#
 # Just like a `LabelingFunction` is constructed from a black-box Python function that maps a data point to an integer label,
 # a `Preprocessor` is a black-box Python function that maps a data point to a new data point.
 # `LabelingFunction`s can use `Preprocessor`s, which lets us write LFs over transformed or enhanced data points.
-# We use the `@preprocessor(...)` decorator to add extra functionality to preprocessing functions, such as memoization.
+# We use the `@preprocessor(...)` decorator to add extra functionality to preprocessing functions, such as memoization (i.e. input/output caching, so it doesn't re-execute for each LF that uses it).
+#
+#
 # We'll start by creating a `Preprocessor` that runs `TextBlob` on our comments, then extracts the polarity and subjectivity scores.
 
 # %%
@@ -448,7 +460,6 @@ plt.show()
 
 # %% [markdown]
 # It looks like subjectivity scores above 0.5 will work pretty well for identifying `HAM` comments, though not perfectly.
-# Using this threshold alone, there's no way to create a more accurate (but still general) rule for targeting `HAM`.
 # We'll rely on our label model to learn that this is a lower accuracy rule.
 
 # %%
@@ -670,11 +681,11 @@ def plot_label_frequency(L):
 plot_label_frequency(L_train)
 
 # %% [markdown]
-# We see that over half of our training dataset data points have 2 or fewer labels from LFs.
-# Fortunately, the signal we do have be used to train a classifier with a larger feature set than just these labeling functions that we've created, allowing it to generalize beyond what we've specified.
+# We see that over half of our `train` dataset data points have 2 or fewer labels from LFs.
+# Fortunately, the signal we do have can be used to train a classifier with a generic feature set, allowing it to generalize beyond what we've specified via our LFs.
 
 # %% [markdown]
-# ## 3. Combining Labeling Functions with the Label Model
+# ## 3. Combining Labeling Function Outputs with the Label Model
 
 # %% [markdown]
 # Our goal is now to convert the labels from our LFs into a single _noise-aware_ probabilistic (or confidence-weighted) label per data point.
@@ -720,7 +731,7 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 
 # %% [markdown]
 # We can also run error analysis after the label model has been trained.
-# For example, let's take a look at false positives from the dev set, which might inspire some more LFs that vote `SPAM`.
+# For example, let's take a look at false positives from the `dev` set, which might inspire some more LFs that vote `SPAM`.
 
 # %%
 Y_dev_prob = majority_model.predict_proba(L=L_dev)
@@ -753,7 +764,7 @@ plot_probabilities_histogram(Y_probs_train[:, SPAM])
 # ### Filtering out unlabeled data points
 
 # %% [markdown]
-# As we saw earlier, some of the data points in our training set received no labels from our LFs.
+# As we saw earlier, some of the data points in our `train` set received no labels from any of our LFs.
 # These examples convey no supervision signal and tend to hurt performance, so we filter them out before training.
 
 # %%
@@ -805,11 +816,9 @@ X_test = vectorizer.transform(words_test)
 # For more information on Keras, see the [Keras documentation](https://keras.io/).
 
 # %%
-from snorkel.analysis.utils import probs_to_preds, preds_to_probs, set_seed
+from snorkel.analysis.utils import probs_to_preds, preds_to_probs
 from snorkel.analysis.metrics import metric_score
 import tensorflow as tf
-
-set_seed(1)
 
 # Our model is a simple linear layer mapping from feature
 # vectors to the number of labels in our problem (2).
@@ -851,12 +860,10 @@ print(f"Test Accuracy: {test_acc * 100:.1f}%")
 # we were able to generalize beyond the noisy labeling heuristics**.
 
 # %% [markdown]
-# We can compare this to the score we could have gotten if we had used our small labeled dev set directly as training data instead of using it to guide the creation of LFs.
+# We can compare this to the score we could have gotten if we had used our small labeled `dev` set directly as training data instead of using it to guide the creation of LFs.
 
 # %%
 import numpy as np
-
-set_seed(1)
 
 keras_dev_model = tf.keras.Sequential()
 keras_dev_model.add(
