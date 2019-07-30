@@ -47,7 +47,6 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("mtl")
 # %%
 from utils import make_circle_data, make_square_data
-import numpy as np
 
 N = 1000  # Data points per dataset
 R = 1  # Unit distance
