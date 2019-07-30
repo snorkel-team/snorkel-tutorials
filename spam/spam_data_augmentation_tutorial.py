@@ -44,7 +44,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # %%
 from utils import load_spam_dataset
 
-df_train, _, df_valid, df_test = load_spam_dataset(load_train_labels=False)
+df_train, _, df_valid, df_test = load_spam_dataset(load_train_labels=True)
 
 # We pull out the label vectors for ease of use later
 Y_valid = df_valid["label"].values
@@ -211,7 +211,7 @@ from snorkel.augmentation.policy import RandomPolicy
 
 policy = RandomPolicy(len(tfs), sequence_length=2, n_per_original=2, keep_original=True)
 tf_applier = PandasTFApplier(tfs, policy)
-df_train_augmented = tf_applier.apply(df_train).infer_objects()
+df_train_augmented = tf_applier.apply(df_train)
 Y_train_augmented = df_train_augmented["label"].values
 
 # %%
