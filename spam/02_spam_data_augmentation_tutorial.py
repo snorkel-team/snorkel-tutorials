@@ -92,7 +92,7 @@ import names
 import numpy as np
 from snorkel.augmentation.tf import transformation_function
 
-replacement_names = [names.get_full_name() for _ in range(20)]
+replacement_names = [names.get_full_name() for _ in range(50)]
 
 # TFs for replacing a random named entity with a different entity of the same type.
 @transformation_function(pre=[spacy])
@@ -204,20 +204,26 @@ for tf in tfs:
 
 # %% [markdown]
 # To apply one or more TFs that we've written to a collection of data points, we use a `TFApplier`.
-# Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasTFApplier` class. In addition, we can apply multiple TFs in a sequence to each example. A `policy` is used to determine what sequence of TFs to apply to each example. In this case, we just use a `RandomPolicy` that picks 3 TFs at random per example. The `n_per_original` argument determines how many augmented examples to generate per original example.
+# Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasTFApplier` class. In addition, we can apply multiple TFs in a sequence to each example. A `policy` is used to determine what sequence of TFs to apply to each example. In this case, we just use a `MeanFieldPolicy` that picks 2 TFs at random per example, with probabilities given by `p`. We give higher probabilities to the replace_X_with_synonym TFs, since those provide more information to the model. The `n_per_original` argument determines how many augmented examples to generate per original example.
 #
 
 # %%
-from snorkel.augmentation.apply import PandasTFApplier
-from snorkel.augmentation.policy import RandomPolicy
 import random
+from snorkel.augmentation.apply import PandasTFApplier
+from snorkel.augmentation.policy import MeanFieldPolicy
 
 # Make augmentations deterministic.
 seed = 1
 np.random.seed(seed)
 random.seed(seed)
 
-policy = RandomPolicy(len(tfs), sequence_length=2, n_per_original=2, keep_original=True)
+policy = MeanFieldPolicy(
+    len(tfs),
+    sequence_length=2,
+    n_per_original=2,
+    keep_original=True,
+    p=[0.05, 0.05, 0.3, 0.3, 0.3],
+)
 tf_applier = PandasTFApplier(tfs, policy)
 df_train_augmented = tf_applier.apply(df_train)
 Y_train_augmented = df_train_augmented["label"].values
@@ -237,22 +243,15 @@ print(f"Augmented training set size: {len(df_train_augmented)}")
 # The next cell makes keras results reproducible. You can ignore it.
 
 # %%
-import random
 import tensorflow as tf
-
-seed = 1
-np.random.seed(seed)
-random.seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto(
     intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
 )
 
-from tensorflow.keras import backend as K
-
-tf.set_random_seed(seed)
-sess = tf.compat.v1.Session(graph=tf.get_default_graph(), config=session_conf)
-K.set_session(sess)
+tf.compat.v1.set_random_seed(seed)
+sess = tf.compat.v1.Session(graph=tf.compat.v1.get_default_graph(), config=session_conf)
+tf.compat.v1.keras.backend.set_session(sess)
 
 
 # %% [markdown]
