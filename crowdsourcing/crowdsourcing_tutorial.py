@@ -148,7 +148,7 @@ L_dev = applier.apply(df_dev)
 # %%
 from snorkel.labeling.analysis import LFAnalysis
 
-LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head(8)
+LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head()
 
 # %% [markdown]
 # So the crowd labels are quite good! But how much of our dev and training
@@ -210,7 +210,7 @@ L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
 
 # %%
-LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head(8)
+LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head()
 
 # %% [markdown]
 # Using the text-based LFs, we've expanded coverage on both our training set
