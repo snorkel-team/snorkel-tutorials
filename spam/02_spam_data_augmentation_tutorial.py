@@ -13,7 +13,7 @@
 # 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
 # 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training examples to generate new training examples.
 # 3. **Applying Transformation Functions**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
-# 4. **Training An End Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
+# 4. **Training A Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
 
 # %% [markdown]
 # ### Data Splits in Snorkel
@@ -188,6 +188,10 @@ def replace_adjective_with_synonym(x):
 # We can try running the TFs on our training data to demonstrate their effect.
 
 # %%
+import pandas as pd
+from collections import OrderedDict
+
+pd.set_option("display.max_colwidth", 0)
 tfs = [
     change_person,
     swap_adjectives,
@@ -196,14 +200,22 @@ tfs = [
     replace_adjective_with_synonym,
 ]
 
+transformed_examples = []
 for tf in tfs:
     for i, row in df_train.iterrows():
         transformed_or_none = tf(row)
         if transformed_or_none is not None:
-            print(f"TF Name: {tf.name}")
-            print(f"Original Text: {row.text}")
-            print(f"Transformed Text: {transformed_or_none.text}\n")
+            transformed_examples.append(
+                OrderedDict(
+                    {
+                        "TF Name": tf.name,
+                        "Original Text": row.text,
+                        "Transformed Text": transformed_or_none.text,
+                    }
+                )
+            )
             break
+pd.DataFrame(transformed_examples)
 
 # %% [markdown]
 # ## 3. Applying Transformation Functions
@@ -242,7 +254,7 @@ print(f"Augmented training set size: {len(df_train_augmented)}")
 # We have almost doubled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because some TFs keep the example unchanged (e.g. `change_person` when applied to a sentence with no persons).
 
 # %% [markdown]
-# ## 4. Training an End Model
+# ## 4. Training A Model
 #
 # Our final step is to use the augmented data to train a model. We train an LSTM (Long Short Term Memory) model, which is a very standard architecture for text processing tasks.
 #
