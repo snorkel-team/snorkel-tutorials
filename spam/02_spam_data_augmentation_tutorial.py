@@ -37,6 +37,12 @@
 # %%
 import os
 
+# For reproducibility
+os.environ["PYTHONHASHSEED"] = "0"
+
+# Turn off TensorFlow logging messages
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
 # Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("spam")
