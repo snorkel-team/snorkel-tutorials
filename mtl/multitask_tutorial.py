@@ -239,7 +239,7 @@ model = SnorkelClassifier([circle_task, square_task])
 # ### Train Model
 
 # %% [markdown]
-# Once the model is constructed, we can train it as we would a single-task model, using the `train_model` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all examples  will be seen exactly once before any are seen twice.
+# Once the model is constructed, we can train it as we would a single-task model, using the `fit` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all examples  will be seen exactly once before any are seen twice.
 
 # %%
 from snorkel.classification.training import Trainer
@@ -247,7 +247,7 @@ from snorkel.classification.training import Trainer
 trainer_config = {"progress_bar": True, "n_epochs": 10, "lr": 0.02}
 
 trainer = Trainer(**trainer_config)
-trainer.train_model(model, dataloaders)
+trainer.fit(model, dataloaders)
 
 # %% [markdown]
 # ### Evaluate model
@@ -333,7 +333,7 @@ all_dataloaders = dataloaders + [inv_dataloader]
 # We can use the same trainer and training settings as before.
 
 # %%
-# trainer.train_model(model, all_dataloaders)
+# trainer.fit(model, all_dataloaders)
 # model.score(all_dataloaders)
 
 # %% [markdown]

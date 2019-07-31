@@ -1,19 +1,3 @@
-# -*- coding: utf-8 -*-
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.2'
-#       jupytext_version: 1.1.7
-#   kernelspec:
-#     display_name: Python 3
-#     language: python
-#     name: python3
-# ---
-
 # %% [markdown]
 # # Visual Relationship Detection
 #
@@ -43,7 +27,7 @@ if os.path.basename(os.getcwd()) == "scene_graph":
 # - `subject_bbox`: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`
 # - `subject_category`: category of the subject
 #
-# Note that the `train_df` object has a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
+# Note that the training DataFrame will have a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
 
 # %%
 # %load_ext autoreload
@@ -175,10 +159,7 @@ L_valid = applier.apply(valid_df)
 from snorkel.labeling.analysis import LFAnalysis
 
 Y_valid = valid_df.label.values
-lf_names = [lf.name for lf in lfs]
-
-lf_analysis = LFAnalysis(L_valid)
-lf_analysis.lf_summary(Y_valid, lf_names=lf_names)
+LFAnalysis(L_valid, lfs).lf_summary(Y_valid)
 
 # %% [markdown]
 # ## 3. Train Label Model
@@ -191,7 +172,7 @@ label_model = LabelModel(cardinality=3, verbose=True)
 label_model.fit(L_train, seed=123, lr=0.01, log_freq=10, n_epochs=100)
 
 # %% [markdown]
-# We use F1 Micro average for the multiclass setting, which calculates metrics globally by counting the total true positives, false negatives and false positives. [source](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
+# We use [F1](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html) Micro average for the multiclass setting, which calculates metrics globally by counting the total true positives, false negatives and false positives.
 
 # %%
 label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
@@ -290,7 +271,7 @@ trainer = Trainer(
     checkpointing=True,
     checkpointer_config={"checkpoint_dir": "checkpoint"},
 )
-trainer.train_model(model, [train_dl])
+trainer.fit(model, [train_dl])
 
 # %%
 model.score([valid_dl])
