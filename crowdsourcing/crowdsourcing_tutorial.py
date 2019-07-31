@@ -1,9 +1,9 @@
 # %% [markdown]
 # # Crowdsourcing tutorial
-# In this tutorial, we'll provide a simple walkthrough of how to use Snorkel to resolve conflicts
-# in a noisy, hybrid dataset for a sentiment analysis task.
-# We have crowdsourced labels for a portion of the training dataset, and combine these
-# with heuristic labeling functions to increase the number of training labels we have.
+# In this tutorial, we'll provide a simple walkthrough of how to use Snorkel alongside Crowdsourcing to generate labels for a sentiment analysis task.
+# We have crowdsourced labels for a portion of the training dataset.
+# The crowdsourcing labels are of a fairly high quality, but do not cover the entire training dataset, nor are they available for the test set or during inference.
+# To make up for their lack of training set coverage, we combine crowdsourcing labels with heuristic labeling functions to increase the number of training labels we have.
 # Like most Snorkel labeling pipelines, we'll use the denoised labels to train a deep learning
 # model which can be applied to new, unseen data to automatically make predictions!
 #
@@ -70,6 +70,11 @@ for k, v in sorted(answer_mapping.items(), key=lambda kv: kv[1]):
 # what the tweets look like.
 
 # %%
+import pandas as pd
+
+# Don't truncate text fields in the display
+pd.set_option("display.max_colwidth", 0)
+
 df_dev.head()
 
 # %% [markdown]
@@ -143,7 +148,7 @@ L_dev = applier.apply(df_dev)
 # %%
 from snorkel.labeling.analysis import LFAnalysis
 
-LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head(10)
+LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head(8)
 
 # %% [markdown]
 # So the crowd labels are quite good! But how much of our dev and training
@@ -156,10 +161,9 @@ print("Dev set coverge:", LFAnalysis(L_dev).label_coverage())
 # %% [markdown]
 # ### Additional labeling functions
 #
-# We can mix the crowd worker labeling functions with labeling
+# To improve coverage and get more training labels, we can mix the crowd worker labeling functions with labeling
 # functions of other types.
-# We'll use a few varied approaches and use the label model learn
-# how to combine their values.
+# For example, we can use [TextBlob](https://textblob.readthedocs.io/en/dev/index.html), a tool that provides a pretrained sentiment analyzer. We run TextBlob on our tweets and create some simple LFs that threshold its polarity score.
 
 # %%
 from snorkel.labeling.lf import labeling_function
@@ -176,17 +180,19 @@ def textblob_polarity(x):
 
 textblob_polarity.memoize = True
 
-
+# Label high polarity tweets as positive.
 @labeling_function(preprocessors=[textblob_polarity])
 def polarity_positive(x):
     return 1 if x.polarity > 0.3 else -1
 
 
+# Label low polarity tweets as negative.
 @labeling_function(preprocessors=[textblob_polarity])
 def polarity_negative(x):
     return 0 if x.polarity < -0.25 else -1
 
 
+# Similar to polarity_negative, but with higher coverage and lower precision.
 @labeling_function(preprocessors=[textblob_polarity])
 def polarity_negative_2(x):
     return 0 if x.polarity <= 0.3 else -1
@@ -196,8 +202,6 @@ def polarity_negative_2(x):
 # ### Applying labeling functions to the training set
 
 # %%
-from snorkel.labeling.apply import PandasLFApplier
-
 text_lfs = [polarity_positive, polarity_negative, polarity_negative_2]
 lfs = text_lfs + worker_lfs_pos + worker_lfs_neg
 
@@ -206,7 +210,7 @@ L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
 
 # %%
-LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head(10)
+LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head(8)
 
 # %% [markdown]
 # Using the text-based LFs, we've expanded coverage on both our training set
@@ -290,3 +294,11 @@ sklearn_model = LogisticRegression(solver="liblinear")
 sklearn_model.fit(train_vectors, probs_to_preds(Y_train_prob))
 
 print(f"Accuracy of trained model: {sklearn_model.score(test_vectors, Y_test)}")
+
+# %% [markdown]
+# ## Summary
+#
+# In this tutorial, we accomplished the following:
+# * We showed how Snorkel can handle Crowdsourced labels, combining them with other programmatic LFs to improve coverage.
+# * We showed how the Label Model learns to combine inputs from crowd workers and other LFs by appropriately weighting them to generate high quality probabilistic labels.
+# * We showed that a classifier trained on the combined labels can achieve a fairly high accuracy while also generalizing to new, unseen examples.
