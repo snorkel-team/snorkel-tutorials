@@ -13,7 +13,7 @@
 # 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
 # 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training examples to generate new training examples.
 # 3. **Applying Transformation Functions**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
-# 4. **Training An End Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
+# 4. **Training A Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
 
 # %% [markdown]
 # ### Data Splits in Snorkel
@@ -36,6 +36,12 @@
 
 # %%
 import os
+
+# For reproducibility
+os.environ["PYTHONHASHSEED"] = "0"
+
+# Turn off TensorFlow logging messages
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
@@ -92,7 +98,7 @@ import names
 import numpy as np
 from snorkel.augmentation.tf import transformation_function
 
-replacement_names = [names.get_full_name() for _ in range(20)]
+replacement_names = [names.get_full_name() for _ in range(50)]
 
 # TFs for replacing a random named entity with a different entity of the same type.
 @transformation_function(pre=[spacy])
@@ -182,6 +188,10 @@ def replace_adjective_with_synonym(x):
 # We can try running the TFs on our training data to demonstrate their effect.
 
 # %%
+import pandas as pd
+from collections import OrderedDict
+
+pd.set_option("display.max_colwidth", 0)
 tfs = [
     change_person,
     swap_adjectives,
@@ -190,28 +200,48 @@ tfs = [
     replace_adjective_with_synonym,
 ]
 
+transformed_examples = []
 for tf in tfs:
     for i, row in df_train.iterrows():
         transformed_or_none = tf(row)
         if transformed_or_none is not None:
-            print(f"TF Name: {tf.name}")
-            print(f"Original Text: {row.text}")
-            print(f"Transformed Text: {transformed_or_none.text}\n")
+            transformed_examples.append(
+                OrderedDict(
+                    {
+                        "TF Name": tf.name,
+                        "Original Text": row.text,
+                        "Transformed Text": transformed_or_none.text,
+                    }
+                )
+            )
             break
+pd.DataFrame(transformed_examples)
 
 # %% [markdown]
 # ## 3. Applying Transformation Functions
 
 # %% [markdown]
 # To apply one or more TFs that we've written to a collection of data points, we use a `TFApplier`.
-# Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasTFApplier` class. In addition, we can apply multiple TFs in a sequence to each example. A `policy` is used to determine what sequence of TFs to apply to each example. In this case, we just use a `RandomPolicy` that picks 3 TFs at random per example. The `n_per_original` argument determines how many augmented examples to generate per original example.
+# Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasTFApplier` class. In addition, we can apply multiple TFs in a sequence to each example. A `policy` is used to determine what sequence of TFs to apply to each example. In this case, we just use a `MeanFieldPolicy` that picks 2 TFs at random per example, with probabilities given by `p`. We give higher probabilities to the replace_X_with_synonym TFs, since those provide more information to the model. The `n_per_original` argument determines how many augmented examples to generate per original example.
 #
 
 # %%
+import random
 from snorkel.augmentation.apply import PandasTFApplier
-from snorkel.augmentation.policy import RandomPolicy
+from snorkel.augmentation.policy import MeanFieldPolicy
 
-policy = RandomPolicy(len(tfs), sequence_length=2, n_per_original=2, keep_original=True)
+# Make augmentations deterministic.
+seed = 1
+np.random.seed(seed)
+random.seed(seed)
+
+policy = MeanFieldPolicy(
+    len(tfs),
+    sequence_length=2,
+    n_per_original=2,
+    keep_original=True,
+    p=[0.05, 0.05, 0.3, 0.3, 0.3],
+)
 tf_applier = PandasTFApplier(tfs, policy)
 df_train_augmented = tf_applier.apply(df_train)
 Y_train_augmented = df_train_augmented["label"].values
@@ -224,14 +254,28 @@ print(f"Augmented training set size: {len(df_train_augmented)}")
 # We have almost doubled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because some TFs keep the example unchanged (e.g. `change_person` when applied to a sentence with no persons).
 
 # %% [markdown]
-# ## 4. Training an End Model
+# ## 4. Training A Model
 #
-# Our final step is to use the augmented data to train a model. We train an LSTM (Long Short Term Memory) model, which is a very standard architecture for text processing tasks. We start with with boilerplate code for creating an LSTM model.
+# Our final step is to use the augmented data to train a model. We train an LSTM (Long Short Term Memory) model, which is a very standard architecture for text processing tasks.
+#
+# The next cell makes keras results reproducible. You can ignore it.
 
 # %%
 import tensorflow as tf
 
+session_conf = tf.compat.v1.ConfigProto(
+    intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
+)
 
+tf.compat.v1.set_random_seed(seed)
+sess = tf.compat.v1.Session(graph=tf.compat.v1.get_default_graph(), config=session_conf)
+tf.compat.v1.keras.backend.set_session(sess)
+
+
+# %% [markdown]
+# Next, we add some boilerplate code for creating an LSTM model.
+
+# %%
 def get_lstm_model(num_buckets, embed_dim=16, rnn_state_size=64):
     lstm_model = tf.keras.Sequential()
     lstm_model.add(tf.keras.layers.Embedding(num_buckets, embed_dim))
