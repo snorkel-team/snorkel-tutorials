@@ -210,6 +210,12 @@ for tf in tfs:
 # %%
 from snorkel.augmentation.apply import PandasTFApplier
 from snorkel.augmentation.policy import RandomPolicy
+import random
+
+# Make augmentations deterministic.
+seed = 1
+np.random.seed(seed)
+random.seed(seed)
 
 policy = RandomPolicy(len(tfs), sequence_length=2, n_per_original=2, keep_original=True)
 tf_applier = PandasTFApplier(tfs, policy)
@@ -226,12 +232,33 @@ print(f"Augmented training set size: {len(df_train_augmented)}")
 # %% [markdown]
 # ## 4. Training an End Model
 #
-# Our final step is to use the augmented data to train a model. We train an LSTM (Long Short Term Memory) model, which is a very standard architecture for text processing tasks. We start with with boilerplate code for creating an LSTM model.
+# Our final step is to use the augmented data to train a model. We train an LSTM (Long Short Term Memory) model, which is a very standard architecture for text processing tasks.
+#
+# The next cell makes keras results reproducible. You can ignore it.
 
 # %%
+import random
 import tensorflow as tf
 
+seed = 1
+np.random.seed(seed)
+random.seed(seed)
 
+session_conf = tf.compat.v1.ConfigProto(
+    intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
+)
+
+from tensorflow.keras import backend as K
+
+tf.set_random_seed(seed)
+sess = tf.compat.v1.Session(graph=tf.get_default_graph(), config=session_conf)
+K.set_session(sess)
+
+
+# %% [markdown]
+# Next, we add some boilerplate code for creating an LSTM model.
+
+# %%
 def get_lstm_model(num_buckets, embed_dim=16, rnn_state_size=64):
     lstm_model = tf.keras.Sequential()
     lstm_model.add(tf.keras.layers.Embedding(num_buckets, embed_dim))
