@@ -136,3 +136,4 @@ dask-worker-space/
 
 # Modeling
 checkpoint/
+checkpoints/

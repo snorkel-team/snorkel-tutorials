@@ -131,6 +131,7 @@ to run &mdash; such as `spam/spam_tutorial.ipynb` &mdash; and execute the
 cells in sequence.
 
 Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam/01_spam_tutorial.py`).
+The `.py` source files are written in [Jupytext `percent` format](https://jupytext.readthedocs.io/en/latest/), and contain the same content as the notebooks.
 
 
 ## <a name="tutorials-index"> Tutorials Index </a>
