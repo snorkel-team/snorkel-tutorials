@@ -108,7 +108,7 @@ jupyter notebook spam
 <details><summary><b>Installing with <tt>conda</tt></b></summary>
 <p>
 
-These commands assume that your conda installation is the Python 3.6+.
+These commands assume that your conda installation is Python 3.6+.
 
 ```bash
 # [OPTIONAL] Activate a virtual environment
