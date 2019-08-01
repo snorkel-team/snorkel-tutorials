@@ -133,3 +133,6 @@ dask-worker-space/
 
 # Generic data directories
 **/data/*
+
+# Modeling
+checkpoint/
