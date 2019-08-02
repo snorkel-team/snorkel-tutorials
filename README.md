@@ -5,8 +5,8 @@ A collection of tutorials for [Snorkel](http://snorkel.org).
 The Snorkel tutorials are grouped by application, with some applications having multiple associated notebooks in their directory.
 * `spam`: Is this YouTube comment spam?
 * `spouse`: Does this sentence imply that the two marked people are spouses?
-* `visual` (Visual Relationship Detection): Is object A riding object B, carrying it, or neither?
-* `weather`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
+* `scene_graph`: Is object A riding object B in the image, carrying it, or neither?
+* `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
 * `mtl` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
@@ -137,16 +137,16 @@ The `.py` source files are written in [Jupytext `percent` format](https://jupyte
 ## <a name="tutorials-index"> Tutorials Index </a>
 Here we provide an index pointing to different available tutorials by their task type, techniques, and integrations.
 * Task
-    * Text Classification (Text): `spam`, `weather`
+    * Text Classification (Text): `spam`, `crowdsourcing`
     * Relation Extraction (Text): `spouse`
-    * Visual Relationship Detection (Image): `visual`
+    * Visual Relationship Detection (Image): `scene_graph`
 * Techniques
-    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `visual`, `weather`
+    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `scene_graph`, `crowdsourcing`
     * Augmentation with Transformation Functions (TFs): `spam`
     * Monitoring with Slicing Functions (SFs): `spam`
-    * Using Crowdworker Labels: `weather`
-    * Multi-Task Learning (MTL): `mtl`, `visual`, `spam`
+    * Using Crowd Worker Labels: `crowdsourcing`
+    * Multi-Task Learning (MTL): `mtl`, `scene_graph`, `spam`
 * Integrations
-    * TensorFlow/Keras: `spam`
-    * Scikit-Learn: `spam`
-    * PyTorch: `spam`
+    * TensorFlow/Keras: `spam`, `spouse`
+    * Scikit-Learn: `spam`, `crowdsourcing`
+    * PyTorch: `mtl`
