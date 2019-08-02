@@ -147,6 +147,6 @@ Here we provide an index pointing to different available tutorials by their task
     * Using Crowd Worker Labels: `crowdsourcing`
     * Multi-Task Learning (MTL): `mtl`, `scene_graph`, `spam`
 * Integrations
-    * TensorFlow/Keras: `spam`, `crowdsourcing`
-    * Scikit-Learn: `spam`
+    * TensorFlow/Keras: `spam`, `spouse`
+    * Scikit-Learn: `spam`, `crowdsourcing`
     * PyTorch: `mtl`
