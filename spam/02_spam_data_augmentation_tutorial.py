@@ -104,6 +104,7 @@ replacement_names = [names.get_full_name() for _ in range(50)]
 @transformation_function(pre=[spacy])
 def change_person(x):
     person_names = [ent.text for ent in x.doc.ents if ent.label_ == "PERSON"]
+    # If there is at least one person name, replace a random one. Else return None.
     if person_names:
         name_to_replace = np.random.choice(person_names)
         replacement_name = np.random.choice(replacement_names)
@@ -115,9 +116,8 @@ def change_person(x):
 @transformation_function(pre=[spacy])
 def swap_adjectives(x):
     adjective_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "ADJ"]
-    if (
-        len(adjective_idxs) >= 2
-    ):  # Check that there are at least two adjectives to swap.
+    # Check that there are at least two adjectives to swap.
+    if len(adjective_idxs) >= 2:
         idx1, idx2 = sorted(np.random.choice(adjective_idxs, 2, replace=False))
         # Swap tokens in positions idx1 and idx2.
         x.text = " ".join(
@@ -145,6 +145,7 @@ nltk.download("wordnet")
 def get_synonym(word, pos=None):
     """Get synonym for word given its part-of-speech (pos)."""
     synsets = wn.synsets(word, pos=pos)
+    # Return None if wordnet has no synsets (synonym sets) for this word and pos.
     if synsets:
         words = [lemma.name() for lemma in synsets[0].lemmas()]
         if words[0].lower() != word.lower():  # Skip if synonym is same as word.
@@ -159,11 +160,13 @@ def replace_token(spacy_doc, idx, replacement):
 
 @transformation_function(pre=[spacy])
 def replace_verb_with_synonym(x):
+    # Get indices of verb tokens in sentence.
     verb_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "VERB"]
     if verb_idxs:
         # Pick random verb idx to replace.
         idx = np.random.choice(verb_idxs)
         synonym = get_synonym(x.doc[idx].text, pos="v")
+        # If there's a valid verb synonym, replace it. Otherwise, return None.
         if synonym:
             x.text = replace_token(x.doc, idx, synonym)
             return x
@@ -171,11 +174,13 @@ def replace_verb_with_synonym(x):
 
 @transformation_function(pre=[spacy])
 def replace_noun_with_synonym(x):
+    # Get indices of noun tokens in sentence.
     noun_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "NOUN"]
     if noun_idxs:
         # Pick random noun idx to replace.
         idx = np.random.choice(noun_idxs)
         synonym = get_synonym(x.doc[idx].text, pos="n")
+        # If there's a valid noun synonym, replace it. Otherwise, return None.
         if synonym:
             x.text = replace_token(x.doc, idx, synonym)
             return x
@@ -183,11 +188,13 @@ def replace_noun_with_synonym(x):
 
 @transformation_function(pre=[spacy])
 def replace_adjective_with_synonym(x):
+    # Get indices of adjective tokens in sentence.
     adjective_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "ADJ"]
     if adjective_idxs:
         # Pick random adjective idx to replace.
         idx = np.random.choice(adjective_idxs)
         synonym = get_synonym(x.doc[idx].text, pos="a")
+        # If there's a valid adjective synonym, replace it. Otherwise, return None.
         if synonym:
             x.text = replace_token(x.doc, idx, synonym)
             return x
@@ -198,7 +205,13 @@ def replace_adjective_with_synonym(x):
 
 # %%
 import pandas as pd
+import random
 from collections import OrderedDict
+
+# Make augmentations deterministic.
+seed = 1
+np.random.seed(seed)
+random.seed(seed)
 
 # Prevent truncating displayed sentences.
 pd.set_option("display.max_colwidth", 0)
@@ -210,14 +223,11 @@ tfs = [
     replace_adjective_with_synonym,
 ]
 
-# Make augmentations deterministic.
-seed = 1
-np.random.seed(seed)
-
 transformed_examples = []
 for tf in tfs:
     for i, row in df_train.sample(frac=1, random_state=2).iterrows():
         transformed_or_none = tf(row)
+        # If TF returned a transformed example, record it in dict and move to next TF.
         if transformed_or_none is not None:
             transformed_examples.append(
                 OrderedDict(
@@ -236,7 +246,7 @@ pd.DataFrame(transformed_examples)
 # * Sometimes they make trivial changes (_titles_ -> _title_ for replace_noun_with_synonym). This can still be helpful for training our model, because it teaches the model that singular and plural versions of words have similar meanings.
 # * Sometimes they make the sentence less meaningful (e.g. swapping _young_ and _more_ for swap_adjectives).
 #
-# Data augmentation can be tricky for text inputs, so we expect most TFs to be a little flawed. But TFs can still be useful despite the flaws if they add enough good augmentations.
+# Data augmentation can be tricky for text inputs, so we expect most TFs to be a little flawed. But these TFs can  be useful despite the flaws; see [this paper](https://arxiv.org/pdf/1901.11196.pdf) for gains resulting from similar TFs.
 
 # %% [markdown]
 # ## 3. Applying Transformation Functions
@@ -246,11 +256,8 @@ pd.DataFrame(transformed_examples)
 # Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasTFApplier` class. In addition, we can apply multiple TFs in a sequence to each example. A `policy` is used to determine what sequence of TFs to apply to each example. In this case, we just use a `MeanFieldPolicy` that picks 2 TFs at random per example, with probabilities given by `p`. We give higher probabilities to the replace_X_with_synonym TFs, since those provide more information to the model. The `n_per_original` argument determines how many augmented examples to generate per original example.
 
 # %%
-import random
 from snorkel.augmentation.apply import PandasTFApplier
 from snorkel.augmentation.policy import MeanFieldPolicy
-
-random.seed(seed)
 
 policy = MeanFieldPolicy(
     len(tfs),
@@ -268,7 +275,7 @@ print(f"Original training set size: {len(df_train)}")
 print(f"Augmented training set size: {len(df_train_augmented)}")
 
 # %% [markdown]
-# We have almost doubled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because some TFs keep the example unchanged (e.g. `change_person` when applied to a sentence with no persons).
+# We have almost doubled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because sometimes TFs return `None` instead of a new example (e.g. `change_person` when applied to a sentence with no persons).
 
 # %% [markdown]
 # ## 4. Training A Model
@@ -284,7 +291,7 @@ session_conf = tf.compat.v1.ConfigProto(
     intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
 )
 
-tf.compat.v1.set_random_seed(seed)
+tf.compat.v1.set_random_seed(1)
 sess = tf.compat.v1.Session(graph=tf.compat.v1.get_default_graph(), config=session_conf)
 tf.compat.v1.keras.backend.set_session(sess)
 
