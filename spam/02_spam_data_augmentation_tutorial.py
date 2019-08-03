@@ -3,7 +3,7 @@
 # # Snorkel Transformation Functions Tutorial
 
 # %% [markdown]
-# In this tutorial, we will walk through the process of using Snorkel Transformation Functions (TFs) to classify YouTube comments as `SPAM` or `HAM` (not spam). For more details on the task, check out the main labeling functions [tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/spam_tutorial.ipynb).
+# In this tutorial, we will walk through the process of using Snorkel Transformation Functions (TFs) to classify YouTube comments as `SPAM` or `HAM` (not spam). For more details on the task, check out the main labeling functions [tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb).
 # For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
 # You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
 #
@@ -100,33 +100,36 @@ from snorkel.augmentation.tf import transformation_function
 
 replacement_names = [names.get_full_name() for _ in range(50)]
 
-# TFs for replacing a random named entity with a different entity of the same type.
+# Replace a random named entity with a different entity of the same type.
 @transformation_function(pre=[spacy])
 def change_person(x):
-    persons = [ent.text for ent in x.doc.ents if ent.label_ == "PERSON"]
-    if persons:
-        to_replace = np.random.choice(persons)
+    person_names = [ent.text for ent in x.doc.ents if ent.label_ == "PERSON"]
+    # If there is at least one person name, replace a random one. Else return None.
+    if person_names:
+        name_to_replace = np.random.choice(person_names)
         replacement_name = np.random.choice(replacement_names)
-        x.text = x.text.replace(to_replace, replacement_name)
+        x.text = x.text.replace(name_to_replace, replacement_name)
         return x
 
 
 # Swap two adjectives at random.
 @transformation_function(pre=[spacy])
 def swap_adjectives(x):
-    words = [token.text for token in x.doc]
-    idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "ADJ"]
-    if len(idxs) < 3:
-        return None
-    idx1, idx2 = sorted(np.random.choice(idxs[:-1], 2))
-    x.text = " ".join(
-        words[:idx1]
-        + [words[idx2]]
-        + words[1 + idx1 : idx2]
-        + [words[idx1]]
-        + words[1 + idx2 :]
-    )
-    return x
+    adjective_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "ADJ"]
+    # Check that there are at least two adjectives to swap.
+    if len(adjective_idxs) >= 2:
+        idx1, idx2 = sorted(np.random.choice(adjective_idxs, 2, replace=False))
+        # Swap tokens in positions idx1 and idx2.
+        x.text = " ".join(
+            [
+                x.doc[:idx1].text,
+                x.doc[idx2].text,
+                x.doc[1 + idx1 : idx2].text,
+                x.doc[idx1].text,
+                x.doc[1 + idx2 :].text,
+            ]
+        )
+        return x
 
 
 # %% [markdown]
@@ -140,47 +143,60 @@ nltk.download("wordnet")
 
 
 def get_synonym(word, pos=None):
+    """Get synonym for word given its part-of-speech (pos)."""
     synsets = wn.synsets(word, pos=pos)
-    if not synsets:
-        return None
-    else:
+    # Return None if wordnet has no synsets (synonym sets) for this word and pos.
+    if synsets:
         words = [lemma.name() for lemma in synsets[0].lemmas()]
-        return words[0] if words else word
+        if words[0].lower() != word.lower():  # Skip if synonym is same as word.
+            # Multi word synonyms in wordnet use '_' as a separator e.g. reckon_with. Replace it with space.
+            return words[0].replace("_", " ")
+
+
+def replace_token(spacy_doc, idx, replacement):
+    """Replace token in position idx with replacement."""
+    return " ".join([spacy_doc[:idx].text, replacement, spacy_doc[1 + idx :].text])
 
 
 @transformation_function(pre=[spacy])
 def replace_verb_with_synonym(x):
-    words = [token.text for token in x.doc]
-    idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "VERB"]
-    if len(idxs) > 1:
-        to_replace = np.random.choice(idxs[:-1])
-        synonym = get_synonym(words[to_replace], pos="v")
-        if synonym and synonym != words[to_replace]:
-            x.text = " ".join(words[:to_replace] + [synonym] + words[1 + to_replace :])
+    # Get indices of verb tokens in sentence.
+    verb_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "VERB"]
+    if verb_idxs:
+        # Pick random verb idx to replace.
+        idx = np.random.choice(verb_idxs)
+        synonym = get_synonym(x.doc[idx].text, pos="v")
+        # If there's a valid verb synonym, replace it. Otherwise, return None.
+        if synonym:
+            x.text = replace_token(x.doc, idx, synonym)
             return x
 
 
 @transformation_function(pre=[spacy])
 def replace_noun_with_synonym(x):
-    words = [token.text for token in x.doc]
-    idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "NOUN"]
-    if len(idxs) > 1:
-        to_replace = np.random.choice(idxs[:-1])
-        synonym = get_synonym(words[to_replace], pos="n")
-        if synonym and synonym != words[to_replace]:
-            x.text = " ".join(words[:to_replace] + [synonym] + words[1 + to_replace :])
+    # Get indices of noun tokens in sentence.
+    noun_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "NOUN"]
+    if noun_idxs:
+        # Pick random noun idx to replace.
+        idx = np.random.choice(noun_idxs)
+        synonym = get_synonym(x.doc[idx].text, pos="n")
+        # If there's a valid noun synonym, replace it. Otherwise, return None.
+        if synonym:
+            x.text = replace_token(x.doc, idx, synonym)
             return x
 
 
 @transformation_function(pre=[spacy])
 def replace_adjective_with_synonym(x):
-    words = [token.text for token in x.doc]
-    idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "ADJ"]
-    if len(idxs) > 1:
-        to_replace = np.random.choice(idxs[:-1])
-        synonym = get_synonym(words[to_replace], pos="a")
-        if synonym and synonym != words[to_replace]:
-            x.text = " ".join(words[:to_replace] + [synonym] + words[1 + to_replace :])
+    # Get indices of adjective tokens in sentence.
+    adjective_idxs = [i for i, token in enumerate(x.doc) if token.pos_ == "ADJ"]
+    if adjective_idxs:
+        # Pick random adjective idx to replace.
+        idx = np.random.choice(adjective_idxs)
+        synonym = get_synonym(x.doc[idx].text, pos="a")
+        # If there's a valid adjective synonym, replace it. Otherwise, return None.
+        if synonym:
+            x.text = replace_token(x.doc, idx, synonym)
             return x
 
 
@@ -189,8 +205,15 @@ def replace_adjective_with_synonym(x):
 
 # %%
 import pandas as pd
+import random
 from collections import OrderedDict
 
+# Make augmentations deterministic.
+seed = 1
+np.random.seed(seed)
+random.seed(seed)
+
+# Prevent truncating displayed sentences.
 pd.set_option("display.max_colwidth", 0)
 tfs = [
     change_person,
@@ -202,8 +225,9 @@ tfs = [
 
 transformed_examples = []
 for tf in tfs:
-    for i, row in df_train.iterrows():
+    for i, row in df_train.sample(frac=1, random_state=2).iterrows():
         transformed_or_none = tf(row)
+        # If TF returned a transformed example, record it in dict and move to next TF.
         if transformed_or_none is not None:
             transformed_examples.append(
                 OrderedDict(
@@ -218,22 +242,22 @@ for tf in tfs:
 pd.DataFrame(transformed_examples)
 
 # %% [markdown]
+# We notice a couple of things about the TFs.
+# * Sometimes they make trivial changes (_titles_ -> _title_ for replace_noun_with_synonym). This can still be helpful for training our model, because it teaches the model that singular and plural versions of words have similar meanings.
+# * Sometimes they make the sentence less meaningful (e.g. swapping _young_ and _more_ for swap_adjectives).
+#
+# Data augmentation can be tricky for text inputs, so we expect most TFs to be a little flawed. But these TFs can  be useful despite the flaws; see [this paper](https://arxiv.org/pdf/1901.11196.pdf) for gains resulting from similar TFs.
+
+# %% [markdown]
 # ## 3. Applying Transformation Functions
 
 # %% [markdown]
 # To apply one or more TFs that we've written to a collection of data points, we use a `TFApplier`.
 # Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasTFApplier` class. In addition, we can apply multiple TFs in a sequence to each example. A `policy` is used to determine what sequence of TFs to apply to each example. In this case, we just use a `MeanFieldPolicy` that picks 2 TFs at random per example, with probabilities given by `p`. We give higher probabilities to the replace_X_with_synonym TFs, since those provide more information to the model. The `n_per_original` argument determines how many augmented examples to generate per original example.
-#
 
 # %%
-import random
 from snorkel.augmentation.apply import PandasTFApplier
 from snorkel.augmentation.policy import MeanFieldPolicy
-
-# Make augmentations deterministic.
-seed = 1
-np.random.seed(seed)
-random.seed(seed)
 
 policy = MeanFieldPolicy(
     len(tfs),
@@ -251,7 +275,7 @@ print(f"Original training set size: {len(df_train)}")
 print(f"Augmented training set size: {len(df_train_augmented)}")
 
 # %% [markdown]
-# We have almost doubled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because some TFs keep the example unchanged (e.g. `change_person` when applied to a sentence with no persons).
+# We have almost doubled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because sometimes TFs return `None` instead of a new example (e.g. `change_person` when applied to a sentence with no persons).
 
 # %% [markdown]
 # ## 4. Training A Model
@@ -267,7 +291,7 @@ session_conf = tf.compat.v1.ConfigProto(
     intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
 )
 
-tf.compat.v1.set_random_seed(seed)
+tf.compat.v1.set_random_seed(1)
 sess = tf.compat.v1.Session(graph=tf.compat.v1.get_default_graph(), config=session_conf)
 tf.compat.v1.keras.backend.set_session(sess)
 
@@ -288,14 +312,17 @@ def get_lstm_model(num_buckets, embed_dim=16, rnn_state_size=64):
 # %%
 def train_and_test(train_set, train_labels, num_buckets=30000):
     def map_pad_or_truncate(string, max_length=30):
+        """Tokenize text, pad or truncate to get max_length, and hash tokens."""
         ids = tf.keras.preprocessing.text.hashing_trick(
             string, n=num_buckets, hash_function="md5"
         )
         return ids[:max_length] + [0] * (max_length - len(ids))
 
+    # Tokenize training text and convert words to integers.
     train_tokens = np.array(list(map(map_pad_or_truncate, train_set.text)))
     lstm_model = get_lstm_model(num_buckets)
 
+    # Tokenize validation set text and convert words to integers.
     valid_tokens = np.array(list(map(map_pad_or_truncate, df_valid.text)))
 
     lstm_model.fit(
@@ -303,6 +330,7 @@ def train_and_test(train_set, train_labels, num_buckets=30000):
         train_labels,
         epochs=50,
         validation_data=(valid_tokens, Y_valid),
+        # Set up early stopping based on val set accuracy.
         callbacks=[
             tf.keras.callbacks.EarlyStopping(
                 monitor="val_acc", patience=10, verbose=1, restore_best_weights=True
@@ -311,6 +339,7 @@ def train_and_test(train_set, train_labels, num_buckets=30000):
         verbose=0,
     )
 
+    # Tokenize validation set text and convert words to integers.
     test_tokens = np.array(list(map(map_pad_or_truncate, df_test.text)))
     test_probs = lstm_model.predict(test_tokens)
     test_preds = test_probs[:, 0] > 0.5
