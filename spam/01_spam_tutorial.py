@@ -285,7 +285,8 @@ print(f"check coverage: {coverage_check * 100:.1f}%")
 print(f"check_out coverage: {coverage_check_out * 100:.1f}%")
 
 # %% [markdown]
-# However, Snorkel provides tooling for common LF analyses using the
+# Lots of statistics about labeling functions &mdash; like coverage &mdash; are useful when building any Snorkel application.
+# So Snorkel provides tooling for common LF analyses using the
 # [`LFAnalysis` utility](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.html#snorkel.labeling.analysis.LFAnalysis).
 # We report the following summary statistics for multiple LFs at once:
 #
