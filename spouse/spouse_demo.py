@@ -414,7 +414,13 @@ train_L = applier.apply(train_df)
 from snorkel.labeling.model.label_model import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
-label_model.fit(train_L, dev_labels, n_epochs=5000, log_freq=500, seed=123)
+label_model.fit(train_L, dev_labels, n_epochs=500, log_freq=50, seed=12345)
+
+from snorkel.analysis.metrics import metric_score
+from snorkel.analysis.utils import probs_to_preds
+
+Y_probs_dev = label_model.predict_proba(dev_L)
+Y_preds_dev = probs_to_preds(Y_probs_dev)
 
 # %% [markdown]
 # ### Label Model Accuracy
@@ -427,10 +433,10 @@ from snorkel.analysis.utils import probs_to_preds
 Y_probs_dev = label_model.predict_proba(dev_L)
 Y_preds_dev = probs_to_preds(Y_probs_dev)
 print(
-    f"Label model accuracy: {metric_score(dev_labels, Y_preds_dev, probs=Y_probs_dev, metric='accuracy')}"
+    f"Label model f1 score: {metric_score(dev_labels, Y_preds_dev, probs=Y_probs_dev, metric='f1')}"
 )
 print(
-    f"Label model f1 score: {metric_score(dev_labels, Y_preds_dev, probs=Y_probs_dev, metric='f1')}"
+    f"Label model roc-auc: {metric_score(dev_labels, Y_preds_dev, probs=Y_probs_dev, metric='roc_auc')}"
 )
 
 # %% [markdown]
@@ -509,7 +515,7 @@ test_tokens, test_idx1, test_idx2 = get_feature_arrays(test_df)
 probs = model.predict((test_tokens, test_idx1, test_idx2))
 preds = probs_to_preds(probs)
 print(
-    f"Test Accuracy when trained with soft labels: {metric_score(test_labels, preds=preds, metric='accuracy')}"
+    f"Test F1 when trained with soft labels: {metric_score(test_labels, preds=preds, metric='f1')}"
 )
 print(
     f"Test ROC-AUC when trained with soft labels: {metric_score(test_labels, probs=probs, metric='roc_auc')}"
@@ -521,7 +527,7 @@ print(
 # %%
 dev_model = get_model()
 dev_tokens, dev_idx1, dev_idx2 = get_feature_arrays(dev_df)
-num_epochs = 10  # TODO: Change this to 100.
+num_epochs = 10 # TODO: Change this to 100.
 dev_model.fit(
     (dev_tokens, dev_idx1, dev_idx2),
     dev_label_probs,
@@ -532,7 +538,7 @@ dev_model.fit(
 dev_probs = dev_model.predict((test_tokens, test_idx1, test_idx2))
 dev_preds = probs_to_preds(dev_probs)
 print(
-    f"Test Accuracy when trained with dev labels: {metric_score(test_labels, preds=dev_preds, metric='accuracy')}"
+    f"Test F1 when trained with dev labels: {metric_score(test_labels, preds=dev_preds, metric='f1')}"
 )
 print(
     f"Test ROC-AUC when trained with dev labels: {metric_score(test_labels, probs=dev_probs, metric='roc_auc')}"
