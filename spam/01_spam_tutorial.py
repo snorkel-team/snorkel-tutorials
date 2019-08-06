@@ -372,7 +372,7 @@ df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
 # We'll start by creating a `Preprocessor` that runs `TextBlob` on our comments, then extracts the polarity and subjectivity scores.
 
 # %%
-from snorkel.labeling.preprocess import preprocessor
+from snorkel.preprocess import preprocessor
 from textblob import TextBlob
 
 
@@ -413,7 +413,7 @@ plt.show()
 # Using our accuracy-over-coverage principle above, we'll target the high polarity bin on the far right in our LF since there are many more `HAM` comments.
 
 # %%
-@labeling_function(preprocessors=[textblob_sentiment])
+@labeling_function(pre=[textblob_sentiment])
 def textblob_polarity(x):
     return HAM if x.polarity > 0.9 else ABSTAIN
 
@@ -451,7 +451,7 @@ plt.show()
 # We'll rely on our label model to learn that this is a lower accuracy rule.
 
 # %%
-@labeling_function(preprocessors=[textblob_sentiment])
+@labeling_function(pre=[textblob_sentiment])
 def textblob_subjectivity(x):
     return HAM if x.subjectivity >= 0.5 else ABSTAIN
 
@@ -558,11 +558,11 @@ def short_comment(x):
 # For example, we can use the fantastic NLP tool [spaCy](https://spacy.io/) to add lemmas, part-of-speech (pos) tags, etc. to each token.
 # Snorkel provides a prebuilt preprocessor for spaCy called `SpacyPreprocessor` which adds a new field to the
 # data point containing a [spaCy `Doc` object](https://spacy.io/api/doc).
-# For more info, see the [`SpacyPreprocessor` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.labeling.preprocess.html#snorkel.labeling.preprocess.nlp.SpacyPreprocessor).
+# For more info, see the [`SpacyPreprocessor` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.preprocess.html#snorkel.preprocess.nlp.SpacyPreprocessor).
 #
 #
 # If you prefer to use a different NLP tool, you can also wrap that as a `Preprocessor` and use it in the same way.
-# For more info, see the [`preprocessor` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.labeling.preprocess.html#snorkel.labeling.preprocess.core.preprocessor).
+# For more info, see the [`preprocessor` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.preprocess.html#snorkel.preprocess.core.preprocessor).
 
 # %%
 # Download the spaCy english model
@@ -570,14 +570,14 @@ def short_comment(x):
 # ! python -m spacy download en_core_web_sm
 
 # %%
-from snorkel.labeling.preprocess.nlp import SpacyPreprocessor
+from snorkel.preprocess.nlp import SpacyPreprocessor
 
 # The SpacyPreprocessor parses the text in text_field and
 # stores the new enriched representation in doc_field
 spacy = SpacyPreprocessor(text_field="text", doc_field="doc", memoize=True)
 
 
-@labeling_function(preprocessors=[spacy])
+@labeling_function(pre=[spacy])
 def has_person(x):
     """Ham comments mention specific people and are short."""
     if len(x.doc) < 20 and any([ent.label_ == "PERSON" for ent in x.doc.ents]):

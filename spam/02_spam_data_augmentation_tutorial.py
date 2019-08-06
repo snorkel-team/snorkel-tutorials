@@ -78,7 +78,7 @@ df_train.head()
 # For example, we can use the fantastic NLP tool [spaCy](https://spacy.io/) to add lemmas, part-of-speech (pos) tags, etc. to each token.
 # Snorkel provides a prebuilt preprocessor for spaCy called `SpacyPreprocessor` which adds a new field to the
 # data point containing a [spaCy `Doc` object](https://spacy.io/api/doc). It uses memoization internally, so it will not reparse the text after applying each TF unless the text's hash changes.
-# For more info, see the [`SpacyPreprocessor` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.labeling.preprocess.html#snorkel.labeling.preprocess.nlp.SpacyPreprocessor).
+# For more info, see the [`SpacyPreprocessor` documentation](https://snorkel.readthedocs.io/en/master/source/snorkel.preprocess.html#snorkel.preprocess.nlp.SpacyPreprocessor).
 #
 
 # %%
@@ -87,7 +87,7 @@ df_train.head()
 # ! python -m spacy download en_core_web_sm
 
 # %%
-from snorkel.labeling.preprocess.nlp import SpacyPreprocessor
+from snorkel.preprocess.nlp import SpacyPreprocessor
 
 # The SpacyPreprocessor parses the text in text_field and
 # stores the new enriched representation in doc_field

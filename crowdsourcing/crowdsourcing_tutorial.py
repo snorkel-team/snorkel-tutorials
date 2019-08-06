@@ -167,7 +167,7 @@ print("Dev set coverage:", LFAnalysis(L_dev).label_coverage())
 
 # %%
 from snorkel.labeling.lf import labeling_function
-from snorkel.labeling.preprocess import preprocessor
+from snorkel.preprocess import preprocessor
 from textblob import TextBlob
 
 
@@ -181,19 +181,19 @@ def textblob_polarity(x):
 textblob_polarity.memoize = True
 
 # Label high polarity tweets as positive.
-@labeling_function(preprocessors=[textblob_polarity])
+@labeling_function(pre=[textblob_polarity])
 def polarity_positive(x):
     return 1 if x.polarity > 0.3 else -1
 
 
 # Label low polarity tweets as negative.
-@labeling_function(preprocessors=[textblob_polarity])
+@labeling_function(pre=[textblob_polarity])
 def polarity_negative(x):
     return 0 if x.polarity < -0.25 else -1
 
 
 # Similar to polarity_negative, but with higher coverage and lower precision.
-@labeling_function(preprocessors=[textblob_polarity])
+@labeling_function(pre=[textblob_polarity])
 def polarity_negative_2(x):
     return 0 if x.polarity <= 0.3 else -1
 
