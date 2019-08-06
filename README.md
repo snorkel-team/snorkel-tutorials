@@ -11,7 +11,7 @@ The Snorkel tutorials are grouped by application, with some applications having 
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
 
-We recommend that all users **start with the `spam` tutorial** for a gentle introduction to the concepts and classes of Snorkel.  
+We recommend that all users **start with the `spam` tutorial** for a gentle introduction to the concepts and classes of Snorkel.
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 
 ## Getting Started
@@ -29,7 +29,7 @@ our [Docker setup](#docker).
 If you want to install things yourself using `pip` or `conda`, you can follow
 our [installation steps](#install) below instead.
 
-*A quick note for Windows users*
+***A quick note for Windows users***
 
 If you're using Windows, we highly recommend using the [Docker setup](#docker)
 or the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/faq).
@@ -58,7 +58,7 @@ Once the image has been built, a Jupyter notebook server will be available
 on port 8888 (you can change the port with the `--port` command line option)
 and print out a link you can follow to access the browser interface.
 In your browser, open a `.ipynb` file you would like to run &mdash;
-such as `spam_tutorial.ipynb` &mdash; and execute the cells in sequence.
+such as `01_spam_tutorial.ipynb` &mdash; and execute the cells in sequence.
 
 Once you've built a tutorial-specific image for the first time,
 you can run it without the `--build` flag:
@@ -127,7 +127,7 @@ jupyter notebook spam
 </details>
 
 Then in the browser tab that opens, navigate to a `.ipynb` file you would like
-to run &mdash; such as `spam/spam_tutorial.ipynb` &mdash; and execute the
+to run &mdash; such as `01_spam_tutorial.ipynb` &mdash; and execute the
 cells in sequence.
 
 Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam/01_spam_tutorial.py`).
