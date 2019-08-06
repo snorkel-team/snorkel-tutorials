@@ -1,6 +1,6 @@
 #### ESSENTIAL LIBRARIES
 
-git+https://github.com/HazyResearch/snorkel.git@move_preprocessor
+git+https://github.com/HazyResearch/snorkel.git@redux
 
 
 #### DEV TOOLS
