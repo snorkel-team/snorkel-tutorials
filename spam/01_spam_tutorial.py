@@ -311,15 +311,16 @@ LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 # We might want to pick the `check` rule, since both have high precision and `check` has higher coverage.
 # But let's look at our data to be sure.
 #
-# The helper method `error_buckets()` groups examples by their predicted label and true label. For example, `buckets[(SPAM, HAM)]` contains the indices of data points that the LF labeled `SPAM` that actually belong to class `HAM`.
+# The helper method `get_label_buckets(...)` groups examples by their predicted label and true label.
+# For example, we can find the indices of data points that the LF labeled `SPAM` that actually belong to class `HAM`.
 # This may give ideas for where the LF could be made more specific.
 
 # %%
-from snorkel.analysis.error_analysis import error_buckets
+from snorkel.analysis.error_analysis import get_label_buckets
 
 # %%
-buckets = error_buckets(Y_dev, L_dev[:, 1])
-df_dev.iloc[buckets[(SPAM, HAM)]]
+buckets = get_label_buckets(Y_dev, L_dev[:, 1])
+df_dev.iloc[buckets[(HAM, SPAM)]]
 
 # %% [markdown]
 # There's only one row here because `check` produced only one false positive on the `dev` set.
@@ -333,8 +334,8 @@ df_train.iloc[L_train[:, 1] == SPAM].sample(10, random_state=1)
 # Let's see 10 examples where `check_out` abstained, but `check` labeled.
 
 # %%
-buckets = error_buckets(L_train[:, 0], L_train[:, 1])
-df_train.iloc[buckets[(SPAM, ABSTAIN)]].sample(10, random_state=1)
+buckets = get_label_buckets(L_train[:, 0], L_train[:, 1])
+df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
 
 # %% [markdown]
 # Most of these seem like small modifications of "check out", like "check me out" or "check it out".
@@ -378,8 +379,8 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 # Let's verify that we corrected our false positive from before.
 
 # %%
-buckets = error_buckets(L_dev[:, 1], L_dev[:, 2])
-df_dev.iloc[buckets[(ABSTAIN, SPAM)]]
+buckets = get_label_buckets(L_dev[:, 1], L_dev[:, 2])
+df_dev.iloc[buckets[(SPAM, ABSTAIN)]]
 
 # %% [markdown]
 # To understand the coverage difference between `check` and `regex_check_out`, let's take a look at 10 examples from the `train` set.
@@ -387,8 +388,8 @@ df_dev.iloc[buckets[(ABSTAIN, SPAM)]]
 # Adding false positives will increase coverage.
 
 # %%
-buckets = error_buckets(L_train[:, 1], L_train[:, 2])
-df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
+buckets = get_label_buckets(L_train[:, 1], L_train[:, 2])
+df_train.iloc[buckets[(SPAM, ABSTAIN)]].sample(10, random_state=1)
 
 # %% [markdown]
 # Most of these are SPAM, but a good number are false positives.
@@ -786,10 +787,10 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 # %%
 Y_dev_prob = majority_model.predict_proba(L=L_dev)
 Y_dev_pred = Y_dev_prob >= 0.5
-buckets = error_buckets(golds=Y_dev, preds=Y_dev_pred[:, 1])
+buckets = get_label_buckets(Y_dev, Y_dev_pred[:, 1])
 
-df_dev_fp = df_dev[["text", "label"]].iloc[buckets[(HAM, SPAM)]]
-df_dev_fp["probability"] = Y_dev_prob[buckets[(HAM, SPAM)], 1]
+df_dev_fp = df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]]
+df_dev_fp["probability"] = Y_dev_prob[buckets[(SPAM, HAM)], 1]
 
 df_dev_fp.sample(5, random_state=3)
 
