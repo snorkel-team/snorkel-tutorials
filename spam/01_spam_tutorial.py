@@ -8,9 +8,9 @@
 # For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
 # You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
 #
-# For our task, we have access to a large amount of *unlabeled data* in the form of YouTube comments with some metadata.
 # Our goal is to train a classifier over the comment data that can predict whether a comment is spam or not spam.
-# To do that, we need to label our data, but doing so by hand for real world applications can be prohibitively slow and expensive, often taking person-weeks or months.
+# We have access to a large amount of *unlabeled data* in the form of YouTube comments with some metadata.
+# In order to train a classifier, we need to label our data, but doing so by hand for real world applications can be prohibitively slow and expensive, often taking person-weeks or months.
 #
 # We therefore turn to weak supervision using **_labeling functions (LFs)_**: noisy, programmatic rules and heuristics that assign labels to unlabeled training data.
 # We'll dive into the Snorkel API and how we write labeling functions later in this tutorial, but as an example,
@@ -22,11 +22,8 @@
 #
 # @labeling_function()
 # def lf_contains_link(x):
-#     if "http" in x.text.lower():
-#         # Return a label of SPAM if "http" in comment text
-#         return 1
-#     # Otherwise, abstain from labeling
-#     return -1
+#     # Return a label of SPAM if "http" in comment text, otherwise ABSTAIN
+#     return SPAM if "http" in x.text.lower() else ABSTAIN
 # ```
 #
 # The tutorial is divided into four parts:
@@ -222,17 +219,12 @@ df_train[["author", "text", "video"]].sample(20, random_state=2)
 
 # %% [markdown]
 # Labeling functions in Snorkel are created with the
-# [`@labeling_function()` decorator](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.lf.html#snorkel.labeling.lf.core.labeling_function),
-# which wraps a function for evaluating on a single data point.
-# Decorators are a convenient Python mechanism for automatically extending the behavior of the decorated function,
-# and you can learn more [here](https://realpython.com/primer-on-python-decorators/).
+# [`@labeling_function` decorator](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.lf.html#snorkel.labeling.lf.core.labeling_function).
+# The [decorator](https://realpython.com/primer-on-python-decorators/) can be applied to _any Python function_ that returns a label for a single data point.
 #
 # Let's start developing an LF to catch instances of commenters trying to get people to "check out" their channel, video, or website.
-# We'll start by just looking for the exact string `"check out"` in the text, and compare that to looking for just `"check"` in the text.
-# We'll write a Python function over a single data point to express the two versions of our rule, then add the decorator.
-# Because our data here is stored as a Pandas DataFrame, a single data point `x` will be a [Pandas `Series` object](https://pandas.pydata.org/pandas-docs/stable/reference/series.html).
-# However, these LFs will work for any object with an attribute named `text`.
-# We discuss using other types of data points below when we introduce LF appliers.
+# We'll start by just looking for the exact string `"check out"` in the text, and see how that compares to looking for just `"check"` in the text.
+# For the two versions of our rule, we'll write a Python function over a single data point that express it, then add the decorator.
 
 # %%
 from snorkel.labeling.lf import labeling_function
@@ -255,6 +247,9 @@ def check_out(x):
 # [`LFApplier`](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.apply.html#snorkel-labeling-apply-package).
 # Because our data points are represented with a Pandas DataFrame in this tutorial, we use the
 # [`PandasLFApplier`](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.apply.html#snorkel.labeling.apply.pandas.PandasLFApplier).
+# Correspondingly, a single data point `x` that's passed into our LFs will be a [Pandas `Series` object](https://pandas.pydata.org/pandas-docs/stable/reference/series.html).
+#
+# It's important to note that these LFs will work for any object with an attribute named `text`, not just Pandas objects.
 # Snorkel has several other appliers for different data point collection types which you can browse in the [API documentation](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.apply.html).
 #
 # The output of the `apply(...)` method is a ***label matrix***, a fundamental concept in Snorkel.
@@ -411,8 +406,7 @@ df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
 #
 # **A brief intro to `Preprocessor`s**
 #
-# Just like a `LabelingFunction` is constructed from a black-box Python function that maps a data point to an integer label,
-# a [Snorkel `Preprocessor`](https://snorkel.readthedocs.io/en/redux/source/snorkel.preprocess.html#snorkel.preprocess.core.preprocessor)
+# A [Snorkel `Preprocessor`](https://snorkel.readthedocs.io/en/redux/source/snorkel.preprocess.html#snorkel.preprocess.core.preprocessor)
 # is constructed from a black-box Python function that maps a data point to a new data point.
 # `LabelingFunction`s can use `Preprocessor`s, which lets us write LFs over transformed or enhanced data points.
 # We add the [`@preprocessor(...)` decorator](https://snorkel.readthedocs.io/en/redux/source/snorkel.preprocess.html#snorkel.preprocess.core.preprocessor)
@@ -760,7 +754,7 @@ Y_pred_train
 # The only information we need is the label matrix, which contains the output of the LFs on our training set.
 # The `LabelModel` is able to learn weights for the labeling functions using only the label matrix as input.
 # We also specify the `cardinality`, or number of classes.
-# The `LabelModel` trains much more quickly than typical discriminative models.
+# The `LabelModel` trains much more quickly than typical discriminative models since we only need the label matrix as input.
 
 # %%
 from snorkel.labeling.model import LabelModel
@@ -838,7 +832,7 @@ df_train_filtered, Y_probs_train_filtered = filter_unlabeled_dataframe(
 # %% [markdown]
 # In this final section of the tutorial, we'll use the noisy training labels we generated in the last section to train a classifier for our task.
 # **The output of the Snorkel `LabelModel` is just a set of labels which can be used with most popular libraries for performing supervised learning, such as TensorFlow, Keras, PyTorch, Scikit-Learn, Ludwig, and XGBoost.**
-# In this tutorial, we demonstrate using classifiers from Keras and Scikit-Learn.
+# In this tutorial, we demonstrate using classifiers from [Keras](https://keras.io) and [Scikit-Learn](https://scikit-learn.org).
 
 # %% [markdown]
 # ### Featurization
@@ -964,8 +958,8 @@ keras_dev_model.fit(
     verbose=0,
 )
 
-Y_preds_test = np.round(keras_dev_model.predict(x=X_test))
-test_acc = metric_score(golds=Y_test, preds=Y_preds_test, metric="accuracy")
+Y_preds_test_dev = np.round(keras_dev_model.predict(x=X_test))
+test_acc = metric_score(golds=Y_test, preds=Y_preds_test_dev, metric="accuracy")
 print(f"Test Accuracy: {test_acc * 100:.1f}%")
 
 # %% [markdown]
