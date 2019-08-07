@@ -96,7 +96,7 @@ spacy = SpacyPreprocessor(text_field="text", doc_field="doc", memoize=True)
 # %%
 import names
 import numpy as np
-from snorkel.augmentation.tf import transformation_function
+from snorkel.augmentation import transformation_function
 
 replacement_names = [names.get_full_name() for _ in range(50)]
 
@@ -256,8 +256,7 @@ pd.DataFrame(transformed_examples)
 # Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasTFApplier` class. In addition, we can apply multiple TFs in a sequence to each example. A `policy` is used to determine what sequence of TFs to apply to each example. In this case, we just use a `MeanFieldPolicy` that picks 2 TFs at random per example, with probabilities given by `p`. We give higher probabilities to the replace_X_with_synonym TFs, since those provide more information to the model. The `n_per_original` argument determines how many augmented examples to generate per original example.
 
 # %%
-from snorkel.augmentation.apply import PandasTFApplier
-from snorkel.augmentation.policy import MeanFieldPolicy
+from snorkel.augmentation import MeanFieldPolicy, PandasTFApplier
 
 policy = MeanFieldPolicy(
     len(tfs),
