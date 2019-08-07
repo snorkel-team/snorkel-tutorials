@@ -92,7 +92,7 @@ NEGATIVE = 0
 ABSTAIN = -1
 
 # %%
-from snorkel.labeling.lf import labeling_function
+from snorkel.labeling import labeling_function
 
 # Check for the `spouse` words appearing between the person mentions
 spouses = {"spouse", "wife", "husband", "ex-wife", "ex-husband"}
@@ -236,7 +236,7 @@ def lf_distant_supervision_last_names(x, last_names):
 # We create a list of labeling functions and apply them to the data
 
 # %%
-from snorkel.labeling.apply import PandasLFApplier
+from snorkel.labeling import PandasLFApplier
 
 lfs = [
     lf_husband_wife,
@@ -252,7 +252,7 @@ lfs = [
 applier = PandasLFApplier(lfs)
 
 # %%
-from snorkel.labeling.analysis import LFAnalysis
+from snorkel.labeling import LFAnalysis
 
 dev_L = applier.apply(df_dev)
 train_L = applier.apply(df_train)
@@ -265,7 +265,7 @@ LFAnalysis(dev_L, lfs).lf_summary(Y_dev)
 # Now, we'll train a model of the LFs to estimate their weights and combine their outputs. Once the model is trained, we can combine the outputs of the LFs into a single, noise-aware training label set for our extractor.
 
 # %%
-from snorkel.labeling.model.label_model import LabelModel
+from snorkel.labeling import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(train_L, Y_dev, n_epochs=5000, log_freq=500, seed=12345)
@@ -275,8 +275,8 @@ label_model.fit(train_L, Y_dev, n_epochs=5000, log_freq=500, seed=12345)
 # Since our dataset is highly unbalanced (91% of the labels are negative), even a trivial baseline that always outputs negative can get a high accuracy. So we evaluate the label model using the F1 score and ROC-AUC rather than accuracy.
 
 # %%
-from snorkel.analysis.metrics import metric_score
-from snorkel.analysis.utils import probs_to_preds
+from snorkel.analysis import metric_score
+from snorkel.utils import probs_to_preds
 
 Y_probs_dev = label_model.predict_proba(dev_L)
 Y_preds_dev = probs_to_preds(Y_probs_dev)
@@ -293,8 +293,8 @@ print(
 # In this final section of the tutorial, we'll use our noisy training labels alongside the development set labels to train our end machine learning model. We start by filtering out training examples which did not recieve a label from any LF, as these examples contain no signal. Then we concatenate them with dev set examples.
 #
 # %%
-from snorkel.analysis.utils import preds_to_probs
-from snorkel.labeling.utils import filter_unlabeled_dataframe
+from snorkel.utils import preds_to_probs
+from snorkel.labeling import filter_unlabeled_dataframe
 
 # Change dev labels 1D array to 2D probabilities array as required for training end model.
 Y_probs_dev = preds_to_probs(Y_dev, 2)
