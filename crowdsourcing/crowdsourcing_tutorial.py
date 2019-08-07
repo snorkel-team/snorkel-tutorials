@@ -107,7 +107,7 @@ for worker_id in labels_by_annotator.groups:
 print("Number of workers:", len(worker_dicts))
 
 # %%
-from snorkel.labeling.lf import LabelingFunction
+from snorkel.labeling import LabelingFunction
 
 
 def f_pos(x, worker_dict):
@@ -137,7 +137,7 @@ worker_lfs_neg = [
 # Let's take a quick look at how well they do on the development set.
 
 # %%
-from snorkel.labeling.apply import PandasLFApplier
+from snorkel.labeling import PandasLFApplier
 
 lfs = worker_lfs_pos + worker_lfs_neg
 
@@ -146,7 +146,7 @@ L_train = applier.apply(df_train)
 L_dev = applier.apply(df_dev)
 
 # %%
-from snorkel.labeling.analysis import LFAnalysis
+from snorkel.labeling import LFAnalysis
 
 LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head()
 
@@ -166,7 +166,7 @@ print("Dev set coverage:", LFAnalysis(L_dev).label_coverage())
 # For example, we can use [TextBlob](https://textblob.readthedocs.io/en/dev/index.html), a tool that provides a pretrained sentiment analyzer. We run TextBlob on our tweets and create some simple LFs that threshold its polarity score, similar to what we did in the spam_tutorial.
 
 # %%
-from snorkel.labeling.lf import labeling_function
+from snorkel.labeling import labeling_function
 from snorkel.preprocess import preprocessor
 from textblob import TextBlob
 
@@ -226,7 +226,7 @@ print("Dev set coverage:", LFAnalysis(L_dev).label_coverage())
 # ## Train LabelModel And Generate Probabilistic Labels
 
 # %%
-from snorkel.labeling.model.label_model import LabelModel
+from snorkel.labeling import LabelModel
 
 # Train LabelModel.
 label_model = LabelModel(cardinality=2, verbose=True)
@@ -236,8 +236,8 @@ label_model.fit(L_train, n_epochs=100, seed=123, log_freq=20, l2=0.1, lr=0.01)
 # As a spot-check for the quality of our LabelModel, we'll score it on the dev set.
 
 # %%
-from snorkel.analysis.metrics import metric_score
-from snorkel.analysis.utils import probs_to_preds
+from snorkel.analysis import metric_score
+from snorkel.utils import probs_to_preds
 
 Y_dev_prob = label_model.predict_proba(L_dev)
 Y_dev_pred = probs_to_preds(Y_dev_prob)

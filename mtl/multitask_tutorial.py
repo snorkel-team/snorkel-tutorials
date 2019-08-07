@@ -16,7 +16,7 @@
 # %%
 # %matplotlib inline
 
-from snorkel.analysis.utils import set_seed
+from snorkel.utils import set_seed
 
 SEED = 123
 set_seed(SEED)
@@ -117,7 +117,7 @@ square_data_splits, square_label_splits = split_data(
 
 # %%
 import torch
-from snorkel.classification.data import DictDataset, DictDataLoader
+from snorkel.classification import DictDataset, DictDataLoader
 
 dataloaders = []
 for split in ["train", "valid", "test"]:
@@ -155,7 +155,7 @@ for split in ["train", "valid", "test"]:
 
 # %%
 import torch.nn as nn
-from snorkel.classification.task import Operation
+from snorkel.classification import Operation
 
 # Define a two-layer MLP module and a one-layer prediction "head" module
 base_mlp = nn.Sequential(nn.Linear(2, 8), nn.ReLU(), nn.Linear(8, 4), nn.ReLU())
@@ -188,8 +188,7 @@ task_flow = [op1, op2]
 # %%
 from functools import partial
 
-from snorkel.classification.task import Task, ce_loss, softmax
-from snorkel.classification.scorer import Scorer
+from snorkel.classification import Scorer, Task, ce_loss, softmax
 
 circle_task = Task(
     name="circle_task",
@@ -231,7 +230,7 @@ square_task = Task(
 # So because both the `square_task` and `circle_task` include "base_mlp" in their module pools, this module will be shared between the two tasks.
 
 # %%
-from snorkel.classification.snorkel_classifier import SnorkelClassifier
+from snorkel.classification import SnorkelClassifier
 
 model = SnorkelClassifier([circle_task, square_task])
 
@@ -242,7 +241,7 @@ model = SnorkelClassifier([circle_task, square_task])
 # Once the model is constructed, we can train it as we would a single-task model, using the `fit` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all examples  will be seen exactly once before any are seen twice.
 
 # %%
-from snorkel.classification.training import Trainer
+from snorkel.classification import Trainer
 
 trainer_config = {"progress_bar": True, "n_epochs": 10, "lr": 0.02}
 

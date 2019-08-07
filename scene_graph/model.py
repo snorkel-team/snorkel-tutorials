@@ -9,8 +9,8 @@ import torch.nn as nn
 from PIL import Image
 from torchvision import transforms
 
-from snorkel.classification.data import DictDataset, XDict, YDict
-from snorkel.classification.task import Operation
+from snorkel.classification import DictDataset, Operation
+from snorkel.classification.data import XDict, YDict
 
 
 def union(bbox1, bbox2):
