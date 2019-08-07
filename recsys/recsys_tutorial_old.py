@@ -501,4 +501,4 @@ for i, (u, b, r) in enumerate(zip(df_interactions.user_id, df_interactions.book_
     print(f"{pred}, {r}")
     if i > 10:
         break
-    
+
