@@ -18,7 +18,7 @@
 # comments contain links:
 #
 # ```python
-# from snorkel.labeling.lf import labeling_function
+# from snorkel.labeling import labeling_function
 #
 # @labeling_function()
 # def lf_contains_link(x):
@@ -227,7 +227,7 @@ df_train[["author", "text", "video"]].sample(20, random_state=2)
 # For the two versions of our rule, we'll write a Python function over a single data point that express it, then add the decorator.
 
 # %%
-from snorkel.labeling.lf import labeling_function
+from snorkel.labeling import labeling_function
 
 
 # %%
@@ -257,7 +257,7 @@ def check_out(x):
 # We'll create one label matrix for the `train` set and one for the `dev` set.
 
 # %%
-from snorkel.labeling.apply import PandasLFApplier
+from snorkel.labeling import PandasLFApplier
 
 # %%
 lfs = [check_out, check]
@@ -298,7 +298,7 @@ print(f"check_out coverage: {coverage_check_out * 100:.1f}%")
 # Since we have labels for the `dev` set but not the `train` set, we'll compute these statistics for the `dev` set only by supplying `Y_dev`.
 
 # %%
-from snorkel.labeling.analysis import LFAnalysis
+from snorkel.labeling import LFAnalysis
 
 # %%
 LFAnalysis(L=L_train, lfs=lfs).lf_summary()
@@ -316,7 +316,7 @@ LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 # This may give ideas for where the LF could be made more specific.
 
 # %%
-from snorkel.analysis.error_analysis import get_label_buckets
+from snorkel.analysis import get_label_buckets
 
 # %%
 buckets = get_label_buckets(Y_dev, L_dev[:, 1])
@@ -547,7 +547,7 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 # wraps a Python function (the `f` parameter), and we can use the `resources` parameter to pass in keyword arguments (here, our keywords to lookup) to said function.
 
 # %%
-from snorkel.labeling.lf import LabelingFunction
+from snorkel.labeling import LabelingFunction
 
 
 # %%
@@ -739,7 +739,7 @@ plot_label_frequency(L_train)
 # [`MajorityLabelVoter` baseline model](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.model.html#snorkel.labeling.model.baselines.MajorityLabelVoter).
 
 # %%
-from snorkel.labeling.model import MajorityLabelVoter
+from snorkel.labeling import MajorityLabelVoter
 
 # %%
 majority_model = MajorityLabelVoter()
@@ -758,7 +758,7 @@ Y_pred_train
 # The `LabelModel` trains much more quickly than typical discriminative models since we only need the label matrix as input.
 
 # %%
-from snorkel.labeling.model import LabelModel
+from snorkel.labeling import LabelModel
 
 # %%
 label_model = LabelModel(cardinality=2, verbose=True)
@@ -820,7 +820,7 @@ plot_probabilities_histogram(Y_probs_train[:, SPAM])
 # [built-in utility](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.html#snorkel.labeling.utils.filter_unlabeled_dataframe).
 
 # %%
-from snorkel.labeling.utils import filter_unlabeled_dataframe
+from snorkel.labeling import filter_unlabeled_dataframe
 
 # %%
 df_train_filtered, Y_probs_train_filtered = filter_unlabeled_dataframe(
@@ -890,8 +890,8 @@ sess = tf.compat.v1.Session(graph=tf.get_default_graph(), config=session_conf)
 K.set_session(sess)
 
 # %%
-from snorkel.analysis.utils import preds_to_probs
-from snorkel.analysis.metrics import metric_score
+from snorkel.analysis import metric_score
+from snorkel.utils import preds_to_probs
 
 # %%
 # Our model is a simple linear layer mapping from feature
@@ -973,7 +973,7 @@ print(f"Test Accuracy: {test_acc * 100:.1f}%")
 # It's important to note that this transformation is lossy, as we no longer have values for our confidence in each label.
 
 # %%
-from snorkel.analysis.utils import probs_to_preds
+from snorkel.utils import probs_to_preds
 
 # %%
 Y_preds_train_filtered = probs_to_preds(probs=Y_probs_train_filtered)
