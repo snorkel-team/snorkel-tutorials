@@ -8,4 +8,5 @@ if [ ! -d "data" ]; then
     cd data/
     unzip ../data.zip
     rm ../data.zip
+    rm trained_spouse_model
 fi

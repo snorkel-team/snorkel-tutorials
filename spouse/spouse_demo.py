@@ -2,8 +2,8 @@
 # # Detecting spouse mentions in sentences
 
 # %% [markdown]
-# We will walk through an example text classification task to explore how Snorkel can be used for Information Extraction.
-# ## Classification Task
+# In this tutorial, we will see how Snorkel can be used for Information Extraction. We will walk through an example text classification task for information extraction, where we use labeling functions involving keywords and distant supervision.
+# ### Classification Task
 # <img src="imgs/sentence.jpg" width="700px;">
 #
 # We want to classify each __candidate__ or pair of people mentioned in a sentence, as being married at some point or not.
@@ -26,7 +26,7 @@ from utils import load_data
 ((df_dev, Y_dev), df_train, (df_test, Y_test)) = load_data()
 
 # %% [markdown]
-# **Input Data:** `df_dev` is a Pandas DataFrame object, where each row represents a particular __candidate__. The DataFrames contain the fields `sentence`, which refers to the sentence the candidate is in, `tokens`, the tokenized form of the sentence, `person1_word_idx` and `person2_word_idx`, which represent `[start, end]` indices in the tokens at which the first and second person's name appear, respectively.
+# **Input Data:** `df_dev`, `df_train`, and `df_test` are Pandas DataFrame objects, where each row represents a particular __candidate__. For our problem, a candidate consists of a sentence, and two people mentioned in the sentence. The DataFrames contain the fields `sentence`, which refers to the sentence of the candidate, `tokens`, the tokenized form of the sentence, and `person1_word_idx` and `person2_word_idx`, which represent `[start, end]` indices in the tokens at which the first and second person's name appear, respectively.
 #
 # We also have certain **preprocessed fields**, that we discuss a few cells below.
 
@@ -52,14 +52,14 @@ print("Person 1: ", person_names[0])
 print("Person 2: ", person_names[1])
 
 # %% [markdown]
-# ### Preprocessing the Database
+# ### Preprocessing the Data
 #
 # In a real application, there is a lot of data preparation, parsing, and database loading that needs to be completed before we generate candidates and dive into writing labeling functions. Here we've pre-generated candidates in a pandas DataFrame object per split (train,dev,test).
 
 # %% [markdown]
 # ### Labeling Function Helpers
 #
-# When writing labeling functions, there are several operators you will use over and over again. In the case of text relation extraction as with this task, common operators include fetching text between mentions of the two people in a candidate, examing word windows around person mentions, etc. We will wrap these operators as `preprocessors`.
+# When writing labeling functions, there are several functions you will use over and over again. In the case of text relation extraction as with this task, common functions include those for fetching text between mentions of the two people in a candidate, examing word windows around person mentions, and so on. We will wrap these functions as `preprocessors`.
 
 # %%
 from snorkel.preprocess import preprocessor
@@ -79,13 +79,10 @@ def get_text_between(cand):
 # %% [markdown]
 # ### Candidate PreProcessors
 #
-# We provide a set of `preprocessor`s for this task in `preprocessors.py`. For the purpose of the tutorial, we also have three fields (between_tokens, person1_right_tokens, person2_right_tokens) preprocessed in the data, which can be used when creating labeling functions.
-#
-# `get_person_text(cand)`
-#
-# `get_person_lastnames(cand)`
-#
-# `get_left_tokens(cand)`
+# For the purposes of the tutorial, we have three fields (`between_tokens`, `person1_right_tokens`, `person2_right_tokens`) preprocessed in the data, which can be used when creating labeling functions. We also provide the following set of `preprocessor`s for this task in `preprocessors.py`, along with the fields these populate.
+# * `get_person_text(cand)`: `person_names`
+# * `get_person_lastnames(cand)`: `person_lastnames`
+# * `get_left_tokens(cand)`: `person1_left_tokens`, `person2_left_tokens`
 
 # %%
 from preprocessors import get_left_tokens, get_person_last_names
@@ -290,13 +287,6 @@ print(
     f"Label model roc-auc: {metric_score(Y_dev, Y_preds_dev, probs=Y_probs_dev, metric='roc_auc')}"
 )
 
-# %%
-import matplotlib.pyplot as plt
-
-Y_probs_train = label_model.predict_proba(train_L)
-plt.hist(Y_probs_train[:, 1], bins=20, range=(0.0, 1.0))
-plt.show()
-
 # %% [markdown]
 # ### Part 4: Training our End Extraction Model
 #
@@ -318,26 +308,10 @@ df_combined = pd.concat([df_dev, df_train_filtered])
 Y_probs_combined = np.concatenate([Y_probs_dev, Y_probs_train_filtered], 0)
 
 # %% [markdown]
-# ### II. Training a _Long Short-term Memory_ (LSTM) Neural Network
-#
-# [LSTMs](https://en.wikipedia.org/wiki/Long_short-term_memory) can acheive state-of-the-art performance on many text classification tasks. We'll train a simple LSTM model below. tf_model contains functions for processing features and building the tensorflow graphs for training and evaluation.
-#
-# For this tutorial, we will be training a fairly effective deep learning model. More generally, however, Snorkel plugs in with many ML libraries, making it easy to use almost any state-of-the-art model as the end model!
+# Next, we train a simple [LSTM](https://en.wikipedia.org/wiki/Long_short-term_memory) network for classifying candidates. `tf_model` contains functions for processing features and building the keras model for training and evaluation.
 
 # %%
-from tf_model import get_model
-
-
-# Truncate sentences to limit memory usage when padding.
-def get_feature_arrays(df):
-    def pad_or_truncate(l, max_length=40):
-        return l[:max_length] + [""] * (max_length - len(l))
-
-    tokens = np.array(list(map(pad_or_truncate, df.tokens)))
-    idx1 = np.array(list(map(list, df.person1_word_idx)))
-    idx2 = np.array(list(map(list, df.person2_word_idx)))
-    return tokens, idx1, idx2
-
+from tf_model import get_model, get_feature_arrays
 
 model = get_model()
 tokens, idx1, idx2 = get_feature_arrays(df_combined)
@@ -349,7 +323,7 @@ model.fit(
 )
 
 # %% [markdown]
-# Measure the trained model's prediction F1 score and ROC_AUC.
+# Finally, we evaluate the trained model by measuring its F1 score and ROC_AUC.
 
 # %%
 test_tokens, test_idx1, test_idx2 = get_feature_arrays(df_test)
@@ -361,3 +335,7 @@ print(
 print(
     f"Test ROC-AUC when trained with soft labels: {metric_score(Y_test, probs=probs, metric='roc_auc')}"
 )
+
+# %% [markdown]
+# ## Summary
+# In this tutorial, we showed how Snorkel can be used for Information Extraction. We demonstrated how to create LFs that leverage keywords and external knowledge bases (distant supervision). Finally, we showed how a model trained using the probabilistic outputs of the Label Model can achieve comparable performance while generalizing to all examples.

@@ -1,5 +1,20 @@
 # +
+from typing import Tuple
+import numpy as np
+import pandas as pd
 import tensorflow as tf
+
+
+def get_feature_arrays(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Get np arrays of upto max_length tokens and person idxs."""
+
+    def pad_or_truncate(l, max_length=40):
+        return l[:max_length] + [""] * (max_length - len(l))
+
+    tokens = np.array(list(map(pad_or_truncate, df.tokens)))
+    idx1 = np.array(list(map(list, df.person1_word_idx)))
+    idx2 = np.array(list(map(list, df.person2_word_idx)))
+    return tokens, idx1, idx2
 
 
 def get_model(
