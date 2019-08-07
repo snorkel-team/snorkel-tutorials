@@ -1,0 +1,2 @@
+# Stored dev, train, test dataframes and labels, and dbpedia entries.
+*.pkl
