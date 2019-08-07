@@ -124,6 +124,7 @@ dmypy.json
 
 # Editors
 .vscode/
+*.swp
 
 # Dask
 dask-worker-space/
@@ -134,6 +135,10 @@ dask-worker-space/
 # Generic data directories
 **/data/*
 
+# Nohup
+nohup.out
+
 # Modeling
 checkpoint/
 checkpoints/
+
