@@ -1,10 +1,26 @@
-# Execute from snorkel-tutorials/spam/
+#!/bin/bash
 set -euxo pipefail
-trap 'rm -r data/ data.zip' ERR  # Clean up in case of error.
 
+# Check that we are running from the right directory.
+if [ ! "${PWD##*/}" = "spam" ]; then
+    echo "Script must be run from spam directory" >&2
+    exit 1
+fi
+
+FILES=( "Youtube01-Psy.csv" "Youtube02-KatyPerry.csv" "Youtube03-LMFAO.csv" "Youtube04-Eminem.csv" "Youtube05-Shakira.csv" )
 DATA_URL="https://archive.ics.uci.edu/ml/machine-learning-databases/00380/YouTube-Spam-Collection-v1.zip"
+RELOAD=false
 
-if [ ! -d "data" ]; then
+# Check if at least any file is missing. If so, reload all data.
+for filename in "${FILES[@]}"
+do
+    if [ ! -e "data/$filename" ]; then
+        RELOAD=true
+    fi
+done
+
+if [ "$RELOAD" = true ]; then
+    if [ -d "data/" ]; then rm -Rf "data/"; fi
     mkdir -p data
     wget $DATA_URL -O data.zip
     mv data.zip data/
