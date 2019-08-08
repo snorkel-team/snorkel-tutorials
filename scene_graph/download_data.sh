@@ -35,23 +35,7 @@ if [ ! -d "scene_graph/data" ]; then
     rm vrd.zip
     cd VRD
 
-    # if [ "$TRAVIS" = "true" ]; then
-    #     # Download and unzip sample images
-    #     mkdir sg_dataset
-    #     cd sg_dataset
-    #     git clone $SAMPLE_IMAGES_URL
-    #     mv Visual-Relationship-Detection/samples ./
-    #     rm -r Visual-Relationship-Detection
-    #     cd ../..
-    # else
-    #     # Download and unzip all images
-    #     wget $IMAGES_URL
-    #     unzip sg_dataset.zip
-    #     rm sg_dataset.zip
-    #     cd ../../..
-    # fi
-
-    # Download and unzip all images
+    # Download and unzip sample images
     mkdir sg_dataset
     cd sg_dataset
     git clone $SAMPLE_IMAGES_URL
