@@ -2,7 +2,7 @@
 # jupyter:
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: ipynb,py
+#     formats: ipynb,py:light
 #     text_representation:
 #       extension: .py
 #       format_name: light
@@ -47,6 +47,7 @@ if os.path.basename(os.getcwd()) == "scene_graph":
 # %autoreload 2
 
 import numpy as np
+
 # -
 
 # If you are running this notebook for the first time, it will take ~15 mins to download all the required data. **Setting `sample = False` will download the full VRD dataset, which can take ~3 hours!**
@@ -58,7 +59,7 @@ import numpy as np
 from scene_graph.utils import load_vrd_data
 
 sample = True
-is_travis = 'TRAVIS' in os.environ
+is_travis = "TRAVIS" in os.environ
 train_df, valid_df, test_df = load_vrd_data(sample, is_travis)
 
 print("Train Relationships: ", len(train_df))
