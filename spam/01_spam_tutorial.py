@@ -219,7 +219,7 @@ df_train[["author", "text", "video"]].sample(20, random_state=2)
 
 # %% [markdown]
 # Labeling functions in Snorkel are created with the
-# [`@labeling_function` decorator](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.lf.html#snorkel.labeling.lf.core.labeling_function).
+# [`@labeling_function` decorator](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.labeling_function.html).
 # The [decorator](https://realpython.com/primer-on-python-decorators/) can be applied to _any Python function_ that returns a label for a single data point.
 #
 # Let's start developing an LF to catch instances of commenters trying to get people to "check out" their channel, video, or website.
@@ -244,13 +244,13 @@ def check_out(x):
 
 # %% [markdown]
 # To apply one or more LFs that we've written to a collection of data points, we use an
-# [`LFApplier`](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.apply.html#snorkel-labeling-apply-package).
+# [`LFApplier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.LFApplier.html).
 # Because our data points are represented with a Pandas DataFrame in this tutorial, we use the
-# [`PandasLFApplier`](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.apply.html#snorkel.labeling.apply.pandas.PandasLFApplier).
+# [`PandasLFApplier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.PandasLFApplier.html).
 # Correspondingly, a single data point `x` that's passed into our LFs will be a [Pandas `Series` object](https://pandas.pydata.org/pandas-docs/stable/reference/series.html).
 #
 # It's important to note that these LFs will work for any object with an attribute named `text`, not just Pandas objects.
-# Snorkel has several other appliers for different data point collection types which you can browse in the [API documentation](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.apply.html).
+# Snorkel has several other appliers for different data point collection types which you can browse in the [API documentation](https://snorkel.readthedocs.io/en/redux/packages/labeling.html).
 #
 # The output of the `apply(...)` method is a ***label matrix***, a fundamental concept in Snorkel.
 # It's a NumPy array `L` with one column for each LF and one row for each data point, where `L[i, j]` is the label that the `j`th labeling function output for the `i`th data point.
@@ -282,7 +282,7 @@ print(f"check_out coverage: {coverage_check_out * 100:.1f}%")
 # %% [markdown]
 # Lots of statistics about labeling functions &mdash; like coverage &mdash; are useful when building any Snorkel application.
 # So Snorkel provides tooling for common LF analyses using the
-# [`LFAnalysis` utility](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.html#snorkel.labeling.analysis.LFAnalysis).
+# [`LFAnalysis` utility](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.LFAnalysis.html).
 # We report the following summary statistics for multiple LFs at once:
 #
 # * **Polarity**: The set of unique labels this LF outputs (excluding abstains)
@@ -407,10 +407,10 @@ df_train.iloc[buckets[(SPAM, ABSTAIN)]].sample(10, random_state=1)
 #
 # **A brief intro to `Preprocessor`s**
 #
-# A [Snorkel `Preprocessor`](https://snorkel.readthedocs.io/en/redux/source/snorkel.preprocess.html#snorkel.preprocess.core.preprocessor)
+# A [Snorkel `Preprocessor`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/preprocess/snorkel.preprocess.Preprocessor.html#snorkel.preprocess.Preprocessor)
 # is constructed from a black-box Python function that maps a data point to a new data point.
 # `LabelingFunction`s can use `Preprocessor`s, which lets us write LFs over transformed or enhanced data points.
-# We add the [`@preprocessor(...)` decorator](https://snorkel.readthedocs.io/en/redux/source/snorkel.preprocess.html#snorkel.preprocess.core.preprocessor)
+# We add the [`@preprocessor(...)` decorator](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/preprocess/snorkel.preprocess.preprocessor.html)
 # to preprocessing functions to create `Preprocessor`s.
 # `Preprocessor`s also have extra functionality, such as memoization
 # (i.e. input/output caching, so it doesn't re-execute for each LF that uses it).
@@ -542,8 +542,8 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 # %% [markdown]
 # For text applications, some of the simplest LFs to write are often just keyword lookups.
 # These will often follow the same execution pattern, so we can create a template and use the `resources` parameter to pass in LF-specific keywords.
-# Similar to the [`labeling_function` decorator](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.lf.html#snorkel.labeling.lf.core.labeling_function),
-# the [`LabelingFunction` class](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.lf.html#snorkel.labeling.lf.core.LabelingFunction)
+# Similar to the [`labeling_function` decorator](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.labeling_function.html#snorkel.labeling.labeling_function),
+# the [`LabelingFunction` class](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.LabelingFunction.html#snorkel.labeling.LabelingFunction)
 # wraps a Python function (the `f` parameter), and we can use the `resources` parameter to pass in keyword arguments (here, our keywords to lookup) to said function.
 
 # %%
@@ -612,11 +612,11 @@ def short_comment(x):
 # For example, we can use the fantastic NLP (natural language processing) tool [spaCy](https://spacy.io/) to add lemmas, part-of-speech (pos) tags, etc. to each token.
 # Snorkel provides a prebuilt preprocessor for spaCy called `SpacyPreprocessor` which adds a new field to the
 # data point containing a [spaCy `Doc` object](https://spacy.io/api/doc).
-# For more info, see the [`SpacyPreprocessor` documentation](https://snorkel.readthedocs.io/en/redux/source/snorkel.preprocess.html#snorkel.preprocess.nlp.SpacyPreprocessor).
+# For more info, see the [`SpacyPreprocessor` documentation](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/preprocess/snorkel.preprocess.nlp.SpacyPreprocessor.html#snorkel.preprocess.nlp.SpacyPreprocessor).
 #
 #
 # If you prefer to use a different NLP tool, you can also wrap that as a `Preprocessor` and use it in the same way.
-# For more info, see the [`preprocessor` documentation](https://snorkel.readthedocs.io/en/redux/source/snorkel.preprocess.html#snorkel.preprocess.core.preprocessor).
+# For more info, see the [`preprocessor` documentation](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/preprocess/snorkel.preprocess.preprocessor.html#snorkel.preprocess.preprocessor).
 
 # %% [markdown]
 # If the spaCy English model wasn't already installed, the next cell may raise an exception.
@@ -642,7 +642,7 @@ def has_person(x):
 
 # %% [markdown]
 # Because spaCy is such a common preprocessor for NLP applications, we also provide a
-# [prebuilt `labeling_function`-like decorator that uses spaCy](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.lf.html#snorkel.labeling.lf.nlp.nlp_labeling_function).
+# [prebuilt `labeling_function`-like decorator that uses spaCy](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.lf.nlp.nlp_labeling_function.html#snorkel.labeling.lf.nlp.nlp_labeling_function).
 # This resulting LF is identical to the one defined manually above.
 
 # %%
@@ -700,7 +700,7 @@ lfs = [
 # The Pandas format provides an easy interface that many practioners are familiar with, but it is also less optimized for scale.
 # For larger datasets, more compute-intensive LFs, or larger LF sets, you may decide to use one of the other data formats
 # that Snorkel supports natively, such as Dask DataFrames or PySpark DataFrames, and their corresponding applier objects.
-# For more info, check out the [Snorkel API documentation](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.apply.html).
+# For more info, check out the [Snorkel API documentation](https://snorkel.readthedocs.io/en/redux/packages/labeling.html).
 
 # %%
 applier = PandasLFApplier(lfs=lfs)
@@ -736,7 +736,7 @@ plot_label_frequency(L_train)
 # Our goal is now to convert the labels from our LFs into a single _noise-aware_ probabilistic (or confidence-weighted) label per data point.
 # A simple baseline for doing this is to take the majority vote on a per-data point basis: if more LFs voted SPAM than HAM, label it SPAM (and vice versa).
 # We can test this with the
-# [`MajorityLabelVoter` baseline model](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.model.html#snorkel.labeling.model.baselines.MajorityLabelVoter).
+# [`MajorityLabelVoter` baseline model](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.MajorityLabelVoter.html#snorkel.labeling.MajorityLabelVoter).
 
 # %%
 from snorkel.labeling import MajorityLabelVoter
@@ -749,7 +749,7 @@ Y_pred_train
 # %% [markdown]
 # However, as we can clearly see by looking the summary statistics of our LFs in the previous section, they are not all equally accurate, and should not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine the outputs of the LFs.
 #
-# This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers. For more info on the API, see the [`LabelModel` documentation](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.model.html#snorkel.labeling.model.label_model.LabelModel).
+# This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers. For more info on the API, see the [`LabelModel` documentation](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.LabelModel.html#snorkel.labeling.LabelModel).
 #
 # Note that no gold labels are used during the training process.
 # The only information we need is the label matrix, which contains the output of the LFs on our training set.
@@ -817,7 +817,7 @@ plot_probabilities_histogram(Y_probs_train[:, SPAM])
 # %% [markdown]
 # As we saw earlier, some of the data points in our `train` set received no labels from any of our LFs.
 # These examples convey no supervision signal and tend to hurt performance, so we filter them out before training using a
-# [built-in utility](https://snorkel.readthedocs.io/en/redux/source/snorkel.labeling.html#snorkel.labeling.utils.filter_unlabeled_dataframe).
+# [built-in utility](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/labeling/snorkel.labeling.filter_unlabeled_dataframe.html#snorkel.labeling.filter_unlabeled_dataframe).
 
 # %%
 from snorkel.labeling import filter_unlabeled_dataframe
@@ -969,7 +969,7 @@ print(f"Test Accuracy: {test_acc * 100:.1f}%")
 # %% [markdown]
 # If we want to use a library or model that doesn't accept probabilistic labels, we can replace each label distribution with the label of the class that has the maximum probability.
 # This can easily be done using the
-# [`probs_to_preds` helper method](https://snorkel.readthedocs.io/en/redux/source/snorkel.analysis.html#snorkel.analysis.utils.probs_to_preds).
+# [`probs_to_preds` helper method](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/utils/snorkel.utils.probs_to_preds.html#snorkel.utils.probs_to_preds).
 # It's important to note that this transformation is lossy, as we no longer have values for our confidence in each label.
 
 # %%
