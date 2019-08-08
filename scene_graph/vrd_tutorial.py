@@ -212,7 +212,8 @@ import torchvision.models as models
 import torch.nn as nn
 
 from functools import partial
-from snorkel.classification import Scorer, Task, ce_loss, softmax
+from snorkel.analysis import Scorer
+from snorkel.classification import Task, ce_loss, softmax
 
 
 # initialize pretrained feature extractor
