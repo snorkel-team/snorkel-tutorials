@@ -212,7 +212,7 @@ import torchvision.models as models
 import torch.nn as nn
 
 from functools import partial
-from snorkel.classification import Scorer, Task, ce_loss, softmax
+from snorkel.classification import Scorer, Task
 
 
 # initialize pretrained feature extractor
@@ -250,8 +250,6 @@ pred_cls_task = Task(
     name="scene_graph_task",
     module_pool=module_pool,
     task_flow=task_flow,
-    loss_func=partial(ce_loss, "head_op"),
-    output_func=partial(softmax, "head_op"),
     scorer=Scorer(metrics=["f1_micro"]),
 )
 
