@@ -260,9 +260,9 @@ pred_cls_task = Task(
 # ### Train and Evaluate Model
 
 # %%
-from snorkel.classification import SnorkelClassifier, Trainer
+from snorkel.classification import MultitaskClassifier, Trainer
 
-model = SnorkelClassifier([pred_cls_task])
+model = MultitaskClassifier([pred_cls_task])
 trainer = Trainer(
     n_epochs=1,
     lr=1e-3,
