@@ -1,5 +1,5 @@
 # Execute from snorkel-tutorials/spam/
-# Download data,
+set -euxo pipefail
 
 DATA_URL="https://archive.ics.uci.edu/ml/machine-learning-databases/00380/YouTube-Spam-Collection-v1.zip"
 

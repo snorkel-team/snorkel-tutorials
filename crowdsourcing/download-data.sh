@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euxo pipefail
 
 if [ ! -d "data" ]; then
     mkdir -p data

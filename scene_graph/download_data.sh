@@ -1,5 +1,5 @@
 # Execute from snorkel-tutorials/
-# Download data,
+set -euxo pipefail
 
 ANNOTATIONS_URL="https://www.dropbox.com/s/bnfhm6kt9xumik8/vrd.zip"
 IMAGES_URL="http://imagenet.stanford.edu/internal/jcjohns/scene_graphs/sg_dataset.zip"

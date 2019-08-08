@@ -1,4 +1,5 @@
 # Execute from root of snorkel-tutorials/
+set -euxo pipefail
 
 DATA_URL="https://www.dropbox.com/s/jmrvyaqew4zp9cy/spouse_data.zip"
 
