@@ -1,5 +1,6 @@
 # Execute from snorkel-tutorials/spam/
 set -euxo pipefail
+trap 'rm -r data/ data.zip' ERR  # Clean up in case of error.
 
 DATA_URL="https://archive.ics.uci.edu/ml/machine-learning-databases/00380/YouTube-Spam-Collection-v1.zip"
 

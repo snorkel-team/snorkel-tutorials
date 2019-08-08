@@ -1,5 +1,6 @@
 # Execute from snorkel-tutorials/
 set -euxo pipefail
+trap 'rm -r scene_graph/data/' ERR  # Clean up in case of error.
 
 ANNOTATIONS_URL="https://www.dropbox.com/s/bnfhm6kt9xumik8/vrd.zip"
 IMAGES_URL="http://imagenet.stanford.edu/internal/jcjohns/scene_graphs/sg_dataset.zip"

@@ -1,5 +1,6 @@
 # Execute from root of snorkel-tutorials/
 set -euxo pipefail
+trap 'rm -r data/ data.zip' ERR  # Clean up in case of error.
 
 DATA_URL="https://www.dropbox.com/s/jmrvyaqew4zp9cy/spouse_data.zip"
 
