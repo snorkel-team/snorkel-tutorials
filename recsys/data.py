@@ -1,9 +1,7 @@
 import calendar
-import collections
 import gdown
 import gzip
 import json
-import numpy as np
 import os
 import pandas as pd
 from datetime import datetime
@@ -162,7 +160,6 @@ def download_and_process_data():
 
     df_interactions, user_id_to_idx = process_interactions_data(book_id_to_idx)
     df_interactions_nz = df_interactions[df_interactions.rating != 0]
-    df_interactions_z = df_interactions[df_interactions.rating == 0]
     ratings_map = {1: 0, 2: 0, 3: 0, 4: 1, 5: 1}
     df_interactions_nz["rating_4_5"] = df_interactions_nz.rating.map(ratings_map)
     df_reviews = process_reviews_data(book_id_to_idx, user_id_to_idx)

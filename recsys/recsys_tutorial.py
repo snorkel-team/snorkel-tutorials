@@ -2,7 +2,9 @@
 # # Recommender Systems Tutorial
 # In this tutorial, we'll provide a simple walkthrough of how to use Snorkel to to improve recommendations.
 # We will use the [Goodreads](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home) dataset, from
-# "Item Recommendation on Monotonic Behavior Chains", RecSys'18 (Mengting Wan, Julian McAuley), and "Fine-Grained Spoiler Detection from Large-Scale Review Corpora", ACL'19, Mengting Wan, Rishabh Misra, Ndapa Nakashole, Julian McAuley. In this dataset, we have user ratings and reviews for Young Adult novels from the Goodreads website, along with metadata (like authors) for the novels. We consider the task of predicting whether a user will read and like any given book.
+# "Item Recommendation on Monotonic Behavior Chains", RecSys'18 (Mengting Wan, Julian McAuley), and "Fine-Grained Spoiler Detection from Large-Scale Review Corpora", ACL'19, Mengting Wan, Rishabh Misra, Ndapa Nakashole, Julian McAuley.
+#
+# In this dataset, we have user ratings and reviews for Young Adult novels from the Goodreads website, along with metadata (like `title` and `authors`) for the novels. We consider the task of predicting whether a user will read and like any given book.
 
 # %%
 import os
@@ -14,7 +16,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # ## Loading Data
 
 # %% [markdown]
-# We run the `download_data` function to download and preprocess the data. The function returns the `df_books` dataframe, which contains one row per book, along with metadata for that book. It also contains the `data_train`, `data_test`, `data_val`, `data_val` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
+# We start by running the `download_and_process_data` function. The function returns the `df_books` dataframe, which contains one row per book, along with metadata for that book. It also contains the `data_train`, `data_test`, `data_val`, `data_val` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
 # * `user_idx`: A unique identifier for a user.
 # * `book_idx`: A unique identifier for a book that is being rated by the user.
 # * `book_idxs`: The set of books that the user has interacted with (read or planned to read).
@@ -28,6 +30,9 @@ from data import download_and_process_data
 df_books, (data_train, data_test, data_dev, data_val) = download_and_process_data()
 
 data_dev.head()
+
+# %% [markdown]
+# ## Writing Labeling Functions
 
 # %% [markdown]
 # If a user has interacted with several books written by an author, there is a good chance that the user will read and like other books by the same author. We express this as a labeling function, using the `first_author` field in the `df_books` dataframe.
@@ -151,12 +156,10 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
 
-early_stopping = tf.keras.callbacks.EarlyStopping(
-    monitor="val_acc", patience=10, verbose=1, restore_best_weights=True
-)
 n_books = len(df_books)
 
 
+# Define recall, precision, and f1 score metrics to evaluate the model.
 def recall_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
@@ -177,86 +180,107 @@ def f1_m(y_true, y_pred):
     return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
 
 
-def get_feedforward_model():
-    num_b = tf.keras.layers.Input([], name="inp_num_b")
-    bids = tf.keras.layers.Input([None], name="inp_bids")
-    bid = tf.keras.layers.Input([], name="inp_bid")
-    bi_emb_dim = 64
-    b_emb_dim = 64
-    layer_sizes = [32]
-    bi_emb = tf.keras.layers.Embedding(n_books, bi_emb_dim, name="bi_emb")(bids)
-    b_emb = tf.keras.layers.Embedding(n_books, b_emb_dim, name="b_emb")(bid)
-    bi_emb_reduced = tf.math.divide(
-        tf.keras.backend.sum(bi_emb, axis=1),
-        tf.expand_dims(num_b, 1),
-        name="bi_emb_reduced",
+# Keras model to predict rating given book_idxs and book_idx.
+def get_model(embed_dim=64, hidden_layer_sizes=[32]):
+    # Compute embedding for book_idxs.
+    len_book_idxs = tf.keras.layers.Input([])
+    book_idxs = tf.keras.layers.Input([None])
+    book_idxs_emb = tf.keras.layers.Embedding(n_books, embed_dim)(book_idxs)
+    book_idxs_emb = tf.math.divide(
+        tf.keras.backend.sum(book_idxs_emb, axis=1), tf.expand_dims(len_book_idxs, 1)
     )
-    input_layer = tf.keras.layers.concatenate(
-        [bi_emb_reduced, b_emb], 1, name="input_layer"
-    )
+    # Compute embedding for book_idx.
+    book_idx = tf.keras.layers.Input([])
+    book_idx_emb = tf.keras.layers.Embedding(n_books, embed_dim)(book_idx)
+    input_layer = tf.keras.layers.concatenate([book_idxs_emb, book_idx_emb], 1)
+    # Build Multi Layer Perceptron on input layer.
     cur_layer = input_layer
-    for size in layer_sizes:
+    for size in hidden_layer_sizes:
         tf.keras.layers.Dense(size, activation=tf.nn.relu)(cur_layer)
     output_layer = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(cur_layer)
-    feedforward_model = tf.keras.Model(
-        inputs=[num_b, bids, bid], outputs=[output_layer]
+    # Create and compile keras model.
+    model = tf.keras.Model(
+        inputs=[len_book_idxs, book_idxs, book_idx], outputs=[output_layer]
     )
-    feedforward_model.compile(
+    model.compile(
         "Adagrad",
         "binary_crossentropy",
         metrics=["accuracy", f1_m, precision_m, recall_m],
     )
-    return feedforward_model
+    return model
 
 
-padded_shapes = {"num_b": [], "bids": [None], "bid": [], "label": []}
-
-
-def get_data_tensors(data):
+# Generator to turn dataframe into examples.
+def get_examples_generator(df):
     def generator():
-        for bids, bid, rating in zip(data.book_idxs, data.book_idx, data.rating):
-            if len(bids) <= 1:
+        for book_idxs, book_idx, rating in zip(df.book_idxs, df.book_idx, df.rating):
+            if len(book_idxs) <= 2:
                 continue
-            yield {"num_b": len(bids), "bids": bids, "bid": bid, "label": rating}
+            # Remove book_idx from book_idxs so the model can't just look it up.
+            book_idxs = tuple(filter(lambda x: x != book_idx, book_idxs))
+            yield {
+                "len_book_idxs": len(book_idxs),
+                "book_idxs": book_idxs,
+                "book_idx": book_idx,
+                "label": rating,
+            }
             if rating == 1:
+                # Generate random negative example.
                 yield {
-                    "num_b": len(bids),
-                    "bids": bids,
-                    "bid": np.random.randint(0, n_books),
+                    "len_book_idxs": len(book_idxs),
+                    "book_idxs": book_idxs,
+                    "book_idx": np.random.randint(0, n_books),
                     "label": 0,
                 }
 
+    return generator
+
+
+def get_data_tensors(df):
+    # Use generator to get examples each epoch, along with shuffling and batching.
+    padded_shapes = {
+        "len_book_idxs": [],
+        "book_idxs": [None],
+        "book_idx": [],
+        "label": [],
+    }
     dataset = (
-        tf.data.Dataset.from_generator(generator, {k: tf.int64 for k in padded_shapes})
+        tf.data.Dataset.from_generator(
+            get_examples_generator(df), {k: tf.int64 for k in padded_shapes}
+        )
         .shuffle(123)
         .repeat(None)
-        .padded_batch(256, padded_shapes, drop_remainder=False)
+        .padded_batch(batch_size=256, padded_shapes=padded_shapes)
     )
     tensor_dict = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
     return (
-        tensor_dict["num_b"],
-        tensor_dict["bids"],
-        tensor_dict["bid"],
+        tensor_dict["len_book_idxs"],
+        tensor_dict["book_idxs"],
+        tensor_dict["book_idx"],
         tensor_dict["label"],
     )
 
 
+# %% [markdown]
+# We now train the model on our combined training data (data labeled by LFs plus dev data).
+#
 # %%
-feedforward_model = get_feedforward_model()
+model = get_model()
 
 train_data_tensors = get_data_tensors(combined_data_train)
 val_data_tensors = get_data_tensors(data_val)
-feedforward_model.fit(
+model.fit(
     train_data_tensors[:-1],
     train_data_tensors[-1],
     steps_per_epoch=300,
     validation_data=(val_data_tensors[:-1], val_data_tensors[-1]),
     validation_steps=40,
-    # callbacks=[early_stopping],
     epochs=50,
     verbose=1,
 )
-
+# %% [markdown]
+# Finally, we evaluate the model's predicted ratings on our test data.
+#
 # %%
 test_data_tensors = get_data_tensors(data_test)
-feedforward_model.evaluate(test_data_tensors[:-1], test_data_tensors[-1], steps=30)
+model.evaluate(test_data_tensors[:-1], test_data_tensors[-1], steps=30)
