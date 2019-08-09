@@ -3,7 +3,7 @@
 # # Introduction to Snorkel
 
 # %% [markdown]
-# In this first Snorkel tutorial, we will walk through the basics of Snorkel, using it to fight YouTube comments spam as our first example!
+# In this first Snorkel tutorial, we will walk through the basics of Snorkel, using it to fight YouTube comments spam!
 
 # %% [markdown]
 # ### Snorkel Basics
@@ -15,7 +15,7 @@
 #
 # Building and managing training datasets often requires slow and prohibitively expensive manual effort by domain experts (especially when data is private or requires expensive expert labelers).
 # In Snorkel, users instead write **programmatic operations to label, transform, and structure training datasets** for machine learning, without needing to hand label any training data; Snorkel then uses novel, theoretically-grounded modeling techniques to clean and integrate the resulting training data.
-# In a wide range of applications---from medical image monitoring to text information extraction to industrial deployments over web data---Snorkel provides a radically faster and more flexible to build machine learning applications; see [snorkel.org](snorkel.org) for more detail on the many examples of Snorkel usage!
+# In a wide range of applications---from medical image monitoring to text information extraction to industrial deployments over web data---Snorkel provides a radically faster and more flexible to build machine learning applications; see [snorkel.org](snorkel.org) for more detail on many examples of Snorkel usage!
 #
 # In this intro tutorial, we'll see how Snorkel can let us train a machine learning model for spam classification _without_ hand-labeling anything but a small test and validation set (i.e., without hand-labeling _any_ training data).
 
@@ -170,7 +170,7 @@ def lf_textblob_polarity(x):
 
 # %% [markdown]
 # For many more types of labeling functions---including over data modalities beyond text---see the other [tutorials](https://github.com/snorkel-team/snorkel-tutorials) and examples at [snorkel.org](http://snorkel.org).
-# In general the process of developing labeling functions is, like any other development process, an iterative one that takes time- but that, in [many cases](http://snorkel.org), can be orders-of-magnitude faster that hand-labeling training data.
+# In general the process of developing labeling functions is, like any other development process, an iterative one that takes time- but that, in many cases, can be orders-of-magnitude faster that hand-labeling training data.
 # For more detail on the process of developing labeling functions and other training data operators in Snorkel, see the [full version of this tutorial](https://github.com/snorkel-team/snorkel-tutorials/tree/master/spam).
 #
 # For now, we proceed by loading the above labeling functions plus some additional similar ones from a utility file:
@@ -192,7 +192,7 @@ L_dev = applier.apply(df_dev)
 L_test = applier.apply(df_test)
 
 # %% [markdown]
-# The result of applying the labeling functions (LFs) to the data is (for each split of the data) a sparse _label matrix_ with rows corresponding to data points, and columns corresponding to LFs.
+# The result of applying the labeling functions (LFs) to the data is (for each split of the data) a _label matrix_ with rows corresponding to data points, and columns corresponding to LFs.
 # We can take a look at some statistics of the LFs on the dev set:
 
 # %%
@@ -200,7 +200,7 @@ from snorkel.labeling.analysis import LFAnalysis
 LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 
 # %% [markdown]
-# Above, we see that the LFs indeed have varying accuracies, conflict with each other on non-negligible portions of the training set, and also each only cover some subset of the training set.
+# Above, we see that the LFs indeed have varying accuracies, conflict with each other on non-negligible portions of the training set, and also each cover only some subset of the training set.
 # Next, we use Snorkel's `LabelModel` to automatically learn the accuracies* and correlations of the LFs, and reweight and combine their outputs into a final set of _probabilistic_ training labels.
 #
 # *_Note that the "Empirical Accuracies" in the table above are computed over a very small labeled development set that we looked at while writing the LFs- thus, it is a very biased estimate of their accuracies (this is, for example, why so many of them have 100% accuracy according to this estimate...).  Thus, we rely on a [novel unsupervised generative modeling technique](https://arxiv.org/abs/1605.07723) in Snorkel to learn their accuracies in a provably convergent way over the much larger unlabeled training set. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers._
@@ -230,7 +230,7 @@ from utils import plot_label_frequency
 plot_label_frequency(L_train)
 
 # %% [markdown]
-# However, where is where the final step of the pipeline comes in handy- we will now use the probabilistic training labels to train a machine learning model which will generalize beyond---and outperform---the labeling functions.
+# Here is where the final step of the pipeline comes in handy- we will now use the probabilistic training labels to train a machine learning model which will generalize beyond---and outperform---the labeling functions.
 
 # %% [markdown]
 # ## STEP 3: Training a Machine Learning Model
