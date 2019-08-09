@@ -23,13 +23,26 @@
 # %% [markdown]
 # ## Environment Setup
 
+# %% [markdown]
+# First, we'll set up our notebook for reproducibility and proper logging.
+
 # %%
+# Show plots in the notebook
 # %matplotlib inline
 
+# %%
 from snorkel.utils import set_seed
 
+# For reproducibility
 SEED = 123
 set_seed(SEED)
+
+# %%
+# For helpful logging statements
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 # %% [markdown]
 # ## Create Toy Data
