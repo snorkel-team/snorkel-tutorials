@@ -101,7 +101,7 @@ def process_books_data():
     ]
 
     book_id_to_idx = {v: i for i, v in enumerate(df_books.book_id)}
-    df_books["book_idx"] = df_books.book_id.map(lambda bid: book_id_to_idx[bid])
+    df_books["book_idx"] = df_books.book_id.map(book_id_to_idx)
     return df_books, book_id_to_idx
 
 
@@ -164,10 +164,7 @@ def download_and_process_data():
     df_interactions_nz = df_interactions[df_interactions.rating != 0]
     df_interactions_z = df_interactions[df_interactions.rating == 0]
     ratings_map = {1: 0, 2: 0, 3: 0, 4: 1, 5: 1}
-    df_interactions_nz["rating_4_5"] = df_interactions_nz.rating.map(
-        lambda r: ratings_map[r]
-    )
-
+    df_interactions_nz["rating_4_5"] = df_interactions_nz.rating.map(ratings_map)
     df_reviews = process_reviews_data(book_id_to_idx, user_id_to_idx)
 
     # Compute book_idxs for each user.

@@ -47,7 +47,7 @@ def common_first_author(x):
     author = book_to_first_author[x.book_idx]
     same_author_books = first_author_to_books[author]
     num_read = len(set(x.book_idxs).intersection(same_author_books))
-    return 1 if num_read > 10 else -1
+    return 1 if num_read > 8 else -1
 
 
 # %% [markdown]
@@ -100,12 +100,7 @@ def polarity_negative(x):
 # %%
 from snorkel.labeling import PandasLFApplier, LFAnalysis
 
-lfs = [
-    common_first_author,
-    polarity_positive,
-    subjectivity_positive,
-    polarity_negative,
-]
+lfs = [common_first_author, polarity_positive, subjectivity_positive, polarity_negative]
 
 applier = PandasLFApplier(lfs)
 L_dev = applier.apply(data_dev)
