@@ -122,7 +122,7 @@ def f_neg(x, worker_dict):
 
 def get_worker_labeling_function(worker_id, f):
     worker_dict = worker_dicts[worker_id]
-    name = f"worker_{worker_id}"
+    name = f"worker_{worker_id}_{f.__name__}"
     return LabelingFunction(name, f=f, resources={"worker_dict": worker_dict})
 
 
