@@ -13,7 +13,11 @@ def load_spam_dataset(load_train_labels: bool = False):
     # TODO:
     # Add reference to dataset
     # Send email to dataset owner: tuliocasagrande < AT > acm.org
-    subprocess.run(["bash", "download_data.sh"], check=True)
+    try:
+        subprocess.run(["bash", "download_data.sh"], check=True, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        print(e.stderr.decode())
+        raise e
     filenames = sorted(glob.glob("data/Youtube*.csv"))
 
     dfs = []
