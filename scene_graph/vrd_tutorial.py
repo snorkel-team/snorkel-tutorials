@@ -211,8 +211,8 @@ valid_dl = DictDataLoader(
 import torchvision.models as models
 import torch.nn as nn
 
-from functools import partial
-from snorkel.classification import Scorer, Task, ce_loss, softmax
+from snorkel.analysis import Scorer
+from snorkel.classification import Task
 
 
 # initialize pretrained feature extractor
@@ -250,8 +250,6 @@ pred_cls_task = Task(
     name="scene_graph_task",
     module_pool=module_pool,
     task_flow=task_flow,
-    loss_func=partial(ce_loss, "head_op"),
-    output_func=partial(softmax, "head_op"),
     scorer=Scorer(metrics=["f1_micro"]),
 )
 
@@ -259,9 +257,9 @@ pred_cls_task = Task(
 # ### Train and Evaluate Model
 
 # %%
-from snorkel.classification import SnorkelClassifier, Trainer
+from snorkel.classification import MultitaskClassifier, Trainer
 
-model = SnorkelClassifier([pred_cls_task])
+model = MultitaskClassifier([pred_cls_task])
 trainer = Trainer(
     n_epochs=1,
     lr=1e-3,
