@@ -1,10 +1,10 @@
 # %% [markdown]
 # # Recommender Systems Tutorial
-# In this tutorial, we'll provide a simple walkthrough of how to use Snorkel to to improve recommendations.
-# We will use the [Goodreads](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home) dataset, from
-# "Item Recommendation on Monotonic Behavior Chains", RecSys'18 (Mengting Wan, Julian McAuley), and "Fine-Grained Spoiler Detection from Large-Scale Review Corpora", ACL'19, Mengting Wan, Rishabh Misra, Ndapa Nakashole, Julian McAuley.
+# In this tutorial, we'll provide a simple walkthrough of how to use Snorkel to improve recommendations. We consider a setting similar to the [Netflix challenge](https://www.kaggle.com/netflix-inc/netflix-prize-data), but with books instead of movies. We have a set of users and books, and for each user we know the set of books they have interacted with (read or marked as to-read). We don't have the user's ratings for the read books, except in a small number of cases. We also have some text reviews written by users. Our goal is to predict whether a user will read and like any given book. We represent users using the set of books they have interacted with, and train a model to predict a `rating` given the set of books the user interacted with and a new book to be rated (a `rating` of 1 means the user will read and like the book). Note that [Recommender systems](https://en.wikipedia.org/wiki/Recommender_system) is a very well studied area with a wide variety of settings and approaches, and we just focus on one of them.
 #
-# In this dataset, we have user ratings and reviews for Young Adult novels from the Goodreads website, along with metadata (like `title` and `authors`) for the novels. We consider the task of predicting whether a user will read and like any given book.
+# We will use the [Goodreads](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home) dataset, from
+# "Item Recommendation on Monotonic Behavior Chains", RecSys'18 (Mengting Wan, Julian McAuley), and "Fine-Grained Spoiler Detection from Large-Scale Review Corpora", ACL'19 (Mengting Wan, Rishabh Misra, Ndapa Nakashole, Julian McAuley).
+# In this dataset, we have user interactions and reviews for Young Adult novels from the Goodreads website, along with metadata (like `title` and `authors`) for the novels.
 
 # %%
 import os
@@ -16,13 +16,13 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # ## Loading Data
 
 # %% [markdown]
-# We start by running the `download_and_process_data` function. The function mainly returns the `data_train`, `data_test`, `data_val`, `data_val` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
+# We start by running the `download_and_process_data` function. The function returns the `data_train`, `data_test`, `data_dev`, `data_val` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
 # * `user_idx`: A unique identifier for a user.
 # * `book_idx`: A unique identifier for a book that is being rated by the user.
 # * `book_idxs`: The set of books that the user has interacted with (read or planned to read).
 # * `review_text`: Optional text review written by the user for the book.
 # * `rating`: Either `0` (which means the user did not read or did not like the book) or `1` (which means the user read and liked the book). The `rating` field is missing for `data_train`.
-# Our objective is to predict whether a given user (represented by the set of book_idxs the user has interacted with) will read and like any given book. That is, we want to train a model that takes a set of `book_idxs` and a `book_idx` as input and predicts the `rating`.
+# Our objective is to predict whether a given user (represented by the set of book_idxs the user has interacted with) will read and like any given book. That is, we want to train a model that takes a set of `book_idxs` and a single `book_idx` as input and predicts the `rating`.
 #
 # In addition, `download_and_process_data` also returns the `df_books` dataframe, which contains one row per book, along with metadata for that book (such as `title` and `first_author`).
 
@@ -34,7 +34,7 @@ from utils import download_and_process_data
 df_books.head()
 
 # %% [markdown]
-# We look at a sample of the labeled development set. As an example, we want our final recommendations model to be able to predict that a user with `book_idxs` (25743, 22318, 7662, 6857, 83, 14495, 30664, ...) would either not read or not like the book with `book_idx` 22764 (first row), while a user with `book_idxs` (3880, 18078, 9092, 29933, 1511, 8560, ...) would read and like the book with `book_idx` 3181 (second row).
+# We look at a sample of the labeled development set. As an example, we want our final recommendations model to be able to predict that a user who has interacted with `book_idxs` (25743, 22318, 7662, 6857, 83, 14495, 30664, ...) would either not read or not like the book with `book_idx` 22764 (first row), while a user who has interacted with `book_idxs` (3880, 18078, 9092, 29933, 1511, 8560, ...) would read and like the book with `book_idx` 3181 (second row).
 
 # %%
 data_dev.sample(frac=1, random_state=12).head()
@@ -61,7 +61,7 @@ first_author_to_books = dict(
 
 
 @labeling_function()
-def common_first_author(x):
+def shared_first_author(x):
     author = book_to_first_author[x.book_idx]
     same_author_books = first_author_to_books[author]
     num_read = len(set(x.book_idxs).intersection(same_author_books))
@@ -109,7 +109,7 @@ from snorkel.preprocess import preprocessor
 from textblob import TextBlob
 
 
-@preprocessor()
+@preprocessor(memoize=True)
 def textblob_polarity(x):
     if x.review_text:
         x.blob = TextBlob(str(x.review_text))
@@ -117,8 +117,6 @@ def textblob_polarity(x):
         x.blob = None
     return x
 
-
-textblob_polarity.memoize = True
 
 # Label high polarity reviews as positive.
 @labeling_function(pre=[textblob_polarity])
@@ -152,7 +150,7 @@ from snorkel.labeling import PandasLFApplier, LFAnalysis
 
 lfs = [
     stars_in_review,
-    common_first_author,
+    shared_first_author,
     polarity_positive,
     subjectivity_positive,
     polarity_negative,
@@ -226,12 +224,14 @@ def get_model(embed_dim=64, hidden_layer_sizes=[32]):
     return model
 
 
+# %% [markdown]
+# We use triples of (`book_idxs`, `book_idx`, `rating`) from our dataframes as training examples. In addition, we want to train the model to recognize when a user will not read a book. To create examples for that, we randomly sample a `book_id` not in `book_idxs` and use that with a `rating` of 0 as a _random negative_ example. We create one such _random negative_ example for every positive (`rating` 1) example in our dataframe so that positive and negative examples are roughly balanced.
+
+# %%
 # Generator to turn dataframe into examples.
 def get_examples_generator(df):
     def generator():
         for book_idxs, book_idx, rating in zip(df.book_idxs, df.book_idx, df.rating):
-            if len(book_idxs) <= 2:
-                continue
             # Remove book_idx from book_idxs so the model can't just look it up.
             book_idxs = tuple(filter(lambda x: x != book_idx, book_idxs))
             yield {
@@ -241,11 +241,14 @@ def get_examples_generator(df):
                 "label": rating,
             }
             if rating == 1:
-                # Generate random negative example.
+                # Generate a random negative book_id not in book_idxs.
+                random_negative = np.random.randint(0, n_books)
+                while random_negative in book_idxs:
+                    random_negative = np.random.randint(0, n_books)
                 yield {
                     "len_book_idxs": len(book_idxs),
                     "book_idxs": book_idxs,
-                    "book_idx": np.random.randint(0, n_books),
+                    "book_idx": random_negative,
                     "label": 0,
                 }
 
@@ -291,7 +294,7 @@ model.fit(
     steps_per_epoch=300,
     validation_data=(val_data_tensors[:-1], val_data_tensors[-1]),
     validation_steps=40,
-    epochs=50,
+    epochs=30,
     verbose=1,
 )
 # %% [markdown]
@@ -300,3 +303,10 @@ model.fit(
 # %%
 test_data_tensors = get_data_tensors(data_test)
 model.evaluate(test_data_tensors[:-1], test_data_tensors[-1], steps=30)
+
+# %% [markdown]
+# ## Summary
+#
+# In this tutorial, we showed one way to use Snorkel for Recommendations. We used books metadata and review text to create `LF`s that estimate user ratings. We used a `LabelModel` to combine the outputs of those `LF`s. Finally, we trained a model to predict what books a user will read and like (and therefore what books should be recommended to the user) based only on what books the user has interacted with in the past.
+#
+# Note that we just focused on a specific setting in this tutorial; but Snorkel can also be used in different settings, where we have user profile data, where users have rated every book they read, and so on.
