@@ -54,7 +54,7 @@ Y_dev = df_dev.sentiment.values
 Y_test = df_test.sentiment.values
 
 # %% [markdown]
-# First, let's take a look at our development set to get a sense of what the tweets look like.  
+# First, let's take a look at our development set to get a sense of what the tweets look like.
 # We use the following label convention: 0 = Negative, 1 = Positive.
 
 # %%
@@ -98,8 +98,10 @@ from snorkel.labeling import LabelingFunction
 
 ABSTAIN = -1
 
+
 def worker_lf(x, worker_dict):
     return worker_dict.get(x.tweet_id, ABSTAIN)
+
 
 def make_worker_lf(worker_id):
     worker_dict = worker_dicts[worker_id]
@@ -239,7 +241,7 @@ Y_train_prob = label_model.predict_proba(L_train)
 
 # %% [markdown]
 # ### Getting features from BERT
-# Since we have very limited training data, we cannot train a complex model like an LSTM with a lot of parameters. 
+# Since we have very limited training data, we cannot train a complex model like an LSTM with a lot of parameters.
 # Instead, we use a pre-trained model, [BERT](https://github.com/google-research/bert), to generate embeddings for each our tweets, and treat the embedding values as features.
 # This may take 5-10 minutes on a CPU, as the BERT model is very large.
 
@@ -275,7 +277,7 @@ sklearn_model.fit(train_vectors, probs_to_preds(Y_train_prob))
 print(f"Accuracy of trained model: {sklearn_model.score(test_vectors, Y_test)}")
 
 # %% [markdown]
-# We now have a trained model that can be applied to future examples without requiring crowdsourced labels, and with accuracy not much lower than the `LabelModel` that _does_ have access to crowdsourced labels! 
+# We now have a trained model that can be applied to future examples without requiring crowdsourced labels, and with accuracy not much lower than the `LabelModel` that _does_ have access to crowdsourced labels!
 
 # %% [markdown]
 # ## Summary
