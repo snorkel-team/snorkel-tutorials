@@ -1,26 +1,40 @@
+from typing import Any, Tuple
+
 import numpy as np
 from sklearn.model_selection import train_test_split
 
 
-def make_circle_dataset(N, R, **kwargs):
-    X = np.random.uniform(0, 1, size=(N, 2)) * 2 - 1
-    Y = (X[:, 0] ** 2 + X[:, 1] ** 2 < R).astype(int)
+DataSplits = Tuple[
+    Tuple[np.ndarray, np.ndarray],
+    Tuple[np.ndarray, np.ndarray],
+    Tuple[np.ndarray, np.ndarray],
+]
+
+
+def make_circle_dataset(n: int, r: float, **kwargs: Any) -> DataSplits:
+    X = np.random.uniform(0, 1, size=(n, 2)) * 2 - 1
+    Y = (X[:, 0] ** 2 + X[:, 1] ** 2 < r).astype(int)
     return split_data(X, Y, **kwargs)
 
 
-def make_inv_circle_dataset(N, R, **kwargs):
-    X = np.random.uniform(0, 1, size=(N, 2)) * 2 - 1
-    Y = (X[:, 0] ** 2 + X[:, 1] ** 2 > R).astype(int)
+def make_inv_circle_dataset(n: int, r: float, **kwargs: Any) -> DataSplits:
+    X = np.random.uniform(0, 1, size=(n, 2)) * 2 - 1
+    Y = (X[:, 0] ** 2 + X[:, 1] ** 2 > r).astype(int)
     return split_data(X, Y, **kwargs)
 
 
-def make_square_dataset(N, R, **kwargs):
-    X = np.random.uniform(0, 1, size=(N, 2)) * 2 - 1
-    Y = ((abs(X[:, 0]) < R / 2) * (abs(X[:, 1]) < R / 2)).astype(int)
+def make_square_dataset(n: int, r: float, **kwargs: Any) -> DataSplits:
+    X = np.random.uniform(0, 1, size=(n, 2)) * 2 - 1
+    Y = ((abs(X[:, 0]) < r / 2) * (abs(X[:, 1]) < r / 2)).astype(int)
     return split_data(X, Y, **kwargs)
 
 
-def split_data(X, Y, splits=[0.8, 0.1, 0.1], seed=123):
+def split_data(
+    X: np.ndarray,
+    Y: np.ndarray,
+    splits: Tuple[float] = (0.8, 0.1, 0.1),
+    seed: int = 123,
+) -> DataSplits:
     """Split data twice using sklearn train_test_split helper."""
     assert len(splits) == 3
 

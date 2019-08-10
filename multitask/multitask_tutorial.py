@@ -3,12 +3,12 @@
 # # Multi-Task Learning (MTL) Basics Tutorial
 
 # %% [markdown]
-# Multi-task learning, or training a single model on multiple tasks, is becoming a standard tool for the modern ML practioner (see Ruder's [survey](http://ruder.io/multi-task/) from 2017 for a nice overview).
+# Multi-task learning, or training a single model on multiple tasks, is becoming a standard tool for the modern ML practitioner (see [Ruder 2017](https://arxiv.org/abs/1706.05098) for a nice overview).
 # It often leads to computational gains (one model performing many tasks takes up less memory and storage) as well as performance gains (learning to do well on a related _auxiliary_ task can improve the model's ability on the _primary_ task).
 #
 # While the primary purpose of the Snorkel project is to support training data creation and management, it also comes with a PyTorch-based modeling framework intended to support flexible multi-task learning (e.g. slice-aware models).
-# Using this particular framework (as opposed to other excellent third party libraries) is entirely optional, but we have found it helpful in our own work and so provide it here.
-# In particular, because MTL in general often requires easily *adding new datasets, tasks, and metrics* (and just as easily removing them), each of these concepts have been decoupled in the snorkel MTL classifier.
+# Using this particular framework (as opposed to other excellent third party libraries like [Keras](https://keras.io/), [Ludwig](https://uber.github.io/ludwig/), [jiant](https://jiant.info/), etc.) is entirely optional, but we have found it helpful in our own work and so provide it here.
+# In particular, because MTL in general often requires easily *adding new datasets, tasks, and metrics* (and just as easily removing them), each of these concepts have been decoupled in the Snorkel MTL classifier.
 
 # %% [markdown]
 # ### Tutorial Overview
@@ -70,19 +70,19 @@ from utils import make_circle_dataset, make_square_dataset
 N = 1000  # Data points per dataset
 R = 1  # Unit distance
 
-circle_train, circle_valid, circle_test = make_circle_dataset(N, R)
-(circle_X_train, circle_Y_train) = circle_train
-(circle_X_valid, circle_Y_valid) = circle_valid
-(circle_X_test, circle_Y_test) = circle_test
+train_circle, valid_circle, test_circle = make_circle_dataset(N, R)
+X_train_circle, Y_train_circle = train_circle
+X_valid_circle, Y_valid_circle = valid_circle
+X_test_circle, Y_test_circle = test_circle
 
 square_train, square_valid, square_test = make_square_dataset(N, R)
-(square_X_train, square_Y_train) = square_train
-(square_X_valid, square_Y_valid) = square_valid
-(square_X_test, square_Y_test) = square_test
+X_train_square, Y_train_square = square_train
+X_valid_square, Y_valid_square = square_valid
+X_test_square, Y_test_square = square_test
 
 # %%
-print(f"Training data shape: {circle_X_train.shape}")
-print(f"Label space: {set(circle_Y_train)}")
+print(f"Training data shape: {X_train_circle.shape}")
+print(f"Label space: {set(Y_train_circle)}")
 
 # %% [markdown]
 # And we can view the ground truth labels of our tasks visually to confirm our intuition on what the decision boundaries look like.
@@ -93,12 +93,12 @@ import matplotlib.pyplot as plt
 
 fig, axs = plt.subplots(1, 2)
 
-scatter = axs[0].scatter(circle_X_train[:, 0], circle_X_train[:, 1], c=circle_Y_train)
+scatter = axs[0].scatter(X_train_circle[:, 0], X_train_circle[:, 1], c=Y_train_circle)
 axs[0].set_aspect("equal", "box")
 axs[0].set_title("Circle Dataset", fontsize=10)
 axs[0].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-scatter = axs[1].scatter(square_X_train[:, 0], square_X_train[:, 1], c=square_Y_train)
+scatter = axs[1].scatter(X_train_square[:, 0], X_train_square[:, 1], c=Y_train_square)
 axs[1].set_aspect("equal", "box")
 axs[1].set_title("Square Dataset", fontsize=10)
 axs[1].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
@@ -109,35 +109,35 @@ plt.show()
 # ## Make DataLoaders
 
 # %% [markdown]
-# With our data now loaded/created, we can now package it up into `DictDataset`s for training. This object is a simple wrapper around `torch.utils.data.Dataset` and stores data fields and labels as dictionaries.
+# With our data now loaded/created, we can now package it up into [DictDataset](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.DictDataset.html#snorkel.classification.DictDataset) objects for training. This object is a simple wrapper around `torch.utils.data.Dataset` and stores data fields and labels as dictionaries.
 #
 # In the `DictDataset`, each label corresponds to a particular `Task` by name.  We'll define these `Task` objects in the following section as we define our model.
 #
-# `DictDataloader` is a wrapper for `torch.utils.data.Dataloader`, which handles the collate function for `DictDataset` appropriately.
+# [DictDataloader](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.DictDataLoader.html#snorkel.classification.DictDataLoader) is a wrapper for `torch.utils.data.Dataloader`, which handles the collate function for `DictDataset` appropriately.
 
 # %%
 import torch
 from snorkel.classification import DictDataset, DictDataLoader
 
 dataloaders = []
-for (split, circle_X_split, circle_Y_split) in [
-    ("train", circle_X_train, circle_Y_train),
-    ("valid", circle_X_valid, circle_Y_valid),
-    ("test", circle_X_test, circle_Y_test),
+for (split, X_split_circle, Y_split_circle) in [
+    ("train", X_train_circle, Y_train_circle),
+    ("valid", X_valid_circle, Y_valid_circle),
+    ("test", X_test_circle, Y_test_circle),
 ]:
-    X_dict = {"circle_data": torch.FloatTensor(circle_X_split)}
-    Y_dict = {"circle_task": torch.LongTensor(circle_Y_split)}
+    X_dict = {"circle_data": torch.FloatTensor(X_split_circle)}
+    Y_dict = {"circle_task": torch.LongTensor(Y_split_circle)}
     dataset = DictDataset("CircleDataset", split, X_dict, Y_dict)
     dataloader = DictDataLoader(dataset, batch_size=32)
     dataloaders.append(dataloader)
 
-for (split, square_X_split, square_Y_split) in [
-    ("train", square_X_train, square_Y_train),
-    ("valid", square_X_valid, square_Y_valid),
-    ("test", square_X_test, square_Y_test),
+for (split, X_split_square, Y_split_square) in [
+    ("train", X_train_square, Y_train_square),
+    ("valid", X_valid_square, Y_valid_square),
+    ("test", X_test_square, Y_test_square),
 ]:
-    X_dict = {"square_data": torch.FloatTensor(square_X_split)}
-    Y_dict = {"square_task": torch.LongTensor(square_Y_split)}
+    X_dict = {"square_data": torch.FloatTensor(X_split_square)}
+    Y_dict = {"square_task": torch.LongTensor(Y_split_square)}
     dataset = DictDataset("SquareDataset", split, X_dict, Y_dict)
     dataloader = DictDataLoader(dataset, batch_size=32)
     dataloaders.append(dataloader)
@@ -158,13 +158,13 @@ for (split, square_X_split, square_Y_split) in [
 # %% [markdown]
 # A `Task` represents a path through a neural network. In `SnorkelClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each example will make a forward pass.
 #
-# To specify this sequence of modules, each `Task` defines a **module pool** (a set of modules that it relies on) and a **task flow**—a sequence of `Operation`s.
-# Each `Operation` specifies a module and the inputs to feed to that module.
+# To specify this sequence of modules, each [Task](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Task.html) defines a **module pool** (a set of modules that it relies on) and a **task flow**—a sequence of `Operation`s.
+# Each [Operation](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Operation.html) specifies a module and the inputs to feed to that module.
 # These inputs can come from a previous operation or the original input data.
 # The inputs are defined by a list of tuples, where each tuple has the name of a previous operation (or the keyword `_input_` to denote the original input) and either the name of a field (e.g., if the output of that operation is a `dict`) or an index (e.g., if the output of that operation is a single `tensor`, a `list` or a `tuple`).
 # Most PyTorch modules output a single tensor, so most of the time, the second element of this tuple is 0.
 #
-# As an example, below we verbosely define the module pool and task flow for the circle task:
+# As an example, below we very verbosely define the module pool and task flow for the circle task:
 
 # %%
 import torch.nn as nn
@@ -196,7 +196,7 @@ task_flow = [op1, op2]
 # We indicate that here with the `partial` helper method, which can set the value of that keyword argument before the function is actually called.
 # (As you'll see below, for common classification tasks, the default values for these arguments often suffice).
 #
-# Each `Task` also specifies which metrics it supports, which are bundled together in a `Scorer` object. For this tutorial, we'll just look at accuracy.
+# Each `Task` also specifies which metrics it supports, which are bundled together in a [Scorer](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Scorer.html) object. For this tutorial, we'll just look at accuracy.
 
 # %% [markdown]
 # Putting this all together, we define the circle task:
@@ -242,7 +242,7 @@ square_task = Task(
 # ## Model
 
 # %% [markdown]
-# With our tasks defined, constructing a model is simple: we simply pass the list of tasks in and the model constructs itself using information from the task flows.
+# With our tasks defined, constructing the actual [SnorkelClassifier](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.SnorkelClassifier.html) model is simple: we simply pass the list of tasks in and the model constructs itself using information from the task flows.
 #
 # Note that the model uses the names of modules (not the modules themselves) to determine whether two modules specified by separate tasks are the same module (and should share weights) or different modules (with separate weights).
 # So because both the `square_task` and `circle_task` include "base_mlp" in their module pools, this module will be shared between the two tasks.
@@ -256,7 +256,7 @@ model = SnorkelClassifier([circle_task, square_task])
 # ### Train Model
 
 # %% [markdown]
-# Once the model is constructed, we can train it as we would a single-task model, using the `fit` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all examples  will be seen exactly once before any are seen twice.
+# Once the model is constructed, we can train it as we would a single-task model, using the `fit` method of a `Trainer` object. The [Trainer](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Trainer.html) supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all examples will be seen exactly once before any are seen twice.
 
 # %%
 from snorkel.classification import Trainer
@@ -301,10 +301,10 @@ from utils import make_inv_circle_dataset
 
 # We flip the inequality when generating the labels so that our positive
 # class is now _outside_ the circle.
-inv_circle_train, inv_circle_valid, inv_circle_test = make_inv_circle_dataset(N, R)
-(inv_circle_X_train, inv_circle_Y_train) = inv_circle_train
-(inv_circle_X_valid, inv_circle_Y_valid) = inv_circle_valid
-(inv_circle_X_test, inv_circle_Y_test) = inv_circle_test
+train_inv_circle, valid_inv_circle, test_inv_circle = make_inv_circle_dataset(N, R)
+(X_train_inv_circle, Y_train_inv_circle) = train_inv_circle
+(X_valid_inv_circle, Y_valid_inv_circle) = valid_inv_circle
+(X_test_inv_circle, Y_test_inv_circle) = test_inv_circle
 
 # %%
 import matplotlib.pyplot as plt
@@ -312,18 +312,18 @@ import matplotlib.pyplot as plt
 fig, axs = plt.subplots(1, 3)
 
 scatter = axs[0].scatter(
-    inv_circle_X_train[:, 0], inv_circle_X_train[:, 1], c=inv_circle_Y_train
+    X_train_inv_circle[:, 0], X_train_inv_circle[:, 1], c=Y_train_inv_circle
 )
 axs[0].set_aspect("equal", "box")
 axs[0].set_title("Inv Circle Dataset", fontsize=10)
 axs[0].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-scatter = axs[1].scatter(circle_X_train[:, 0], circle_X_train[:, 1], c=circle_Y_train)
+scatter = axs[1].scatter(X_train_circle[:, 0], X_train_circle[:, 1], c=Y_train_circle)
 axs[1].set_aspect("equal", "box")
 axs[1].set_title("Circle Dataset", fontsize=10)
 axs[1].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-scatter = axs[2].scatter(square_X_train[:, 0], square_X_train[:, 1], c=square_Y_train)
+scatter = axs[2].scatter(X_train_square[:, 0], X_train_square[:, 1], c=Y_train_square)
 axs[2].set_aspect("equal", "box")
 axs[2].set_title("Square Dataset", fontsize=10)
 axs[2].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
