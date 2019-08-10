@@ -178,8 +178,8 @@ op2 = Operation(
 task_flow = [op1, op2]
 
 # %% [markdown]
-# A dictionary containing the outputs of all operations will then go into a `loss_func()` to calculate the loss (e.g., cross-entropy) during training or an `output_func()` (e.g., softmax) to convert the logits into a prediction.
-# Both of these functions accept as an argument the name of the operation whose output they should use to calculate their respective values; in this case, that will be the `circle_head` operation.
+# A dictionary containing the outputs of all operations will then go into a loss function to calculate the loss (e.g., cross-entropy) during training or an output function (e.g., softmax) to convert the logits into a prediction.
+# Both of these functions ([cross_entropy_from_outputs](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.cross_entropy_from_outputs.html#snorkel.classification.cross_entropy_from_outputs) and [softmax_from_outputs](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.cross_entropy_with_probs_from_outputs.html#snorkel.classification.cross_entropy_with_probs_from_outputs)) accept as an argument the name of the operation whose output they should use to calculate their respective values; in this case, that will be the `circle_head` operation.
 # We indicate that here with the `partial` helper method, which can set the value of that keyword argument before the function is actually called.
 # (As you'll see below, for common classification tasks, the default values for these arguments often suffice).
 #
