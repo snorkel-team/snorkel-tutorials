@@ -191,15 +191,14 @@ task_flow = [op1, op2]
 # %%
 from functools import partial
 
-from snorkel.analysis import Scorer
-from snorkel.classification import Task, ce_loss, softmax
+from snorkel.classification import Scorer, Task, cross_entropy_from_outputs, softmax_from_outputs
 
 circle_task = Task(
     name="circle_task",
     module_pool=module_pool,
     task_flow=task_flow,
-    loss_func=partial(ce_loss, op_name="circle_head"),
-    output_func=partial(softmax, op_name="circle_head"),
+    loss_func=partial(cross_entropy_from_outputs, "circle_head"),
+    output_func=partial(softmax_from_outputs, "circle_head"),
     scorer=Scorer(metrics=["accuracy"]),
 )
 
