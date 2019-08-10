@@ -2,7 +2,7 @@
 # # Crowdsourcing Tutorial
 
 # %% [markdown]
-# In this tutorial, we'll provide a simple walkthrough of how to use Snorkel in conjuction with crowdsourcing to create a training set for a sentiment analysis task.
+# In this tutorial, we'll provide a simple walkthrough of how to use Snorkel in conjunction with crowdsourcing to create a training set for a sentiment analysis task.
 # We already have crowdsourced labels for about half of the training dataset.
 # The crowdsourced labels are fairly accurate, but do not cover the entire training dataset, nor are they available for the test set or during inference.
 # To make up for their lack of training set coverage, we combine crowdsourced labels with heuristic labeling functions to increase the number of training labels we have.
@@ -21,10 +21,10 @@
 # This is a common issue when dealing with crowdsourced labeling workloads.
 #
 # Label options were positive, negative, or one of three other options saying they weren't sure if it was positive or negative; we use only the positive/negative labels.
-# We've also altered the dataset to reflect a realistic crowdsourcing pipeline where only a subset of our available training set have recieved crowd labels.
+# We've also altered the dataset to reflect a realistic crowdsourcing pipeline where only a subset of our available training set has received crowd labels.
 #
 # We will treat each crowdworker's labels as coming from a single labeling function (LF).
-# This will allow us to learn a weight for how much much to trust the labels from each crowdworker.
+# This will allow us to learn a weight for how much to trust the labels from each crowdworker.
 # We will also write a few heuristic labeling functions to cover the data points without crowd labels.
 # Snorkel's ability to build high-quality datasets from multiple noisy labeling signals makes it an ideal framework to approach this problem.
 
@@ -123,7 +123,7 @@ L_dev = applier.apply(df_dev)
 
 # %% [markdown]
 # Note that because our dev set is so small and our LFs are relatively sparse, many LFs will appear to have zero coverage.
-# Fortunately, our label model learns weights for LFs based on their coverage on the training set, which is generally much larger.
+# Fortunately, our label model learns weights for LFs based on their outputs on the training set, which is generally much larger.
 
 # %%
 from snorkel.labeling import LFAnalysis
@@ -215,12 +215,10 @@ label_model.fit(L_train, n_epochs=100, seed=123, log_freq=20, l2=0.1, lr=0.01)
 
 # %%
 from snorkel.analysis import metric_score
-from snorkel.utils import probs_to_preds
 
-Y_dev_prob = label_model.predict_proba(L_dev)
-Y_dev_pred = probs_to_preds(Y_dev_prob)
+Y_dev_preds = label_model.predict(L_dev)
 
-acc = metric_score(Y_dev, Y_dev_pred, probs=None, metric="accuracy")
+acc = metric_score(Y_dev, Y_dev_preds, probs=None, metric="accuracy")
 print(f"LabelModel Accuracy: {acc:.3f}")
 
 # %% [markdown]
@@ -234,7 +232,7 @@ print(f"LabelModel Accuracy: {acc:.3f}")
 # Let's generate a set of probabilistic labels for that training set.
 
 # %%
-Y_train_prob = label_model.predict_proba(L_train)
+Y_train_preds = label_model.predict(L_train)
 
 # %% [markdown]
 # ## Use Soft Labels to Train End Model
@@ -271,7 +269,7 @@ test_vectors = np.array(list(df_test.tweet_text.apply(encode_text).values))
 from sklearn.linear_model import LogisticRegression
 
 sklearn_model = LogisticRegression(solver="liblinear")
-sklearn_model.fit(train_vectors, probs_to_preds(Y_train_prob))
+sklearn_model.fit(train_vectors, Y_train_preds)
 
 # %%
 print(f"Accuracy of trained model: {sklearn_model.score(test_vectors, Y_test)}")
@@ -284,5 +282,5 @@ print(f"Accuracy of trained model: {sklearn_model.score(test_vectors, Y_test)}")
 #
 # In this tutorial, we accomplished the following:
 # * We demonstrated how to combine crowdsourced labels with other programmatic LFs to improve coverage.
-# * We used the `LabelModel` to learn how to combine inputs from crowdworkers and other LFs to generate high quality probabilistic labels.
+# * We used the `LabelModel` to combine inputs from crowdworkers and other LFs to generate high quality probabilistic labels.
 # * We used our probabilistic labels to train a classifier for making predictions on new, unseen examples.
