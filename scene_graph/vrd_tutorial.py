@@ -212,7 +212,8 @@ import torchvision.models as models
 import torch.nn as nn
 
 from functools import partial
-from snorkel.classification import Scorer, Task
+from snorkel.analysis import Scorer
+from snorkel.classification import Task
 
 
 # initialize pretrained feature extractor
