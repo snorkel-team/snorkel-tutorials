@@ -211,7 +211,6 @@ valid_dl = DictDataLoader(
 import torchvision.models as models
 import torch.nn as nn
 
-from functools import partial
 from snorkel.analysis import Scorer
 from snorkel.classification import Task
 
