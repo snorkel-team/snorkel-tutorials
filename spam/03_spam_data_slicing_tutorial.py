@@ -8,7 +8,7 @@
 #
 # In this tutorial, we introduce _Slicing Functions (SFs)_ as a programming interface to:
 # 1. **Monitor** application-critical data slices
-# 2. **Address model performance** on slices
+# 2. **Improve model performance** on slices
 
 # %% [markdown]
 # First, we'll set up our notebook for reproducibility and proper logging.
@@ -17,7 +17,7 @@
 import logging
 import os
 import pandas as pd
-from snorkel.analysis.utils import set_seed
+from snorkel.utils import set_seed
 
 # For reproducibility
 os.environ["PYTHONHASHSEED"] = "0"
@@ -34,9 +34,13 @@ logger.setLevel(logging.WARNING)
 # Show full columns for viewing data
 pd.set_option("display.max_colwidth", -1)
 
+# Download the spaCy english model for preprocessing
+import spacy
+# ! python -m spacy download en
+
 # %% [markdown]
-# _Note:_ this tutorial differs from labeling tutorial because we use ground truth labels in the train split for demo purposes.
-# In practice, data slicing is agnostic to the _training labels_ used as inputs — you can use Snorkel-generated labels as inputs to this pipeline!
+# _Note:_ this tutorial differs from the labeling tutorial in that we use ground truth labels in the train split for demo purposes.
+# In practice, data slicing is agnostic to the _training labels_ used as inputs — you can use Snorkel-generated labels as inputs to this pipeline.
 
 # %%
 from utils import load_spam_dataset
@@ -50,12 +54,12 @@ df_train, df_valid, df_test = load_spam_dataset(
 # ## 1. Train a discriminative model
 #
 # To start, we'll initialize a discriminative model using our [`SnorkelClassifier`](https://snorkel.readthedocs.io/en/redux/source/snorkel.classification.html).
-# We'll assume that you are familiar with Snorkel's the data/model/training abstraction — if not, we'd recommend you check out our [MTL Tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/mtl/multitask_tutorial.ipynb).
+# We'll assume that you are familiar with Snorkel's multitask model — if not, we'd recommend you check out our [Multitask Tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/multitask/multitask_tutorial.ipynb).
 
 # %% [markdown]
 # ### Featurize Data
 #
-# As a first step, we'll featurize the data—as you saw in the introductory Spam tutorial, we'll extract simple bag of words features and store them as numpy arrays.
+# As a first step, we'll featurize the data—as you saw in the introductory Spam tutorial, we can extract simple bag of words features and store them as numpy arrays.
 
 # %%
 import torch
@@ -173,7 +177,7 @@ spam_task = Task(
 
 # %%
 from snorkel.classification.snorkel_classifier import SnorkelClassifier
-from snorkel.classification.training import Trainer
+from snorkel.classification import Trainer
 
 model = SnorkelClassifier([spam_task])
 trainer = Trainer(n_epochs=5, lr=1e-4, progress_bar=True)
@@ -197,7 +201,7 @@ model.score([dl_train, dl_valid], as_dataframe=True)
 
 # %%
 from snorkel.analysis.error_analysis import get_label_buckets
-from snorkel.analysis.utils import probs_to_preds
+from snorkel.utils import probs_to_preds
 
 outputs = model.predict(dl_valid, return_preds=True)
 error_buckets = get_label_buckets(
@@ -242,7 +246,7 @@ slice_names = [sf.name for sf in sfs]
 # For our $n$ examples and $k$ slices in each split, we apply the SF to our data to create an $n \times k$ matrix. (So far, $k=1$).
 
 # %%
-from snorkel.slicing.apply import PandasSFApplier
+from snorkel.slicing import PandasSFApplier
 
 applier = PandasSFApplier(sfs)
 S_train = applier.apply(df_train)
@@ -263,7 +267,7 @@ short_link_df = pd_slicer.slice(short_link)
 short_link_df[["text", "label"]]
 
 # %% [markdown]
-# Now, we add labels for this particularly slice to an existing dataloader.
+# Now, we add labels for this particular slice to an existing dataloader.
 # Specifically, `add_slice_labels` will add two sets of labels for each slice:
 # * `spam_task_slice:{slice_name}_ind`: an indicator label, which corresponds to the outputs of the slicing functions.
 # These indicate whether each example is in the slice (`label=1`)or not (`label=0`).
@@ -281,7 +285,8 @@ add_slice_labels(dl_test, spam_task, S_test, slice_names)
 dl_valid.dataset
 
 # %% [markdown]
-# With our updated dataloader, we want to evaluate on model on the defined slice. In the `SnorkelClassifier`, we can call `score` with an additional argument, `remap_labels` to specify that the slice's prediction labels, `spam_task_slice:short_link_pred` should be mapped to the `spam_task` for evaluation.
+# With our updated dataloader, we want to evaluate our model on the defined slice. 
+# In the `SnorkelClassifier`, we can call `score` with an additional argument, `remap_labels`, to specify that the slice's prediction labels, `spam_task_slice:short_link_pred`, should be mapped to the `spam_task` for evaluation.
 
 # %%
 model.score(
@@ -306,7 +311,7 @@ sklearn_model.fit(X=X_train, y=Y_train)
 sklearn_model.score(X_test, Y_test)
 
 # %%
-from snorkel.analysis.utils import preds_to_probs
+from snorkel.utils import preds_to_probs
 from snorkel.slicing.monitor import SliceScorer
 
 
@@ -323,14 +328,14 @@ scorer.score(
 )
 
 # %% [markdown]
-# ## 4. Address slice performance
+# ## 4. Improve slice performance
 #
 # In classification tasks, we might attempt to increase slice performance with techniques like _oversampling_ (i.e. with PyTorch's [`WeightedRandomSampler`](https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler)).
 # This would shift the training distribution to over-represent certain minority populations.
 # Intuitively, we'd like to show more `short_link` examples to the model so that the representation is better suited to handle these examples!
 #
 # A technique like upsampling might work with a small number of slices, but with a large number of slices, it could quickly become intractable to tune upsampling weights per slice.
-# In the following section, we show how we might handle numerous slices with a modeling approach using `SnorkelClassifier`.
+# In the following section, we show a modeling approach that we call _Slice-based Learning_, which handle numerous slices using `SnorkelClassifier`.
 
 # %% [markdown]
 # ### Write additional slicing functions (SFs)
@@ -338,7 +343,6 @@ scorer.score(
 # We'll take inspiration from the labeling tutorial to write a few additional `SlicingFunctions`.
 
 # %%
-import spacy
 from snorkel.slicing.sf import SlicingFunction, slicing_function, nlp_slicing_function
 from snorkel.preprocess import preprocessor
 
@@ -354,13 +358,11 @@ def make_keyword_sf(keywords):
         resources=dict(keywords=keywords),
     )
 
-
 """Spam comments ask users to subscribe to their channels."""
 keyword_subscribe = make_keyword_sf(keywords=["subscribe"])
 
 """Spam comments make requests rather than commenting."""
 keyword_please = make_keyword_sf(keywords=["please", "plz"])
-
 
 @nlp_slicing_function()
 def has_person_nlp(x):
@@ -470,8 +472,8 @@ eval_mapping = {label: "spam_task" for label in Y_dict.keys() if "pred" in label
 eval_mapping.update({label: None for label in Y_dict.keys() if "ind" in label})
 
 # %% [markdown]
-# _Note: in this toy dataset, we might not see significant gains because slices are defined for demo purposes. 
-# The dataset's slices contain only a few examples — they are not reliable evaluation metrics. For a demonstration of data slicing deployed in state-of-the-art models, please see our [SuperGLUE](https://github.com/HazyResearch/snorkel-superglue) tutorials._
+# _Note: in this toy dataset, we might not see significant gains because our dataset is so small that (i) there are few examples the train split, giving little signal to learn over, and (ii) there are few examples in the test split, making our evaluation metrics very noisy.
+# For a demonstration of data slicing deployed in state-of-the-art models, please see our [SuperGLUE](https://github.com/HazyResearch/snorkel-superglue/tree/master/tutorials) tutorials._
 
 # %%
 slice_model.score([dl_valid], remap_labels=eval_mapping, as_dataframe=True)
