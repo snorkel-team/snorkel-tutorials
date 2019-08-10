@@ -136,14 +136,14 @@ for (split, square_X_split, square_Y_split) in [
 # ## Define Model
 
 # %% [markdown]
-# Now we'll define the `SnorkelClassifier` model, a PyTorch multi-task classifier.
+# Now we'll define the `MultitaskClassifier` model, a PyTorch multi-task classifier.
 # We'll instantiate it from a list of `Tasks`.
 
 # %% [markdown]
 # ### Tasks
 
 # %% [markdown]
-# A `Task` represents a path through a neural network. In `SnorkelClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each example will make a forward pass.
+# A `Task` represents a path through a neural network. In `MultitaskClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each example will make a forward pass.
 #
 # To specify this sequence of modules, each `Task` defines a **module pool** (a set of modules that it relies on) and a **task flow**—a sequence of `Operation`s.
 # Each `Operation` specifies a module and the inputs to feed to that module.
@@ -235,9 +235,9 @@ square_task = Task(
 # So because both the `square_task` and `circle_task` include "base_mlp" in their module pools, this module will be shared between the two tasks.
 
 # %%
-from snorkel.classification import SnorkelClassifier
+from snorkel.classification import MultitaskClassifier
 
-model = SnorkelClassifier([circle_task, square_task])
+model = MultitaskClassifier([circle_task, square_task])
 
 # %% [markdown]
 # ### Train Model
@@ -271,7 +271,7 @@ model.score(dataloaders)
 # # Your Turn
 
 # %% [markdown]
-# To check your understanding of how to use the multi-task `SnorkelClassifier`, see if you can add a task to this multi-task model.
+# To check your understanding of how to use the multi-task `MultitaskClassifier`, see if you can add a task to this multi-task model.
 #
 # We'll generate the data for you (again, with a train, valid, and test split).
 # Let's call it the `inv_circle_task`, since it will have the same distribution as our circle data, but with the inverted (flipped) labels.
@@ -360,7 +360,7 @@ all_dataloaders = dataloaders + [inv_dataloader]
 
 # %%
 # Add your new task to the list of tasks for creating the MTL model
-model = SnorkelClassifier([circle_task, square_task])  # Filled in by you
+model = MultitaskClassifier([circle_task, square_task])  # Filled in by you
 
 # %% [markdown]
 # ### Train the model
