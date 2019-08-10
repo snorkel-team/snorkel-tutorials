@@ -7,7 +7,7 @@ The Snorkel tutorials are grouped by application, with some applications having 
 * `spouse`: Does this sentence imply that the two marked people are spouses?
 * `scene_graph`: Is object A riding object B in the image, carrying it, or neither?
 * `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
-* `mtl` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+* `multitask` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
 
@@ -145,8 +145,8 @@ Here we provide an index pointing to different available tutorials by their task
     * Augmentation with Transformation Functions (TFs): `spam`
     * Monitoring with Slicing Functions (SFs): `spam`
     * Using Crowd Worker Labels: `crowdsourcing`
-    * Multi-Task Learning (MTL): `mtl`, `scene_graph`, `spam`
+    * Multi-Task Learning (MTL): `multitask`, `scene_graph`, `spam`
 * Integrations
     * TensorFlow/Keras: `spam`, `spouse`
     * Scikit-Learn: `spam`, `crowdsourcing`
-    * PyTorch: `mtl`
+    * PyTorch: `multitask`

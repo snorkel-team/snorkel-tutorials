@@ -50,7 +50,7 @@ import os
 
 # Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
-    os.chdir("mtl")
+    os.chdir("multitask")
 # %%
 from utils import make_circle_dataset, make_square_dataset
 
