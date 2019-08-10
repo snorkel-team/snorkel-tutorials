@@ -60,7 +60,13 @@ def load_vrd_data():
 
     NOTE: Only loads semantic relationship examples.
     """
-    subprocess.call("bash scene_graph/download_data.sh", shell=True)
+    try:
+        subprocess.run(
+            ["bash", "scene_graph/download_data.sh"], check=True, stderr=subprocess.PIPE
+        )
+    except subprocess.CalledProcessError as e:
+        print(e.stderr.decode())
+        raise e
 
     relationships_train = json.load(open("scene_graph/data/VRD/annotations_train.json"))
     relationships_test = json.load(open("scene_graph/data/VRD/annotations_test.json"))

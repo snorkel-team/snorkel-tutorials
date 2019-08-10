@@ -17,7 +17,11 @@ answer_mapping = {
 def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     if os.path.basename(os.getcwd()) != "crowdsourcing":
         raise ValueError("Function must be called from crowdsourcing/ directory.")
-    subprocess.run(["bash", "download-data.sh"], check=True)
+    try:
+        subprocess.run(["bash", "download-data.sh"], check=True, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        print(e.stderr.decode())
+        raise e
 
     gold_labels = pd.read_csv("data/weather-evaluated-agg-DFE.csv")
     gold_labels = gold_labels.set_index("tweet_id", drop=False)
