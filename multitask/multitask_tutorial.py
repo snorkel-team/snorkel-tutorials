@@ -191,7 +191,12 @@ task_flow = [op1, op2]
 # %%
 from functools import partial
 
-from snorkel.classification import Scorer, Task, cross_entropy_from_outputs, softmax_from_outputs
+from snorkel.analysis import Scorer
+from snorkel.classification import (
+    Task,
+    cross_entropy_from_outputs,
+    softmax_from_outputs,
+)
 
 circle_task = Task(
     name="circle_task",
