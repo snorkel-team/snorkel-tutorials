@@ -6,6 +6,7 @@ import os
 import pandas as pd
 from datetime import datetime
 from sklearn.model_selection import train_test_split
+from tensorflow.keras import backend as K
 
 
 def maybe_download_files():
@@ -180,4 +181,22 @@ def download_and_process_data():
     )
     data = data.rename(columns={"rating_4_5": "rating"})
     user_idxs = list(user_id_to_idx.values())
-    return df_books, split_data(user_idxs, data)
+    return split_data(user_idxs, data), df_books
+
+
+def recall(y_true, y_pred):
+    true_positives = K.sum(K.round(y_true * y_pred))
+    all_positives = K.sum(y_true)
+    return true_positives / (all_positives + K.epsilon())
+
+
+def precision(y_true, y_pred):
+    true_positives = K.sum(K.round(y_true * y_pred))
+    predicted_positives = K.sum(K.round(y_pred))
+    return true_positives / (predicted_positives + K.epsilon())
+
+
+def f1(y_true, y_pred):
+    prec = precision(y_true, y_pred)
+    rec = recall(y_true, y_pred)
+    return 2 * ((prec * rec) / (prec + rec + K.epsilon()))

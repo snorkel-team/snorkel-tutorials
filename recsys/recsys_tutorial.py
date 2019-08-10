@@ -16,26 +16,39 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # ## Loading Data
 
 # %% [markdown]
-# We start by running the `download_and_process_data` function. The function returns the `df_books` dataframe, which contains one row per book, along with metadata for that book. It also contains the `data_train`, `data_test`, `data_val`, `data_val` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
+# We start by running the `download_and_process_data` function. The function mainly returns the `data_train`, `data_test`, `data_val`, `data_val` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
 # * `user_idx`: A unique identifier for a user.
 # * `book_idx`: A unique identifier for a book that is being rated by the user.
 # * `book_idxs`: The set of books that the user has interacted with (read or planned to read).
 # * `review_text`: Optional text review written by the user for the book.
 # * `rating`: Either `0` (which means the user did not read or did not like the book) or `1` (which means the user read and liked the book). The `rating` field is missing for `data_train`.
 # Our objective is to predict whether a given user (represented by the set of book_idxs the user has interacted with) will read and like any given book. That is, we want to train a model that takes a set of `book_idxs` and a `book_idx` as input and predicts the `rating`.
+#
+# In addition, `download_and_process_data` also returns the `df_books` dataframe, which contains one row per book, along with metadata for that book (such as `title` and `first_author`).
 
 # %%
-from data import download_and_process_data
+from utils import download_and_process_data
 
-df_books, (data_train, data_test, data_dev, data_val) = download_and_process_data()
+(data_train, data_test, data_dev, data_val), df_books = download_and_process_data()
 
-data_dev.head()
+df_books.head()
+
+# %% [markdown]
+# We look at a sample of the labeled development set. As an example, we want our final recommendations model to be able to predict that a user with `book_idxs` (25743, 22318, 7662, 6857, 83, 14495, 30664, ...) would either not read or not like the book with `book_idx` 22764 (first row), while a user with `book_idxs` (3880, 18078, 9092, 29933, 1511, 8560, ...) would read and like the book with `book_idx` 3181 (second row).
+
+# %%
+data_dev.sample(frac=1, random_state=12).head()
 
 # %% [markdown]
 # ## Writing Labeling Functions
 
 # %% [markdown]
 # If a user has interacted with several books written by an author, there is a good chance that the user will read and like other books by the same author. We express this as a labeling function, using the `first_author` field in the `df_books` dataframe.
+
+# %%
+POSITIVE = 1
+NEGATIVE = 0
+ABSTAIN = -1
 
 # %%
 from snorkel.labeling.lf import labeling_function
@@ -52,11 +65,44 @@ def common_first_author(x):
     author = book_to_first_author[x.book_idx]
     same_author_books = first_author_to_books[author]
     num_read = len(set(x.book_idxs).intersection(same_author_books))
-    return 1 if num_read > 8 else -1
+    return POSITIVE if num_read > 15 else ABSTAIN
 
 
 # %% [markdown]
-# We can also leverage the long text reviews written by users to guess whether they liked or disliked a book. We run [TextBlob](https://textblob.readthedocs.io/en/dev/index.html), a tool that provides a pretrained sentiment analyzer, on the reviews, and use its polarity and subjectivity scores to estimate the user's rating for the book.
+# We can also leverage the long text reviews written by users to guess whether they liked or disliked a book. For example, the third data_dev entry above has a review with the text '4.5 STARS', which indicates that the user liked the book. We write a simple LF that looks for similar phrases to guess the user's rating of a book. We interpret >= 4 stars to indicate a positive rating, while < 4 stars is negative.
+
+# %%
+low_rating_strs = [
+    "one star",
+    "1 star",
+    "two star",
+    "2 star",
+    "3 star",
+    "three star",
+    "3.5 star",
+    "2.5 star",
+    "1 out of 5",
+    "2 out of 5",
+    "3 out of 5",
+]
+high_rating_strs = ["5 stars", "five stars", "four stars", "4 stars", "4.5 stars"]
+
+
+@labeling_function()
+def stars_in_review(x):
+    if not isinstance(x.review_text, str):
+        return ABSTAIN
+    for low_rating_str in low_rating_strs:
+        if low_rating_str in x.review_text.lower():
+            return NEGATIVE
+    for high_rating_str in high_rating_strs:
+        if high_rating_str in x.review_text.lower():
+            return POSITIVE
+    return ABSTAIN
+
+
+# %% [markdown]
+# We can also run [TextBlob](https://textblob.readthedocs.io/en/dev/index.html), a tool that provides a pretrained sentiment analyzer, on the reviews, and use its polarity and subjectivity scores to estimate the user's rating for the book.
 
 # %%
 from snorkel.preprocess import preprocessor
@@ -67,7 +113,6 @@ from textblob import TextBlob
 def textblob_polarity(x):
     if x.review_text:
         x.blob = TextBlob(str(x.review_text))
-        x.start_blob = TextBlob(" ".join(x.blob.raw_sentences[:2]))
     else:
         x.blob = None
     return x
@@ -80,8 +125,8 @@ textblob_polarity.memoize = True
 def polarity_positive(x):
     if x.blob:
         if x.blob.polarity > 0.3:
-            return 1
-    return -1
+            return POSITIVE
+    return ABSTAIN
 
 
 # Label high subjectivity reviews as positive.
@@ -89,8 +134,8 @@ def polarity_positive(x):
 def subjectivity_positive(x):
     if x.blob:
         if x.blob.subjectivity > 0.75:
-            return 1
-    return -1
+            return POSITIVE
+    return ABSTAIN
 
 
 # Label low polarity reviews as negative.
@@ -98,14 +143,20 @@ def subjectivity_positive(x):
 def polarity_negative(x):
     if x.blob:
         if x.blob.polarity < 0.0:
-            return 0
-    return -1
+            return NEGATIVE
+    return ABSTAIN
 
 
 # %%
 from snorkel.labeling import PandasLFApplier, LFAnalysis
 
-lfs = [common_first_author, polarity_positive, subjectivity_positive, polarity_negative]
+lfs = [
+    stars_in_review,
+    common_first_author,
+    polarity_positive,
+    subjectivity_positive,
+    polarity_negative,
+]
 
 applier = PandasLFApplier(lfs)
 L_dev = applier.apply(data_dev)
@@ -123,27 +174,15 @@ from snorkel.labeling.model.label_model import LabelModel
 L_train = applier.apply(data_train)
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=5000, seed=123, log_freq=20, lr=0.01)
-
-from snorkel.analysis import metric_score
-from snorkel.utils import probs_to_preds
-
-Y_dev_prob = label_model.predict_proba(L_dev)
-Y_dev_pred = probs_to_preds(Y_dev_prob)
-
-acc = metric_score(data_dev.rating, Y_dev_pred, probs=None, metric="accuracy")
-print(f"LabelModel Accuracy: {acc:.3f}")
-
-Y_train_prob = label_model.predict_proba(L_train)
-Y_train_preds = probs_to_preds(Y_train_prob)
+Y_train_preds = label_model.predict(L_train)
 
 # %%
 import pandas as pd
 from snorkel.labeling import filter_unlabeled_dataframe
 
-data_train_filtered, Y_train_prob_filtered = filter_unlabeled_dataframe(
-    data_train, Y_train_prob, L_train
+data_train_filtered, Y_train_preds_filtered = filter_unlabeled_dataframe(
+    data_train, Y_train_preds, L_train
 )
-Y_train_preds_filtered = probs_to_preds(Y_train_prob_filtered)
 data_train_filtered["rating"] = Y_train_preds_filtered
 combined_data_train = pd.concat([data_train_filtered, data_dev], axis=0)
 
@@ -154,30 +193,9 @@ combined_data_train = pd.concat([data_train_filtered, data_dev], axis=0)
 # %%
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import backend as K
+from utils import precision, recall, f1
 
 n_books = len(df_books)
-
-
-# Define recall, precision, and f1 score metrics to evaluate the model.
-def recall_m(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    recall = true_positives / (possible_positives + K.epsilon())
-    return recall
-
-
-def precision_m(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
-    return precision
-
-
-def f1_m(y_true, y_pred):
-    precision = precision_m(y_true, y_pred)
-    recall = recall_m(y_true, y_pred)
-    return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
 
 
 # Keras model to predict rating given book_idxs and book_idx.
@@ -203,9 +221,7 @@ def get_model(embed_dim=64, hidden_layer_sizes=[32]):
         inputs=[len_book_idxs, book_idxs, book_idx], outputs=[output_layer]
     )
     model.compile(
-        "Adagrad",
-        "binary_crossentropy",
-        metrics=["accuracy", f1_m, precision_m, recall_m],
+        "Adagrad", "binary_crossentropy", metrics=["accuracy", f1, precision, recall]
     )
     return model
 
