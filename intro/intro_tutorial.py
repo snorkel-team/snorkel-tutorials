@@ -38,6 +38,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 
 # %%
 from utils import load_unlabeled_spam_dataset
+
 df_train = load_unlabeled_spam_dataset()
 
 # %% [markdown]
@@ -130,12 +131,7 @@ def lf_textblob_polarity(x):
 from snorkel.labeling import PandasLFApplier, LabelModel
 
 # Define the set of labeling functions (LFs)
-lfs = [
-    lf_keyword_my,
-    lf_regex_check_out,
-    lf_short_comment,
-    lf_textblob_polarity
-]
+lfs = [lf_keyword_my, lf_regex_check_out, lf_short_comment, lf_textblob_polarity]
 
 # Apply the LFs to the unlabeled training data
 applier = PandasLFApplier(lfs)
@@ -144,7 +140,7 @@ L_train = applier.apply(df_train)
 # Train the label model and compute the training labels
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=500, log_freq=50, seed=123)
-df_train['label'] = label_model.predict(L=L_train, tie_break_policy='abstain')
+df_train["label"] = label_model.predict(L=L_train, tie_break_policy="abstain")
 
 # %% [markdown]
 # Note that we used the `LabelModel` to label data; however, on many data points, all the labeling functions abstain, and so the `LabelModel` abstains as well.
@@ -173,6 +169,7 @@ from snorkel.augmentation import transformation_function
 import random
 import nltk
 from nltk.corpus import wordnet as wn
+
 nltk.download("wordnet")
 
 
@@ -189,7 +186,7 @@ def tf_replace_word_with_synonym(x):
     idx = random.choice(range(len(words)))
     synonyms = get_synonyms(words[idx])
     if len(synonyms) > 0:
-        x.text = " ".join(words[:idx] + [synonyms[0]] + words[idx + 1:])
+        x.text = " ".join(words[:idx] + [synonyms[0]] + words[idx + 1 :])
         return x
 
 
