@@ -36,6 +36,7 @@ pd.set_option("display.max_colwidth", -1)
 
 # Download the spaCy english model for preprocessing
 import spacy
+
 # ! python -m spacy download en
 
 # %% [markdown]
@@ -162,7 +163,11 @@ task_flow = [
 # %%
 from functools import partial
 from snorkel.analysis import Scorer
-from snorkel.classification import Task, cross_entropy_from_outputs, softmax_from_outputs 
+from snorkel.classification import (
+    Task,
+    cross_entropy_from_outputs,
+    softmax_from_outputs,
+)
 
 spam_task = Task(
     name="spam_task",
@@ -219,7 +224,7 @@ df_valid[["text", "label"]].iloc[error_buckets[(1, 0)]].head()
 # %% [markdown]
 # ## 3. Monitor data slices
 #
-# We leverage *slicing functions* (SFs) — an abstraction that shares syntax with *labeling functions*, which you should already be familiar with. 
+# We leverage *slicing functions* (SFs) — an abstraction that shares syntax with *labeling functions*, which you should already be familiar with.
 # (If not, please see the [intro tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb).)
 # A key difference: whereas labeling functions output labels, slicing functions output binary _masks_ indicating whether an example is in the slice or not.
 
@@ -227,7 +232,7 @@ df_valid[["text", "label"]].iloc[error_buckets[(1, 0)]].head()
 # In the following cells, we define a slicing function that identifies these shortened links the spam dataset.
 # To do so, we write a regex that checks for the commonly-used `.ly` extension.
 #
-# You'll notice that the slicing function is noisily defined — it doesn't represent the ground truth for all short links. 
+# You'll notice that the slicing function is noisily defined — it doesn't represent the ground truth for all short links.
 # Instead, SFs are often heuristics to quickly measure performance over important subsets of the data.
 
 # %%
@@ -286,7 +291,7 @@ add_slice_labels(dl_test, spam_task, S_test, slice_names)
 dl_valid.dataset
 
 # %% [markdown]
-# With our updated dataloader, we want to evaluate our model on the defined slice. 
+# With our updated dataloader, we want to evaluate our model on the defined slice.
 # In the `SnorkelClassifier`, we can call `score` with an additional argument, `remap_labels`, to specify that the slice's prediction labels, `spam_task_slice:short_link_pred`, should be mapped to the `spam_task` for evaluation.
 
 # %%
@@ -359,11 +364,13 @@ def make_keyword_sf(keywords):
         resources=dict(keywords=keywords),
     )
 
+
 """Spam comments ask users to subscribe to their channels."""
 keyword_subscribe = make_keyword_sf(keywords=["subscribe"])
 
 """Spam comments make requests rather than commenting."""
 keyword_please = make_keyword_sf(keywords=["please", "plz"])
+
 
 @nlp_slicing_function()
 def has_person_nlp(x):
@@ -438,9 +445,9 @@ polarity_df[["text", "label"]].head()
 # ### Representation learning with slices
 
 # %% [markdown]
-# To cope with scale, we will attempt to learn and combine many slice-specific representations with an attention mechanism. 
+# To cope with scale, we will attempt to learn and combine many slice-specific representations with an attention mechanism.
 # (For details, please see our technical report — coming soon!)
-# Using the helper, `convert_to_slice_tasks`, we initialize slice-specific tasks to learn "expert task heads" for each slice, in the style of multi-task learning. 
+# Using the helper, `convert_to_slice_tasks`, we initialize slice-specific tasks to learn "expert task heads" for each slice, in the style of multi-task learning.
 # The original `spam_task` now contains the attention mechanism to then combine these slice experts.
 
 # %%
