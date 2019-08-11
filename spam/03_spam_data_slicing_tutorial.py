@@ -182,7 +182,7 @@ dl_valid.dataset
 #
 # We define a simple Multi-Layer Perceptron (MLP) architecture to learn from the `bow_features`.
 #
-# _Note: the following might feel like extra steps to define what is a very simple architecture (e.g. `sklearn`'s [`MLPClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html)), but this will lend us additional flexibility later in the pipeline!_
+# *Note: the following might feel like extra steps to define what is a very simple architecture (e.g. `sklearn`'s [`MLPClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html)), but this will lend us additional flexibility later in the pipeline!*
 
 # %% [markdown]
 # To start, we define a `module_pool` with all the PyTorch modules that we'll want to include in our network.
@@ -249,7 +249,7 @@ model.score([dl_train, dl_valid], as_dataframe=True)
 # %% [markdown]
 # ## 3. Perform error analysis
 #
-# In overall metrics (`f1`, `accuracy`) our model appears to perform well!
+# In overall metrics (e.g. `f1`, `accuracy`) our model appears to perform well!
 # However, we emphasize we might actually be **more interested in performance for application-critical subsets,** or _slices_.
 #
 # Let's perform an error analysis, using [`get_label_buckets`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/analysis/snorkel.analysis.get_label_buckets.html), to see where our model makes mistakes.
@@ -268,6 +268,9 @@ error_buckets = get_label_buckets(
 
 # %%
 df_valid[["text", "label"]].iloc[error_buckets[(1, 0)]].head()
+
+# %% [markdown]
+# In the next sections, we'll explore how we can programmatically monitor these error modes with built-in helpers from Snorkel.
 
 # %% [markdown]
 # ## 4. Monitor slice performance
@@ -462,8 +465,8 @@ slice_model = MultitaskClassifier(slice_tasks)
 # We train a single model initialized with all slice tasks.
 # We note that we can monitor slice-specific performance during training — this is a powerful way to track especially critical subsets of the data.
 #
-# _Note: This model includes more parameters (corresponding to additional slices), and therefore requires more time to train.
-# We set `num_epochs=1` for demonstration purposes._
+# *Note: This model includes more parameters (corresponding to additional slices), and therefore requires more time to train.
+# We set `num_epochs=1` for demonstration purposes.*
 
 # %%
 trainer = Trainer(n_epochs=1, lr=1e-4, progress_bar=True)
@@ -481,8 +484,8 @@ eval_mapping = {label: "spam_task" for label in Y_dict.keys() if "pred" in label
 eval_mapping.update({label: None for label in Y_dict.keys() if "ind" in label})
 
 # %% [markdown]
-# _Note: in this toy dataset, we might not see significant gains because our dataset is so small that (i) there are few examples the train split, giving little signal to learn over, and (ii) there are few examples in the test split, making our evaluation metrics very noisy.
-# For a demonstration of data slicing deployed in state-of-the-art models, please see our [SuperGLUE](https://github.com/HazyResearch/snorkel-superglue/tree/master/tutorials) tutorials._
+# *Note: in this toy dataset, we might not see significant gains because our dataset is so small that (i) there are few examples the train split, giving little signal to learn over, and (ii) there are few examples in the test split, making our evaluation metrics very noisy.
+# For a demonstration of data slicing deployed in state-of-the-art models, please see our [SuperGLUE](https://github.com/HazyResearch/snorkel-superglue/tree/master/tutorials) tutorials.*
 
 # %%
 slice_model.score([dl_valid, dl_test], remap_labels=eval_mapping, as_dataframe=True)
