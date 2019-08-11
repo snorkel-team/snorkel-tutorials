@@ -39,6 +39,8 @@ def call_jupytext(notebook: Notebook, out_fname: str, to_ipynb: bool) -> None:
         from_fmt,
         "--opt",
         "notebook_metadata_filter=-all",
+        "--opt",
+        "cell_metadata_filter=tags",
         notebook.py if to_ipynb else notebook.ipynb,
         "-o",
         out_fname,
