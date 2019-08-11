@@ -34,11 +34,6 @@ logger.setLevel(logging.WARNING)
 # Show full columns for viewing data
 pd.set_option("display.max_colwidth", -1)
 
-# Download the spaCy english model for preprocessing
-import spacy
-
-# ! python -m spacy download en
-
 # %% [markdown]
 # _Note:_ this tutorial differs from the labeling tutorial in that we use ground truth labels in the train split for demo purposes.
 # In practice, data slicing is agnostic to the _training labels_ used as inputs — you can use Snorkel-generated labels as inputs to this pipeline.
@@ -352,6 +347,9 @@ from snorkel.slicing import SlicingFunction, slicing_function, nlp_slicing_funct
 from snorkel.preprocess import preprocessor
 
 
+"""Keyword-based SFs"""
+
+
 def keyword_lookup(x, keywords):
     return any(word in x.text.lower() for word in keywords)
 
@@ -364,11 +362,11 @@ def make_keyword_sf(keywords):
     )
 
 
-"""Spam comments ask users to subscribe to their channels."""
 keyword_subscribe = make_keyword_sf(keywords=["subscribe"])
-
-"""Spam comments make requests rather than commenting."""
 keyword_please = make_keyword_sf(keywords=["please", "plz"])
+
+
+"""Leverage @nlp_slicing_function"""
 
 
 @nlp_slicing_function()
@@ -377,9 +375,15 @@ def has_person_nlp(x):
     return len(x.doc) < 20 and any([ent.label_ == "PERSON" for ent in x.doc.ents])
 
 
+"""Regex-based SF"""
+
+
 @slicing_function()
 def regex_check_out(x):
     return bool(re.search(r"check.*out", x.text, flags=re.I))
+
+
+"""Heuristic-based SF"""
 
 
 @slicing_function()
@@ -388,12 +392,7 @@ def short_comment(x):
     return len(x.text.split()) < 5
 
 
-@slicing_function(pre=[spacy])
-def has_person(x):
-    """Ham comments mention specific people and are short."""
-    return len(x.doc) < 20 and any([ent.label_ == "PERSON" for ent in x.doc.ents])
-
-
+"""Levearage preprocessor in SF"""
 from textblob import TextBlob
 
 
@@ -401,7 +400,6 @@ from textblob import TextBlob
 def textblob_sentiment(x):
     scores = TextBlob(x.text)
     x.polarity = scores.sentiment.polarity
-    x.subjectivity = scores.sentiment.subjectivity
     return x
 
 
