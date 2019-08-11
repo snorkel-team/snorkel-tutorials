@@ -16,7 +16,6 @@
 
 import os
 import pickle
-import numpy as np
 
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("spouse")
@@ -290,22 +289,15 @@ print(
 # %% [markdown]
 # ### Part 4: Training our End Extraction Model
 #
-# In this final section of the tutorial, we'll use our noisy training labels alongside the development set labels to train our end machine learning model. We start by filtering out training examples which did not recieve a label from any LF, as these examples contain no signal. Then we concatenate them with dev set examples.
+# In this final section of the tutorial, we'll use our noisy training labels to train our end machine learning model. We start by filtering out training examples which did not recieve a label from any LF, as these examples contain no signal.
 #
 # %%
-from snorkel.utils import preds_to_probs
 from snorkel.labeling import filter_unlabeled_dataframe
-
-# Change dev labels 1D array to 2D categorical labels array as required for training end model.
-Y_probs_dev = preds_to_probs(Y_dev, 2)
 
 Y_probs_train = label_model.predict_proba(train_L)
 df_train_filtered, Y_probs_train_filtered = filter_unlabeled_dataframe(
     X=df_train, y=Y_probs_train, L=train_L
 )
-
-df_combined = pd.concat([df_dev, df_train_filtered])
-Y_probs_combined = np.concatenate([Y_probs_dev, Y_probs_train_filtered], 0)
 
 # %% [markdown]
 # Next, we train a simple [LSTM](https://en.wikipedia.org/wiki/Long_short-term_memory) network for classifying candidates. `tf_model` contains functions for processing features and building the keras model for training and evaluation.
@@ -314,12 +306,15 @@ Y_probs_combined = np.concatenate([Y_probs_dev, Y_probs_train_filtered], 0)
 from tf_model import get_model, get_feature_arrays
 
 model = get_model()
-tokens, idx1, idx2 = get_feature_arrays(df_combined)
+tokens, idx1, idx2 = get_feature_arrays(df_train_filtered)
 
 batch_size = 64
-num_epochs = 20  # TODO: Change this to ~50. Warning: Training takes several minutes!
+num_epochs = 30
 model.fit(
-    (tokens, idx1, idx2), Y_probs_combined, batch_size=batch_size, epochs=num_epochs
+    (tokens, idx1, idx2),
+    Y_probs_train_filtered,
+    batch_size=batch_size,
+    epochs=num_epochs,
 )
 
 # %% [markdown]
