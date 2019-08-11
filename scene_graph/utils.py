@@ -64,7 +64,7 @@ def load_vrd_data(sample=False, is_travis=False):
     if sample or is_travis:
         try:
             subprocess.run(
-                ["bash", "scene_graph/download_data.sh"],
+                ["bash", "scene_graph/download_sample_data.sh"],
                 check=True,
                 stderr=subprocess.PIPE,
             )

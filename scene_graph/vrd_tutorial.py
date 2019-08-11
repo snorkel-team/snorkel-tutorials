@@ -34,7 +34,7 @@ if os.path.basename(os.getcwd()) == "scene_graph":
 # -
 
 # ### 1. Load Dataset
-# We load the VRD dataset and filter images with at least one action predicate in it, since these are more difficult to classify than geometric relationships like `above` or `next to`. We load the train, valid, and test sets as Pandas DataFrame objects with the following fields:
+# We load the VRD dataset and filter images with at least one action predicate in it, since these are more difficult to classify than geometric relationships like `above` or `next to`. We load the train, valid, and test sets as Pandas `DataFrame` objects with the following fields:
 # - `label`: The relationship between the objects. 0: `RIDE`, 1: `CARRY`, 2: `OTHER` action predicates
 # - `object_bbox`: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`
 # - `object_category`: category of the object
@@ -50,15 +50,15 @@ import numpy as np
 
 # -
 
-# If you are running this notebook for the first time, it will take ~15 mins to download all the required data. **Setting `sample = False` will download the full VRD dataset, which can take ~3 hours!**
+# If you are running this notebook for the first time, it will take ~15 mins to download all the required sample data.
 #
-# The sampled version of the dataset **uses the same 26 examples across the train, dev, and test sets. This setting is meant to demonstrate how Snorkel works with this task, NOT TO DEMONSTRATE PERFORMANCE.**
-#
+# The sampled version of the dataset **uses the same 26 examples across the train, dev, and test sets. This setting is meant to demonstrate how Snorkel works with this task, not to demonstrate performance.**
 
 # +
 from scene_graph.utils import load_vrd_data
 
-sample = True
+#setting sample=False will take ~3 hours to run (downloads full VRD dataset)
+sample = True 
 is_travis = "TRAVIS" in os.environ
 train_df, valid_df, test_df = load_vrd_data(sample, is_travis)
 
@@ -67,10 +67,12 @@ print("Dev Relationships: ", len(valid_df))
 print("Test Relationships: ", len(test_df))
 # -
 
-# Note that the training DataFrame will have a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
+# Note that the training `DataFrame` will have a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
 
 # ## 2. Writing Labeling Functions
-# We now write labeling functions to detect what relationship exists between pairs of bounding boxes. To do so, we can encode various intuitions into the labeling functions. _Categorical_ intution: knowledge about the categories of subjects and objects usually involved in these relationships (e.g., `person` is usually the subject for predicates like `ride` and `carry`), and _spatial_ intuition: knowledge about the relative positions of the subject and objects (e.g., subject is usually higher than the object for the predicate `ride`).
+# We now write labeling functions to detect what relationship exists between pairs of bounding boxes. To do so, we can encode various intuitions into the labeling functions:
+# * _Categorical_ intution: knowledge about the categories of subjects and objects usually involved in these relationships (e.g., `person` is usually the subject for predicates like `ride` and `carry`)
+# * _Spatial_ intuition: knowledge about the relative positions of the subject and objects (e.g., subject is usually higher than the object for the predicate `ride`)
 
 RIDE = 0
 CARRY = 1
@@ -196,7 +198,7 @@ label_model = LabelModel(cardinality=3, verbose=True)
 label_model.fit(L_train, seed=123, lr=0.01, log_freq=10, n_epochs=100)
 # -
 
-# We use [F1](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html) Micro average for the multiclass setting, which calculates metrics globally by counting the total true positives, false negatives and false positives.
+# We use [F1](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html) Micro average for the multiclass setting, which calculates metrics globally across classes, by counting the total true positives, false negatives and false positives.
 
 label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 
@@ -208,11 +210,14 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 # +
 from snorkel.classification import DictDataLoader
 from scene_graph.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
-
-# change to "scene_graph/data/VRD/sg_dataset/sg_train_images" for full set
-TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/samples"
+    
 train_df["labels"] = label_model.predict(L_train)
 
+if sample:
+    TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/samples"
+else:
+    TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/sg_train_images"
+    
 train_dl = DictDataLoader(
     SceneGraphDataset("train_dataset", "train", TRAIN_DIR, train_df),
     batch_size=16,
@@ -277,12 +282,12 @@ pred_cls_task = Task(
 
 # ### Train and Evaluate Model
 
-# %%
+# +
 from snorkel.classification import MultitaskClassifier, Trainer
 
 model = MultitaskClassifier([pred_cls_task])
 trainer = Trainer(
-    n_epochs=1,
+    n_epochs=1, #increase for improved performance
     lr=1e-3,
     checkpointing=True,
     checkpointer_config={"checkpoint_dir": "checkpoint"},
@@ -291,3 +296,5 @@ trainer.fit(model, [train_dl])
 # -
 
 model.score([valid_dl])
+
+# We have successfully trained a visual relationship detection model! Using categorical and spatial intuition about how objects in a visual relationship interact with each other, we are able to assign high quality training labels to object pairs in the VRD dataset in a multi-class classification setting. 
