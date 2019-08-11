@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # %% [markdown]
-# # ✂️ _Spam_ — Data Slicing Tutorial
+# # ✂️ Snorkel Intro Tutorial: _Data Slicing_
 #
 # In real-world applications, some model outcomes are often more important than others — e.g. vulnerable cyclist detections in an autonomous driving task, or, in our running **spam** application, potentially malicious link redirects to external websites.
 #
@@ -46,6 +46,8 @@ df_train, df_valid, df_test = load_spam_dataset(
     load_train_labels=True, include_dev=False
 )
 
+df_train.head()
+
 
 # %% [markdown]
 # ## 1. Write slicing functions
@@ -55,7 +57,7 @@ df_train, df_valid, df_test = load_spam_dataset(
 # A key difference: whereas labeling functions output labels, slicing functions output binary _masks_ indicating whether an example is in the slice or not.
 
 # %% [markdown]
-# In the following cells, we define a slicing function that identifies shortened links the spam dataset.
+# In the following cells, we use the [`@slicing_function()`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.slicing_function.html#snorkel.slicing.slicing_function) decorator to initialize an SF that identifies shortened links the spam dataset.
 # These links could redirect us to potentially dangerous websites, and we don't want our users to click them!
 # To select the subset of shortened links in our dataset, we write a regex that checks for the commonly-used `.ly` extension.
 #
@@ -74,7 +76,6 @@ def short_link(x):
 
 
 sfs = [short_link]
-slice_names = [sf.name for sf in sfs]
 
 # %% [markdown]
 # For our $n$ examples and $k$ slices in each split, we apply the SF to our data to create an $n \times k$ matrix. (So far, $k=1$).
@@ -91,7 +92,7 @@ S_test = applier.apply(df_test)
 # ### Visualize slices
 
 # %% [markdown]
-# With a utility function, `slice_dataframe`, we can visualize examples belonging to this slice in a `pandas.DataFrame`.
+# With a utility function, [`slice_dataframe`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.slice_dataframe.html#snorkel.slicing.slice_dataframe), we can visualize examples belonging to this slice in a `pandas.DataFrame`.
 
 # %%
 from snorkel.slicing import slice_dataframe
@@ -104,6 +105,8 @@ short_link_df[["text", "label"]]
 #
 # To start, we'll initialize a discriminative model using our [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html#snorkel.classification.MultitaskClassifier).
 # We'll assume that you are familiar with Snorkel's multitask model — if not, we'd recommend you check out our [Multitask Tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/multitask/multitask_tutorial.ipynb).
+#
+# In this section, we're ignoring slice information for modeling purposes; slices are used solely for monitoring fine-grained performance.
 
 # %% [markdown]
 # ### Featurize Data
@@ -207,7 +210,7 @@ task_flow = [
 ]
 
 # %% [markdown]
-# With these pieces, we're ready to define a [`Task`](https://snorkel.readthedocs.io/en/redux/source/snorkel.classification.html#module-snorkel.classification.task) in Snorkel for spam classification.
+# With these pieces, we're ready to define a [`Task`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Task.html) in Snorkel for spam classification.
 
 # %%
 from functools import partial
@@ -228,7 +231,7 @@ spam_task = Task(
 )
 
 # %% [markdown]
-# We'll initialize a `MultitaskClassifier` with the `spam_task` we've created, initialize a corresponding [`Trainer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Trainer.html), and `fit` to our dataloaders!
+# We'll initialize a  [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html) with the `spam_task` we've created, initialize a corresponding [`Trainer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Trainer.html), and `fit` to our dataloaders!
 
 # %%
 from snorkel.classification import MultitaskClassifier, Trainer
@@ -249,7 +252,7 @@ model.score([dl_train, dl_valid], as_dataframe=True)
 # In overall metrics (`f1`, `accuracy`) our model appears to perform well!
 # However, we emphasize we might actually be **more interested in performance for application-critical subsets,** or _slices_.
 #
-# Let's perform an [`error_analysis`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/analysis/snorkel.analysis.get_label_buckets.html?highlight=error_analysis) to see where our model makes mistakes.
+# Let's perform an error analysis, using [`get_label_buckets`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/analysis/snorkel.analysis.get_label_buckets.html), to see where our model makes mistakes.
 # We collect the predictions from the model and visualize examples in specific error buckets.
 
 # %%
@@ -289,7 +292,7 @@ dl_valid.dataset
 
 # %% [markdown]
 # With our updated dataloader, we want to evaluate our model on the defined slice.
-# In the `SnorkelClassifier`, we can call `score` with an additional argument, `remap_labels`, to specify that the slice's prediction labels, `spam_task_slice:short_link_pred`, should be mapped to the `spam_task` for evaluation.
+# In the  [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html), we can call [`score`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html#snorkel.classification.MultitaskClassifier.score) with an additional argument, `remap_labels`, to specify that the slice's prediction labels, `spam_task_slice:short_link_pred`, should be mapped to the `spam_task` for evaluation.
 
 # %%
 model.score(
@@ -302,7 +305,7 @@ model.score(
 # ### Performance monitoring with [`SliceScorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer)
 
 # %% [markdown]
-# If you're using a model other than `MultitaskClassifier`, you can still evaluate on slices using the more general `SliceScorer` class.
+# If you're using a model other than [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html#snorkel-classification-multitaskclassifier), you can still evaluate on slices using the more general `SliceScorer` class.
 #
 # We define a `LogisticRegression` model from sklearn and show how we might visualize these slice-specific scores.
 
@@ -314,7 +317,7 @@ sklearn_model.fit(X=X_train, y=Y_train)
 sklearn_model.score(X_test, Y_test)
 
 # %% [markdown]
-# Now, we initialize the `SliceScorer` using 1) an existing `Scorer` and 2) desired `slice_names` to see slice-specific performance.
+# Now, we initialize the [`SliceScorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer) using 1) an existing [`Scorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html) and 2) desired `slice_names` to see slice-specific performance.
 
 # %%
 from snorkel.utils import preds_to_probs
@@ -334,7 +337,7 @@ scorer.score(
 )
 
 # %% [markdown]
-# ## 4. Improve slice performance
+# ## 5. Improve slice performance
 #
 # In classification tasks, we might attempt to increase slice performance with techniques like _oversampling_ (i.e. with PyTorch's [`WeightedRandomSampler`](https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler)).
 # This would shift the training distribution to over-represent certain minority populations.
@@ -431,6 +434,7 @@ add_slice_labels(dl_test, spam_task, S_test, slice_names)
 
 # %% [markdown]
 # Like we saw above, we'd like to visualize examples in the slice.
+# In this case, most examples with high-polarity sentiments are strong opinions about the video — hence, they are usually relevant to the video, and the corresponding labels are $0$.
 
 # %%
 polarity_df = slice_dataframe(df_valid, textblob_polarity)
@@ -481,7 +485,7 @@ eval_mapping.update({label: None for label in Y_dict.keys() if "ind" in label})
 # For a demonstration of data slicing deployed in state-of-the-art models, please see our [SuperGLUE](https://github.com/HazyResearch/snorkel-superglue/tree/master/tutorials) tutorials._
 
 # %%
-slice_model.score([dl_valid], remap_labels=eval_mapping, as_dataframe=True)
+slice_model.score([dl_valid, dl_test], remap_labels=eval_mapping, as_dataframe=True)
 
 # %% [markdown]
 # ## Recap
