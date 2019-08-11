@@ -1,10 +1,22 @@
 import glob
 import os
 import subprocess
+from functools import partial
 
+import torch
+import torch.nn as nn
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
+from snorkel.analysis import Scorer
+from snorkel.classification.data import DictDataset, DictDataLoader
+from snorkel.classification.task import Operation
+from snorkel.classification import (
+    Task,
+    cross_entropy_from_outputs,
+    softmax_from_outputs,
+)
 
 
 def load_spam_dataset(load_train_labels: bool = False, include_dev: bool = True):
@@ -51,3 +63,61 @@ def load_spam_dataset(load_train_labels: bool = False, include_dev: bool = True)
         return df_train, df_dev, df_valid, df_test
     else:
         return df_train, df_valid, df_test
+
+
+def df_to_torch_features(vectorizer, df, fit_train=False):
+    """Convert pandas DataFrame containing spam data to bag-of-words PyTorch features."""
+    words = [row.text for i, row in df.iterrows()]
+
+    if fit_train:
+        feats = vectorizer.fit_transform(words)
+    else:
+        feats = vectorizer.transform(words)
+    X = feats.todense()
+    Y = df["label"].values
+    return X, Y
+
+
+def create_dict_dataloader(X, Y, split, **kwargs):
+    """Create a DictDataLoader for bag-of-words features."""
+    ds = DictDataset(
+        name="spam_dataset",
+        split=split,
+        X_dict={"bow_features": torch.FloatTensor(X)},
+        Y_dict={"spam_task": torch.LongTensor(Y)},
+    )
+    return DictDataLoader(ds, **kwargs)
+
+
+def create_spam_task(bow_dim):
+    """Create a Snorkel Task specifying the task flow for a simple Multi-layer Perceptron."""
+
+    # Define a `module_pool` with all the PyTorch modules that we'll want to include in our network
+    module_pool = nn.ModuleDict(
+        {
+            "mlp": nn.Sequential(nn.Linear(bow_dim, bow_dim), nn.ReLU()),
+            "prediction_head": nn.Linear(bow_dim, 2),
+        }
+    )
+
+    # Specify the desired `task_flow` through each module
+    task_flow = [
+        Operation(
+            name="input_op", module_name="mlp", inputs=[("_input_", "bow_features")]
+        ),
+        Operation(
+            name="head_op", module_name="prediction_head", inputs=[("input_op", 0)]
+        ),
+    ]
+
+    # Define a Snorkel Task
+    spam_task = Task(
+        name="spam_task",
+        module_pool=module_pool,
+        task_flow=task_flow,
+        loss_func=partial(cross_entropy_from_outputs, "head_op"),
+        output_func=partial(softmax_from_outputs, "head_op"),
+        scorer=Scorer(metrics=["accuracy", "f1"]),
+    )
+
+    return spam_task
