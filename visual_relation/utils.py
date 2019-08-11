@@ -82,8 +82,12 @@ def load_vrd_data(sample=False, is_travis=False):
             print(e.stderr.decode())
             raise e
 
-    relationships_train = json.load(open("visual_relation/data/VRD/annotations_train.json"))
-    relationships_test = json.load(open("visual_relation/data/VRD/annotations_test.json"))
+    relationships_train = json.load(
+        open("visual_relation/data/VRD/annotations_train.json")
+    )
+    relationships_test = json.load(
+        open("visual_relation/data/VRD/annotations_test.json")
+    )
 
     objects = json.load(open("visual_relation/data/VRD/objects.json"))
     predicates = json.load(open("visual_relation/data/VRD/predicates.json"))

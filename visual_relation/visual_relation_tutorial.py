@@ -210,14 +210,14 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 # +
 from snorkel.classification import DictDataLoader
 from visual_relation.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
-    
+
 train_df["labels"] = label_model.predict(L_train)
 
 if sample:
     TRAIN_DIR = "visual_relation/data/VRD/sg_dataset/samples"
 else:
     TRAIN_DIR = "visual_relation/data/VRD/sg_dataset/sg_train_images"
-    
+
 train_dl = DictDataLoader(
     SceneGraphDataset("train_dataset", "train", TRAIN_DIR, train_df),
     batch_size=16,
