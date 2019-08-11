@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import tempfile
@@ -7,8 +8,11 @@ import click
 import jupytext
 from jupytext.compare import compare_notebooks
 
+logging.basicConfig(level=logging.INFO)
 
-CONFIG_FILENAME = ".notebooks"
+
+NOTEBOOKS_CONFIG_FNAME = ".notebooks"
+SCRIPTS_CONFIG_FNAME = ".scripts"
 
 
 class Notebook:
@@ -46,12 +50,24 @@ def call_jupytext(notebook: Notebook, out_fname: str, to_ipynb: bool) -> None:
 
 def get_notebooks(tutorial_dir: str) -> List[Notebook]:
     path = os.path.abspath(tutorial_dir)
-    config_path = os.path.join(path, CONFIG_FILENAME)
+    config_path = os.path.join(path, NOTEBOOKS_CONFIG_FNAME)
     if not os.path.isfile(config_path):
-        raise ValueError(f"No {CONFIG_FILENAME} config file in {path}")
+        logging.info(f"No {NOTEBOOKS_CONFIG_FNAME} config file in {path}")
+        return []
     with open(config_path, "r") as f:
         notebooks = f.read().splitlines()
     return [Notebook(os.path.join(path, nb)) for nb in notebooks if nb]
+
+
+def get_scripts(tutorial_dir: str) -> List[Notebook]:
+    path = os.path.abspath(tutorial_dir)
+    config_path = os.path.join(path, SCRIPTS_CONFIG_FNAME)
+    if not os.path.isfile(config_path):
+        logging.info(f"No {SCRIPTS_CONFIG_FNAME} config file in {path}")
+        return []
+    with open(config_path, "r") as f:
+        scripts = [os.path.join(path, s) for s in f.read().splitlines() if s]
+    return scripts
 
 
 def check_notebook(notebook: Notebook) -> None:
@@ -61,6 +77,13 @@ def check_notebook(notebook: Notebook) -> None:
         call_jupytext(notebook, f.name, to_ipynb=True)
         notebook_expected = jupytext.read(f.name, fmt=dict(extension="ipynb"))
         compare_notebooks(notebook_actual, notebook_expected)
+
+
+def check_script(script_path: str) -> None:
+    assert os.path.exists(script_path), f"No file {script_path}"
+    check_run = subprocess.run(["python", script_path])
+    if check_run.returncode:
+        raise ValueError(f"Error running {script_path}")
 
 
 def build_html_notebook(notebook: Notebook, build_dir: str) -> None:
@@ -98,6 +121,8 @@ def cli() -> None:
 def test(tutorial_dir: str) -> None:
     for notebook in get_notebooks(tutorial_dir):
         check_notebook(notebook)
+    for script in get_scripts(tutorial_dir):
+        check_script(script)
 
 
 @cli.command()
