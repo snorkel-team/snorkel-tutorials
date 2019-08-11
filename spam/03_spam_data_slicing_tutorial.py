@@ -117,7 +117,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 vectorizer = CountVectorizer(ngram_range=(1, 1))
 
 
-def df_to_torch_example(vectorizer, df, fit_train=False):
+def df_to_torch_features(vectorizer, df, fit_train=False):
     words = [row.text for i, row in df.iterrows()]
 
     if fit_train:
@@ -130,16 +130,16 @@ def df_to_torch_example(vectorizer, df, fit_train=False):
 
 
 # %%
-X_train, Y_train = df_to_torch_example(vectorizer, df_train, fit_train=True)
-X_valid, Y_valid = df_to_torch_example(vectorizer, df_valid, fit_train=False)
-X_test, Y_test = df_to_torch_example(vectorizer, df_test, fit_train=False)
+X_train, Y_train = df_to_torch_features(vectorizer, df_train, fit_train=True)
+X_valid, Y_valid = df_to_torch_features(vectorizer, df_valid, fit_train=False)
+X_test, Y_test = df_to_torch_features(vectorizer, df_test, fit_train=False)
 
 # %% [markdown]
 # ### Create DataLoaders
 #
 # Next, we'll use the extracted Tensors to initialize a [`DictDataLoader`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.DictDataLoader.html) — as a quick recap, this is a Snorkel-specific class that inherits from the common PyTorch class and supports multiple data fields in the `X_dict` and labels in the `Y_dict`.
 #
-# In this task, we'd like to store the `bow_features` in our `X_dict`, and we have one set of labels (for now) correpsonding to the `spam_task`.
+# In this task, we'd like to store the bag-of-words `bow_features` in our `X_dict`, and we have one set of labels (for now) correpsonding to the `spam_task`.
 
 # %%
 from snorkel.classification.data import DictDataset, DictDataLoader
@@ -148,7 +148,7 @@ BATCH_SIZE = 32
 
 
 def create_dict_dataloader(X, Y, split, **kwargs):
-    """Create a DictDataLoader for bag of words features."""
+    """Create a DictDataLoader for bag-of-words features."""
     ds = DictDataset(
         name="spam_dataset",
         split=split,
