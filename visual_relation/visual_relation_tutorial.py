@@ -29,7 +29,7 @@
 # +
 import os
 
-if os.path.basename(os.getcwd()) == "scene_graph":
+if os.path.basename(os.getcwd()) == "visual_relation":
     os.chdir("..")
 # -
 
@@ -55,7 +55,7 @@ import numpy as np
 # The sampled version of the dataset **uses the same 26 examples across the train, dev, and test sets. This setting is meant to demonstrate how Snorkel works with this task, not to demonstrate performance.**
 
 # +
-from scene_graph.utils import load_vrd_data
+from visual_relation.utils import load_vrd_data
 
 # setting sample=False will take ~3 hours to run (downloads full VRD dataset)
 sample = True
@@ -209,15 +209,15 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 
 # +
 from snorkel.classification import DictDataLoader
-from scene_graph.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
-
+from visual_relation.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
+    
 train_df["labels"] = label_model.predict(L_train)
 
 if sample:
-    TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/samples"
+    TRAIN_DIR = "visual_relation/data/VRD/sg_dataset/samples"
 else:
-    TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/sg_train_images"
-
+    TRAIN_DIR = "visual_relation/data/VRD/sg_dataset/sg_train_images"
+    
 train_dl = DictDataLoader(
     SceneGraphDataset("train_dataset", "train", TRAIN_DIR, train_df),
     batch_size=16,
@@ -268,12 +268,12 @@ module_pool = nn.ModuleDict(
 )
 
 # +
-from scene_graph.model import get_task_flow
+from visual_relation.model import get_task_flow
 
 # define task flow through modules
 task_flow = get_task_flow()
 pred_cls_task = Task(
-    name="scene_graph_task",
+    name="visual_relation_task",
     module_pool=module_pool,
     task_flow=task_flow,
     scorer=Scorer(metrics=["f1_micro"]),
