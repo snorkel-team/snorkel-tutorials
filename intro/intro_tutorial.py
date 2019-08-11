@@ -64,6 +64,7 @@ SPAM = 1
 # %%
 from snorkel.labeling import labeling_function
 
+
 @labeling_function()
 def lf_keyword_my(x):
     """Many spam comments talk about 'my channel', 'my video', etc."""
@@ -75,6 +76,7 @@ def lf_keyword_my(x):
 
 # %%
 import re
+
 
 @labeling_function()
 def lf_regex_check_out(x):
@@ -88,7 +90,7 @@ def lf_regex_check_out(x):
 # %%
 @labeling_function()
 def lf_short_comment(x):
-    """Ham comments are often short, such as 'cool video!'"""
+    """Non-spam comments are often short, such as 'cool video!'."""
     return NOT_SPAM if len(x.text.split()) < 5 else ABSTAIN
 
 
@@ -98,11 +100,13 @@ def lf_short_comment(x):
 # %%
 from textblob import TextBlob
 
+
 @labeling_function()
 def lf_textblob_polarity(x):
     """
-    We use a third-party sentiment classification model, TextBlob,
-    combined with the heuristic that ham comments are often positive.
+    We use a third-party sentiment classification model, TextBlob.
+
+    We combine this with the heuristic that non-spam comments are often positive.
     """
     sentiment = TextBlob(x.text).sentiment
     return NOT_SPAM if sentiment.polarity > 0.3 else ABSTAIN
@@ -169,13 +173,14 @@ from snorkel.augmentation import transformation_function
 import random
 import nltk
 from nltk.corpus import wordnet as wn
-
 nltk.download("wordnet")
 
+
 def get_synonyms(word):
-    """Helper function to get the synonyms of word from Wordnet."""
+    """Get the synonyms of word from Wordnet."""
     lemmas = set().union(*[s.lemmas() for s in wn.synsets(word)])
     return list(set([l.name().lower().replace("_", " ") for l in lemmas]) - {word})
+
 
 @transformation_function()
 def tf_replace_word_with_synonym(x):
@@ -192,7 +197,7 @@ def tf_replace_word_with_synonym(x):
 # Next, we apply this transformation function to our training dataset:
 
 # %%
-from snorkel.augmentation import ApplyOnePolicy, PandasTFApplier 
+from snorkel.augmentation import ApplyOnePolicy, PandasTFApplier
 
 tf_policy = ApplyOnePolicy(n_per_original=2, keep_original=True)
 tf_applier = PandasTFApplier([tf_replace_word_with_synonym], tf_policy)
@@ -214,9 +219,10 @@ df_train_augmented = tf_applier.apply(df_train)
 # %%
 from snorkel.slicing import slicing_function
 
+
 @slicing_function()
 def short_link(x):
-    """Returns whether text matches common pattern for shortened ".ly" links."""
+    """Return whether text matches common pattern for shortened ".ly" links."""
     return bool(re.search(r"\w+\.ly", x.text))
 
 
