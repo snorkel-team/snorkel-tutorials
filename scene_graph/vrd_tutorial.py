@@ -1,19 +1,3 @@
-# -*- coding: utf-8 -*-
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.2'
-#       jupytext_version: 1.1.7
-#   kernelspec:
-#     display_name: Python 3
-#     language: python
-#     name: python3
-# ---
-
 # %% [markdown]
 # # Visual Relationship Detection
 #
@@ -43,7 +27,7 @@ if os.path.basename(os.getcwd()) == "scene_graph":
 # - `subject_bbox`: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`
 # - `subject_category`: category of the subject
 #
-# Note that the `train_df` object has a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
+# Note that the training DataFrame will have a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
 
 # %%
 # %load_ext autoreload
@@ -74,7 +58,7 @@ ABSTAIN = -1
 # We begin with labeling functions that encode categorical intuition: we use knowledge about common subject-object category pairs that are common for `RIDE` and `CARRY` and also knowledge about what subjects or objects are unlikely to be involved in the two relationships.
 
 # %%
-from snorkel.labeling.lf import labeling_function
+from snorkel.labeling import labeling_function
 
 # Category-based LFs
 @labeling_function()
@@ -154,7 +138,7 @@ def LF_area(x):
 # Note that the labeling functions have varying empirical accuracies and coverages. Due to class imbalance in our chosen relationships, labeling functions that label the `OTHER` class have higher coverage than labeling functions for `RIDE` or `CARRY`. This reflects the distribution of classes in the dataset as well.
 
 # %%
-from snorkel.labeling.apply import PandasLFApplier
+from snorkel.labeling import PandasLFApplier
 
 lfs = [
     LF_ride_object,
@@ -172,7 +156,7 @@ L_train = applier.apply(train_df)
 L_valid = applier.apply(valid_df)
 
 # %%
-from snorkel.labeling.analysis import LFAnalysis
+from snorkel.labeling import LFAnalysis
 
 Y_valid = valid_df.label.values
 LFAnalysis(L_valid, lfs).lf_summary(Y_valid)
@@ -182,13 +166,13 @@ LFAnalysis(L_valid, lfs).lf_summary(Y_valid)
 # We now train a multi-class `LabelModel` to assign training labels to the unalabeled training set.
 
 # %%
-from snorkel.labeling.model import LabelModel
+from snorkel.labeling import LabelModel
 
 label_model = LabelModel(cardinality=3, verbose=True)
 label_model.fit(L_train, seed=123, lr=0.01, log_freq=10, n_epochs=100)
 
 # %% [markdown]
-# We use F1 Micro average for the multiclass setting, which calculates metrics globally by counting the total true positives, false negatives and false positives. [source](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
+# We use [F1](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html) Micro average for the multiclass setting, which calculates metrics globally by counting the total true positives, false negatives and false positives.
 
 # %%
 label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
@@ -201,7 +185,7 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 # #### Create DataLoaders for Classifier
 
 # %%
-from snorkel.classification.data import DictDataLoader
+from snorkel.classification import DictDataLoader
 from scene_graph.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
 
 # change to "scene_graph/data/VRD/sg_dataset/sg_train_images" for full set
@@ -227,10 +211,8 @@ valid_dl = DictDataLoader(
 import torchvision.models as models
 import torch.nn as nn
 
-from functools import partial
-from snorkel.classification.scorer import Scorer
-from snorkel.classification.task import ce_loss, softmax
-from snorkel.classification.task import Task
+from snorkel.analysis import Scorer
+from snorkel.classification import Task
 
 
 # initialize pretrained feature extractor
@@ -268,8 +250,6 @@ pred_cls_task = Task(
     name="scene_graph_task",
     module_pool=module_pool,
     task_flow=task_flow,
-    loss_func=partial(ce_loss, "head_op"),
-    output_func=partial(softmax, "head_op"),
     scorer=Scorer(metrics=["f1_micro"]),
 )
 
@@ -277,10 +257,9 @@ pred_cls_task = Task(
 # ### Train and Evaluate Model
 
 # %%
-from snorkel.classification.snorkel_classifier import SnorkelClassifier
-from snorkel.classification.training import Trainer
+from snorkel.classification import MultitaskClassifier, Trainer
 
-model = SnorkelClassifier([pred_cls_task])
+model = MultitaskClassifier([pred_cls_task])
 trainer = Trainer(
     n_epochs=1,
     lr=1e-3,

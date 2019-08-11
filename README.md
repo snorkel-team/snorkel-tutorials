@@ -5,51 +5,156 @@ A collection of tutorials for [Snorkel](http://snorkel.org).
 The Snorkel tutorials are grouped by application, with some applications having multiple associated notebooks in their directory.
 * `spam`: Is this YouTube comment spam?
 * `spouse`: Does this sentence imply that the two marked people are spouses?
-* `visual` (Visual Relationship Detection): Is object A riding object B, carrying it, or neither?
-* `weather`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
+* `scene_graph`: Is object A riding object B in the image, carrying it, or neither?
+* `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
+<<<<<<< HEAD
+* `multitask` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+=======
 * `mtl` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+* [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
+>>>>>>> Add to tox and README
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
 
-## Getting Started
-Start with the `spam` tutorial for a gentle introduction to the concepts and classes of Snorkel.
+We recommend that all users **start with the `spam` tutorial** for a gentle introduction to the concepts and classes of Snorkel.
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 
-To run a tutorial in a jupyter notebook, run the following commands, which create a virtual environment, install requirements, create an ipython kernel, and launch Jupyter:
+## Getting Started
+
+Step one is cloning this repo.
+
 ```bash
-TUTORIAL="spam"  # Change this to the name of the directory for the tutorial you want
-
-# Create virtual env
-VIRTUALENV=".env_${TUTORIAL}"
-virtualenv $VIRTUALENV
-source $VIRTUALENV/bin/activate  # Activate the created virtual environment
-pip3 install -r requirements.txt  # Requirements shared among all tutorials
-cd $TUTORIAL
-pip3 install -r requirements.txt  # Requirements specific to this tutorial
-
-# Launch Jupyter
-jupyter notebook
-
-# To deactivate the virtual environment when you are done, run `deactivate`.
+git clone https://github.com/snorkel-team/snorkel-tutorials.git
+cd snorkel-tutorials
 ```
-Then, in the browser tab that opens, select the notebook you would like to run.
 
-Alternatively, to run the tutorial as a script, skip the Jupyter launch command and run the tutorial's `.py` file directly (e.g. `python spam_tutorial.py`).
+As with Snorkel, our tutorials require Python 3.6+.
+If you're looking to quickly get started with a tutorial, we recommend using
+our [Docker setup](#docker).
+If you want to install things yourself using `pip` or `conda`, you can follow
+our [installation steps](#install) below instead.
+
+***A quick note for Windows users***
+
+If you're using Windows, we highly recommend using the [Docker setup](#docker)
+or the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/faq).
+It can be tricky to get the installation right using application-specific shells
+(e.g. the `conda` shell).
+Additionally, the shell scripts included in this repo (such as those for
+downloading datasets) use *nix-style commands.
+
+
+### <a name="docker"> Running with Docker </a>
+
+We've included a Docker setup for our tutorials to make setup easy.
+First, make sure you have [Docker installed](https://docs.docker.com/install/) on your machine.
+To build and run a Docker image for a tutorial, use `scripts/docker_launch.py` with the `--build` flag.
+For example, run the following for the `spam` tutorial:
+
+```bash
+python3 scripts/docker_launch.py spam --build
+```
+
+Building a Docker image from scratch can take anywhere between 5 and
+30 minutes depending on the machine you're using.
+We're working on making prebuilt images available via DockerHub.
+
+Once the image has been built, a Jupyter notebook server will be available
+on port 8888 (you can change the port with the `--port` command line option)
+and print out a link you can follow to access the browser interface.
+In your browser, open a `.ipynb` file you would like to run &mdash;
+such as `01_spam_tutorial.ipynb` &mdash; and execute the cells in sequence.
+
+Once you've built a tutorial-specific image for the first time,
+you can run it without the `--build` flag:
+
+```bash
+python3 scripts/docker_launch.py spam
+```
+
+### <a name="install"> Installing yourself </a>
+
+Running a tutorial has three required steps if you're installing yourself:
+
+1. Installing repo-wide requirements
+1. Installing tutorial-specific requirements
+1. Launching a Jupyter notebook server or executing as a script
+
+We recommend installing requirements in a virtual environment using [`virtualenv`](https://virtualenv.pypa.io/en/latest/) or [`conda`](https://docs.conda.io/en/latest/).
+
+The following example commands show you how to install the requirements for the
+`spam` tutorial, then launch a notebook server to run the tutorial.
+To run a different tutorial, simply replace `spam` with the desired directory.
+
+<details><summary><b>Installing with <tt>pip</tt></b></summary>
+<p>
+
+These commands assume that your Python version is 3.6+ and that the Python 3
+version of `pip` is available as `pip3`.
+It may be available as `pip` depending on how your system is configured.
+
+```bash
+# [OPTIONAL] Activate a virtual environment
+pip3 install --upgrade virtualenv
+virtualenv -p python3 spam
+
+# Install requirements (both shared and tutorial-specific)
+pip3 install -r requirements.txt
+pip3 install -r spam/requirements.txt
+
+# Launch the Jupyter notebook interface
+jupyter notebook spam
+```
+
+</p>
+</details>
+
+
+<details><summary><b>Installing with <tt>conda</tt></b></summary>
+<p>
+
+These commands assume that your conda installation is Python 3.6+.
+
+```bash
+# [OPTIONAL] Activate a virtual environment
+conda create --name spam
+source activate spam
+
+# Install requirements (both shared and tutorial-specific)
+conda install --yes --file requirements.txt
+conda install --yes --file spam/requirements.txt
+
+# Launch the Jupyter notebook interface
+jupyter notebook spam
+```
+
+</p>
+</details>
+
+Then in the browser tab that opens, navigate to a `.ipynb` file you would like
+to run &mdash; such as `01_spam_tutorial.ipynb` &mdash; and execute the
+cells in sequence.
+
+Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam/01_spam_tutorial.py`).
+The `.py` source files are written in [Jupytext `percent` format](https://jupytext.readthedocs.io/en/latest/), and contain the same content as the notebooks.
 
 
 ## <a name="tutorials-index"> Tutorials Index </a>
 Here we provide an index pointing to different available tutorials by their task type, techniques, and integrations.
 * Task
-    * Text Classification (Text): `spam`, `weather`
+    * Text Classification (Text): `spam`, `crowdsourcing`, `drybell`
     * Relation Extraction (Text): `spouse`
-    * Visual Relationship Detection (Image): `visual`
+    * Visual Relationship Detection (Image): `scene_graph`
 * Techniques
-    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `visual`, `weather`
+    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `scene_graph`, `crowdsourcing`, `drybell`
     * Augmentation with Transformation Functions (TFs): `spam`
     * Monitoring with Slicing Functions (SFs): `spam`
-    * Using Crowdworker Labels: `weather`
-    * Multi-Task Learning (MTL): `mtl`, `visual`, `spam`
+    * Using Crowd Worker Labels: `crowdsourcing`
+    * Multi-Task Learning (MTL): `multitask`, `scene_graph`, `spam`
+    * Large-Scale Production Pipeline: `drybell`
 * Integrations
-    * TensorFlow/Keras: `spam`
-    * Scikit-Learn: `spam`
-    * PyTorch: `spam`
+    * TensorFlow/Keras: `spam`, `spouse`
+    * Scikit-Learn: `spam`, `crowdsourcing`
+    * PyTorch: `multitask`
+    * Dask: `drybell`
+    * Spark: `drybell`
