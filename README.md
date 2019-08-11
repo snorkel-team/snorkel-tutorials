@@ -7,7 +7,12 @@ The Snorkel tutorials are grouped by application, with some applications having 
 * `spouse`: Does this sentence imply that the two marked people are spouses?
 * `scene_graph`: Is object A riding object B in the image, carrying it, or neither?
 * `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
+<<<<<<< HEAD
 * `multitask` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+=======
+* `mtl` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+* [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
+>>>>>>> Add to tox and README
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
 
@@ -137,16 +142,19 @@ The `.py` source files are written in [Jupytext `percent` format](https://jupyte
 ## <a name="tutorials-index"> Tutorials Index </a>
 Here we provide an index pointing to different available tutorials by their task type, techniques, and integrations.
 * Task
-    * Text Classification (Text): `spam`, `crowdsourcing`
+    * Text Classification (Text): `spam`, `crowdsourcing`, `drybell`
     * Relation Extraction (Text): `spouse`
     * Visual Relationship Detection (Image): `scene_graph`
 * Techniques
-    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `scene_graph`, `crowdsourcing`
+    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `scene_graph`, `crowdsourcing`, `drybell`
     * Augmentation with Transformation Functions (TFs): `spam`
     * Monitoring with Slicing Functions (SFs): `spam`
     * Using Crowd Worker Labels: `crowdsourcing`
     * Multi-Task Learning (MTL): `multitask`, `scene_graph`, `spam`
+    * Large-Scale Production Pipeline: `drybell`
 * Integrations
     * TensorFlow/Keras: `spam`, `spouse`
     * Scikit-Learn: `spam`, `crowdsourcing`
     * PyTorch: `multitask`
+    * Dask: `drybell`
+    * Spark: `drybell`
