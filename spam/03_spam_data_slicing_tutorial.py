@@ -458,7 +458,7 @@ slice_model = MultitaskClassifier(slice_tasks)
 # We train a single model initialized with all slice tasks.
 # We note that we can monitor slice-specific performance during training — this is a powerful way to track especially critical subsets of the data.
 #
-# _Note: This model includes more parameters (corresponding to additional slices), and therefore requires more time to train. 
+# _Note: This model includes more parameters (corresponding to additional slices), and therefore requires more time to train.
 # We set `num_epochs=1` for demonstration purposes._
 
 # %%
