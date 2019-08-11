@@ -1,77 +1,32 @@
 # -*- coding: utf-8 -*-
 # %% [markdown]
-# # Introduction to Snorkel
+# # Getting Started with Snorkel
 
 # %% [markdown]
-# In this first Snorkel tutorial, we will walk through the basics of Snorkel, using it to fight YouTube comments spam!
+# In this quick walkthrough, we'll preview the high level workflow and interfaces of Snorkel.  For the more detailed version, see the [Introductory Tutorial](#).
 
 # %% [markdown]
-# ### Snorkel Basics
+# ## Programmatically Building and Managing Training Data with Snorkel
 #
-# **Snorkel is a system for programmatically building and managing training datasets to rapidly and flexibly fuel machine learning models.**
+# Snorkel is a system for programmatically building and managing training datasets. In Snorkel, users can develop training datasets in hours or days rather than hand-labeling them over weeks or months.
 #
-# Today's state-of-the-art machine learning models are more powerful and easy to use than ever before- however, they require massive _training datasets_.
-# For example, if we wanted to use one of the latest and greatest machine learning models to classify YouTube comments as spam or not, we'd need to first hand-label a large number of YouTube comments---a *training set*---that our model would learn from.
-#
-# Building and managing training datasets often requires slow and prohibitively expensive manual effort by domain experts (especially when data is private or requires expensive expert labelers).
-# In Snorkel, users instead write **programmatic operations to label, transform, and structure training datasets** for machine learning, without needing to hand label any training data; Snorkel then uses novel, theoretically-grounded modeling techniques to clean and integrate the resulting training data.
-# In a wide range of applications---from medical image monitoring to text information extraction to industrial deployments over web data---Snorkel provides a radically faster and more flexible to build machine learning applications; see [snorkel.org](snorkel.org) for more detail on many examples of Snorkel usage!
-#
-# In this intro tutorial, we'll see how Snorkel can let us train a machine learning model for spam classification _without_ hand-labeling anything but a small test and validation set (i.e., without hand-labeling _any_ training data).
+# Snorkel currently exposes three key programmatic operations: **labeling data**, for example using heuristic rules or distant supervision techniques; **transforming data**, for example rotating or stretching images to perform data augmentation; and **slicing data** into different critical subsets. Snorkel then automatically models, cleans, and integrates the resulting training data using novel, theoretically-grounded techniques.
 
 # %% [markdown]
-# ### The Snorkel Pipeline
+# <img src="img/snorkel_ops.png" align="center">
 
 # %% [markdown]
-# <img src="img/snorkel_101_pipeline.png" align="left">`
-
-# %% [markdown]
-# Snorkel is a system for programmatically building and managing training datasets in a number of ways- we'll start with **labeling** training data.
-# Here, the basic pipeline consists of three main steps:
+# In this walkthrough, we'll look at a canonical machine learning problem: classifying spam.  We'll use a public [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle; for more details on this dataset see the [Introductory Tutorial](#).
 #
-# 1. **Writing Labeling Functions:** First, instead of labeling the training data by hand, we will write _labeling functions_, special Python functions that label subsets of the training data heuristically.
+# We'll walk through five basic steps:
 #
-# 2. **Combining & cleaning the labels:** The labeling functions we write will have varying accuracies, coverages, and correlations- leading to complex overlaps and disagreements. We will use Snorkel's `LabelModel` to automatically reweight and combine the outputs of the labeling functions, resulting in clean, _probabilistic_ training labels.
+# 1. **Writing Labeling Functions (LFs):** First, rather than hand-labeling any training data, we'll programamtically label our _unlabeled_ dataset with LFs
+# 2. **Modeling & Combining LFs:** Next, we'll use the `LabelModel` to automatically learn the accuracies of our LFs and reweight and combine their outputs
+# 3. **Writing Transformation Functions (TFs) for Data Augmentation:** Then, we'll augment this labeled training set by writing a simple TF
+# 4. **Writing _Slicing Functions (SFs)_ for Data Subset Selection:** Then, we'll write an SF to identify a critical subset or _slice_ of our training set.
+# 5. **Training a final ML model:** Finally, we'll train a simple ML model with our training set!
 #
-# 3. **Training a machine learning model:** Finally, we'll show how to use the probabilistic training labels from step (2) to train a machine learning model, which we'll show will generalize beyond and outperform the labeling functions!
-#
-# For much more on Snorkel---including four years of academic papers, applications, and more!---see [snorkel.org](http://snorkel.org).
-# You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
-
-# %% [markdown]
-# ### Example Problem: Classifying YouTube Spam
-
-# %% [markdown]
-# <img src="img/snorkel_101_spam.png" width="500px" align="left">
-
-# %% [markdown]
-# For this tutorial, we'll focus on a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle that consists of YouTube comments from 5 videos.
-# **For a much more detailed version of this tutorial, see the Snorkel [spam tutorial](https://github.com/snorkel-team/snorkel-tutorials/tree/master/spam).**
-#
-# The simple classification task we focus on here is a classic one in the history of machine learning- classifying each comment as being "spam" or "ham" (not spam); more specifically, we aim to train a classifier that outputs one of the following labels for each YouTube comment:
-#
-# * **`SPAM`**: irrelevant or inappropriate messages, or
-# * **`HAM`**: comments relevant to the video
-#
-# For example, the following comments are `SPAM`:
-#
-#         "Subscribe to me for free Android games, apps.."
-#
-#         "Please check out my vidios"
-#
-#         "Subscribe to me and I'll subscribe back!!!"
-#
-# and these are `HAM`:
-#
-#         "3:46 so cute!"
-#
-#         "This looks so fun and it's a good song"
-#
-#         "This is a weird video."
-#         
-# For our task, we have access to a large amount of *unlabeled YouTube comments*, which forms our **training set**.
-# We also have access to a small amount of labeled data, which we split into **development set** (for looking at while developing labeling functions), a **validation set** (for model hyperparameter tuning), and a **test set** (for final evaluation).
-# We load this data in now:
+# We'll start first by loading the _unlabeled_ comments, which we'll use as our training data, as a pandas `DataFrame`:
 
 # %%
 import os
@@ -81,10 +36,11 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("intro")
 
 # %%
-from utils import load_spam_dataset
+from utils import load_unlabeled_spam_dataset
+df_train = load_unlabeled_spam_dataset()
 
-# Load data- for details see the spam tutorial
-df_train, *_ = load_spam_dataset()
+# %% [markdown]
+# # OLD STUFF BELOW HERE
 
 # %% [markdown]
 # Each row is one comment consisting of text, author, and date values, as well as an integer id for which YouTube video the comment corresponds to.
@@ -104,7 +60,7 @@ df_train, *_ = load_spam_dataset()
 # As a starting example, labeling functions can be based on **matching keywords**, using **regular expressions**, leveraging arbitrary **heuristics**, using **third-party models**, and much more- anything that can be expressed as a function that labels!
 
 # %%
-from snorkel.labeling.lf import labeling_function
+from snorkel.labeling import labeling_function
 import re
 from textblob import TextBlob
 
@@ -155,7 +111,7 @@ lfs = [
 # Our next step is to apply the labeling functions we wrote to the unlabeled training data; we do this using the `LFApplier` corresponding to our base data class (in this case, the `PandasLFApplier`):
 
 # %%
-from snorkel.labeling.apply.pandas import PandasLFApplier
+from snorkel.labeling import PandasLFApplier
 
 applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
@@ -165,11 +121,11 @@ L_train = applier.apply(df_train)
 # We can take a look at some statistics of the LFs on the dev set:
 
 # %%
-from snorkel.labeling.model.label_model import LabelModel
+from snorkel.labeling import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=500, log_freq=50, seed=123)
-Y_preds_train = label_model.predict(L=L_train)
+df_train['label'] = label_model.predict(L=L_train)
 
 # %% [markdown]
 # Note that above, we have applied the `LabelModel` to the test set, and see that we get an accuracy score of approximately $85\%$.
@@ -179,6 +135,45 @@ Y_preds_train = label_model.predict(L=L_train)
 
 # %% [markdown]
 # Here is where the final step of the pipeline comes in handy- we will now use the probabilistic training labels to train a machine learning model which will generalize beyond---and outperform---the labeling functions.
+
+# %% [markdown]
+# ### [Optional] STEP 3: Writing Transformation Functions for Data Augmentation
+#
+# TODO: Intro text here
+
+# %%
+from snorkel.augmentation import transformation_function
+import random
+import nltk
+from nltk.corpus import wordnet as wn
+
+nltk.download("wordnet")
+
+def get_synonyms(word):
+    """Helper function to get the synonyms of word from Wordnet."""
+    lemmas = set().union(*[s.lemmas() for s in wn.synsets(word)])
+    return list(set([l.name().lower().replace("_", " ") for l in lemmas]) - {word})
+
+@transformation_function()
+def tf_replace_word_with_synonym(x):
+    """Try to replace a random word with a synonym."""
+    words = x.text.lower().split()
+    idx = random.choice(range(len(words)))
+    synonyms = get_synonyms(words[idx])
+    if len(synonyms) > 0:
+        x.text = " ".join(words[:idx] + [synonyms[0]] + words[idx + 1:])
+        return x
+
+
+# %% [markdown]
+# Now, we apply these to the data:
+
+# %%
+from snorkel.augmentation import ApplyOnePolicy, PandasTFApplier 
+
+tf_policy = ApplyOnePolicy(n_per_original=2, keep_original=True)
+tf_applier = PandasTFApplier([tf_replace_word_with_synonym], tf_policy)
+df_train_augmented = tf_applier.apply(df_train)
 
 # %% [markdown]
 # ## STEP 3: Training a Machine Learning Model
@@ -194,11 +189,11 @@ Y_preds_train = label_model.predict(L=L_train)
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 
-text_train = [row.text for i, row in df_train.iterrows()]
+text_train = [row.text for i, row in df_train_augmented.iterrows()]
 X_train = CountVectorizer(ngram_range=(1, 2)).fit_transform(text_train)
 
 clf = LogisticRegression()
-clf.fit(X=X_train, y=Y_preds_train)
+clf.fit(X=X_train, y=df_train_augmented.label.values)
 
 # %% [markdown]
 # **We observe an additional boost in accuracy over the `LabelModel` by multiple points!
