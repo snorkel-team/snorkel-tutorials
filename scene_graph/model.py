@@ -154,7 +154,7 @@ class FlatConcat(nn.Module):
 
 
 # Helper functions to geenerate operations
-def get_task_flow():
+def get_op_sequence():
     # define feature extractors for each of the (union, subject, and object) image crops
     union_feat_op = Operation(
         name="union_feat_op",
@@ -185,17 +185,12 @@ def get_task_flow():
     concat_op = Operation(
         name="concat_op",
         module_name="feat_concat",
-        inputs=[
-            ("obj_feat_op", 0),
-            ("sub_feat_op", 0),
-            ("union_feat_op", 0),
-            ("word_emb_op", 0),
-        ],
+        inputs=["obj_feat_op", "sub_feat_op", "union_feat_op", "word_emb_op"],
     )
 
     # define an operation to make a prediction over all concatenated features
     prediction_op = Operation(
-        name="head_op", module_name="prediction_head", inputs=[("concat_op", 0)]
+        name="head_op", module_name="prediction_head", inputs=["concat_op"]
     )
 
     return [
