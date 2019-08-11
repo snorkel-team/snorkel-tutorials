@@ -16,20 +16,20 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # ## Loading Data
 
 # %% [markdown]
-# We start by running the `download_and_process_data` function. The function returns the `data_train`, `data_test`, `data_dev`, `data_val` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
+# We start by running the `download_and_process_data` function. The function returns the `df_train`, `df_test`, `df_dev`, `df_val` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
 # * `user_idx`: A unique identifier for a user.
 # * `book_idx`: A unique identifier for a book that is being rated by the user.
 # * `book_idxs`: The set of books that the user has interacted with (read or planned to read).
 # * `review_text`: Optional text review written by the user for the book.
-# * `rating`: Either `0` (which means the user did not read or did not like the book) or `1` (which means the user read and liked the book). The `rating` field is missing for `data_train`.
-# Our objective is to predict whether a given user (represented by the set of book_idxs the user has interacted with) will read and like any given book. That is, we want to train a model that takes a set of `book_idxs` and a single `book_idx` as input and predicts the `rating`.
+# * `rating`: Either `0` (which means the user did not read or did not like the book) or `1` (which means the user read and liked the book). The `rating` field is missing for `df_train`.
+# Our objective is to predict whether a given user (represented by the set of book_idxs the user has interacted with) will read and like any given book. That is, we want to train a model that takes a set of `book_idxs` (the user) and a single `book_idx` (the book to rate) and predicts the `rating`.
 #
 # In addition, `download_and_process_data` also returns the `df_books` dataframe, which contains one row per book, along with metadata for that book (such as `title` and `first_author`).
 
 # %%
 from utils import download_and_process_data
 
-(data_train, data_test, data_dev, data_val), df_books = download_and_process_data()
+(df_train, df_test, df_dev, df_val), df_books = download_and_process_data()
 
 df_books.head()
 
@@ -37,7 +37,7 @@ df_books.head()
 # We look at a sample of the labeled development set. As an example, we want our final recommendations model to be able to predict that a user who has interacted with `book_idxs` (25743, 22318, 7662, 6857, 83, 14495, 30664, ...) would either not read or not like the book with `book_idx` 22764 (first row), while a user who has interacted with `book_idxs` (3880, 18078, 9092, 29933, 1511, 8560, ...) would read and like the book with `book_idx` 3181 (second row).
 
 # %%
-data_dev.sample(frac=1, random_state=12).head()
+df_dev.sample(frac=1, random_state=12).head()
 
 # %% [markdown]
 # ## Writing Labeling Functions
@@ -69,7 +69,7 @@ def shared_first_author(x):
 
 
 # %% [markdown]
-# We can also leverage the long text reviews written by users to guess whether they liked or disliked a book. For example, the third data_dev entry above has a review with the text '4.5 STARS', which indicates that the user liked the book. We write a simple LF that looks for similar phrases to guess the user's rating of a book. We interpret >= 4 stars to indicate a positive rating, while < 4 stars is negative.
+# We can also leverage the long text reviews written by users to guess whether they liked or disliked a book. For example, the third df_dev entry above has a review with the text '4.5 STARS', which indicates that the user liked the book. We write a simple LF that looks for similar phrases to guess the user's rating of a book. We interpret >= 4 stars to indicate a positive rating, while < 4 stars is negative.
 
 # %%
 low_rating_strs = [
@@ -157,8 +157,8 @@ lfs = [
 ]
 
 applier = PandasLFApplier(lfs)
-L_dev = applier.apply(data_dev)
-LFAnalysis(L_dev, lfs).lf_summary(data_dev.rating)
+L_dev = applier.apply(df_dev)
+LFAnalysis(L_dev, lfs).lf_summary(df_dev.rating)
 
 # %% [markdown]
 # ### Applying labeling functions to the training set
@@ -169,7 +169,7 @@ LFAnalysis(L_dev, lfs).lf_summary(data_dev.rating)
 from snorkel.labeling.model.label_model import LabelModel
 
 # Train LabelModel.
-L_train = applier.apply(data_train)
+L_train = applier.apply(df_train)
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=5000, seed=123, log_freq=20, lr=0.01)
 Y_train_preds = label_model.predict(L_train)
@@ -178,11 +178,11 @@ Y_train_preds = label_model.predict(L_train)
 import pandas as pd
 from snorkel.labeling import filter_unlabeled_dataframe
 
-data_train_filtered, Y_train_preds_filtered = filter_unlabeled_dataframe(
-    data_train, Y_train_preds, L_train
+df_train_filtered, Y_train_preds_filtered = filter_unlabeled_dataframe(
+    df_train, Y_train_preds, L_train
 )
-data_train_filtered["rating"] = Y_train_preds_filtered
-combined_data_train = pd.concat([data_train_filtered, data_dev], axis=0)
+df_train_filtered["rating"] = Y_train_preds_filtered
+combined_df_train = pd.concat([df_train_filtered, df_dev], axis=0)
 
 # %% [markdown]
 # ### Rating Prediction Model
@@ -286,8 +286,8 @@ def get_data_tensors(df):
 # %%
 model = get_model()
 
-train_data_tensors = get_data_tensors(combined_data_train)
-val_data_tensors = get_data_tensors(data_val)
+train_data_tensors = get_data_tensors(combined_df_train)
+val_data_tensors = get_data_tensors(df_val)
 model.fit(
     train_data_tensors[:-1],
     train_data_tensors[-1],
@@ -301,12 +301,12 @@ model.fit(
 # Finally, we evaluate the model's predicted ratings on our test data.
 #
 # %%
-test_data_tensors = get_data_tensors(data_test)
+test_data_tensors = get_data_tensors(df_test)
 model.evaluate(test_data_tensors[:-1], test_data_tensors[-1], steps=30)
 
 # %% [markdown]
 # ## Summary
 #
-# In this tutorial, we showed one way to use Snorkel for Recommendations. We used books metadata and review text to create `LF`s that estimate user ratings. We used a `LabelModel` to combine the outputs of those `LF`s. Finally, we trained a model to predict what books a user will read and like (and therefore what books should be recommended to the user) based only on what books the user has interacted with in the past.
+# In this tutorial, we showed one way to use Snorkel for recommendations. We used books' metadata and review text to create `LF`s that estimate user ratings. We used a `LabelModel` to combine the outputs of those `LF`s. Finally, we trained a model to predict what books a user will read and like (and therefore what books should be recommended to the user) based only on what books the user has interacted with in the past.
 #
-# Note that we just focused on a specific setting in this tutorial; but Snorkel can also be used in different settings, where we have user profile data, where users have rated every book they read, and so on.
+# Here we demonstrated one way to use Snorkel for training a recommender system. Note, however, that this approach could easily be adapted to take advantage of additional information as it is available (e.g., user profile data, denser user ratings, and so on.)
