@@ -1,8 +1,8 @@
 from pyspark.sql import Row
-from snorkel.labeling import labeling_function
+from snorkel.labeling.lf.nlp_spark import spark_nlp_labeling_function
 from snorkel.preprocess import preprocessor
-from snorkel.preprocess.nlp import SpacyPreprocessor
-from snorkel.preprocess.spark import make_spark_preprocessor
+
+from drybell_lfs import load_celebrity_knowledge_base
 
 ABSTAIN = -1
 NEGATIVE = 0
@@ -10,17 +10,11 @@ POSITIVE = 1
 
 
 @preprocessor()
-def combine_text_spark(x):
-    return Row(article=f"{x.title} {x.body}", title=x.title, body=x.body)
+def combine_text(x):
+    return Row(title=x.title, body=x.body, article=f"{x.title} {x.body}")
 
 
-spacy_preprocessor = SpacyPreprocessor(
-    text_field="article", doc_field="doc", pre=[combine_text_spark], memoize=True
-)
-spacy_preprocessor_spark = make_spark_preprocessor(spacy_preprocessor)
-
-
-@labeling_function(pre=[spacy_preprocessor_spark])
+@spark_nlp_labeling_function(text_field="article", pre=[combine_text])
 def article_mentions_person(x):
     for ent in x.doc.ents:
         if ent.label_ == "PERSON":
@@ -28,13 +22,9 @@ def article_mentions_person(x):
     return NEGATIVE
 
 
-def load_celebrity_knowledge_base(path="drybell/data/celebrity_knowledge_base.txt"):
-    with open(path, "r") as f:
-        return f.read().splitlines()
-
-
-@labeling_function(
-    pre=[spacy_preprocessor_spark],
+@spark_nlp_labeling_function(
+    text_field="article",
+    pre=[combine_text],
     resources=dict(celebrity_knowledge_base=load_celebrity_knowledge_base()),
 )
 def person_in_db(x, celebrity_knowledge_base):

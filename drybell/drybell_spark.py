@@ -34,7 +34,7 @@ def main(data_path, output_path):
     y_prob = label_model.predict_proba(L)[:, 1]
     y_prob_sql_array = F.array([F.lit(y) for y in y_prob])
     data_labeled = data.withColumn("y_prob", y_prob_sql_array)
-    data_labeled.write.parquet(output_path)
+    data_labeled.write.mode("overwrite").parquet(output_path)
     logging.info(f"Labels saved to {output_path}")
 
 
