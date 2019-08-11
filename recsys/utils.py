@@ -1,47 +1,48 @@
 import calendar
+from datetime import datetime
 import gdown
 import gzip
 import json
 import os
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 import pandas as pd
-from datetime import datetime
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import backend as K
 
+YA_BOOKS_URL = "https://drive.google.com/uc?id=1gH7dG4yQzZykTpbHYsrw2nFknjUm0Mol"
+YA_INTERACTIONS_URL = "https://drive.google.com/uc?id=1NNX7SWcKahezLFNyiW88QFPAqOAYP5qg"
+YA_REVIEWS_URL = "https://drive.google.com/uc?id=1M5iqCZ8a7rZRtsmY5KQ5rYnP9S0bQJVo"
 
-def maybe_download_files():
-    if not os.path.exists("data"):
-        os.makedirs("data", exist_ok=True)
-        os.chdir("data")
+BOOK_DATA = "data/goodreads_books_young_adult.json.gz"
+INTERACTIONS_DATA = "data/goodreads_interactions_young_adult.json.gz"
+REVIEWS_DATA = "data/goodreads_reviews_young_adult.json.gz"
+
+
+def maybe_download_files(data_dir: str = "data") -> None:
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir, exist_ok=True)
+        os.chdir(data_dir)
         # Books
-        gdown.download(
-            "https://drive.google.com/uc?id=1gH7dG4yQzZykTpbHYsrw2nFknjUm0Mol",
-            output=None,
-            quiet=None,
-        )
+        gdown.download(YA_BOOKS_URL, output=None, quiet=None)
         # Interactions
-        gdown.download(
-            "https://drive.google.com/uc?id=1NNX7SWcKahezLFNyiW88QFPAqOAYP5qg",
-            output=None,
-            quiet=None,
-        )
+        gdown.download(YA_INTERACTIONS_URL, output=None, quiet=None)
         # Reviews
-        gdown.download(
-            "https://drive.google.com/uc?id=1M5iqCZ8a7rZRtsmY5KQ5rYnP9S0bQJVo",
-            output=None,
-            quiet=None,
-        )
+        gdown.download(YA_REVIEWS_URL, output=None, quiet=None)
         os.chdir("..")
 
 
-def get_timestamp(date_str):
+def get_timestamp(date_str: str) -> datetime.timestamp:
     month_to_int = dict((v, k) for k, v in enumerate(calendar.month_abbr))
     _, month, day, _, _, year = date_str.split()
     dt = datetime(year=int(year), month=month_to_int[month], day=int(day))
     return datetime.timestamp(dt)
 
 
-def load_data(file_name, max_to_load=100, filter_dict=None):
+def load_data(
+    file_name: str, max_to_load: int = 100, filter_dict: Optional[dict] = None
+) -> List[Dict[str, Any]]:
     count = 0
     data = []
     filter_dict = filter_dict or {}
@@ -59,8 +60,10 @@ def load_data(file_name, max_to_load=100, filter_dict=None):
     return data
 
 
-def process_books_data():
-    books = load_data(f"data/goodreads_books_young_adult.json.gz", None)
+def process_books_data(
+    book_path: str = BOOK_DATA, min_ratings: int = 100, max_ratings: int = 15000
+) -> Tuple[pd.DataFrame, Dict[int, int]]:
+    books = load_data(book_path, None)
     df_books = pd.DataFrame(books)
     df_books = df_books[
         [
@@ -91,8 +94,6 @@ def process_books_data():
         lambda l: [pair["author_id"] for pair in l[:5]]
     )
     df_books["first_author"] = df_books.authors.map(lambda l: int(l[0]))
-    min_ratings = 100
-    max_ratings = 15000
 
     df_books = df_books[
         (df_books.ratings_count >= min_ratings)
@@ -104,10 +105,16 @@ def process_books_data():
     return df_books, book_id_to_idx
 
 
-def process_interactions_data(book_id_to_idx):
+def process_interactions_data(
+    book_id_to_idx: Dict[int, int],
+    interactions_path: str = INTERACTIONS_DATA,
+    min_user_count: int = 25,
+    max_user_count: int = 200,
+) -> Tuple[pd.DataFrame, Dict[int, int]]:
+    max_to_load = 50_000 if "TRAVIS" in os.environ else 5_000_000
     interactions = load_data(
-        f"data/goodreads_interactions_young_adult.json.gz",
-        5000000,
+        interactions_path,
+        max_to_load,
         dict(book_id=set(map(str, book_id_to_idx.keys()))),
     )
     df_interactions = pd.DataFrame(interactions)
@@ -119,7 +126,8 @@ def process_interactions_data(book_id_to_idx):
     )
     df_interactions["book_idx"] = df_interactions.book_id.map(book_id_to_idx)
     user_counts = df_interactions.groupby(["user_id"]).size()
-    users_filt = user_counts[(user_counts >= 25) & (user_counts <= 200)].index
+    user_mask = (user_counts >= min_user_count) & (user_counts <= max_user_count)
+    users_filt = user_counts[user_mask].index
     user_id_to_idx = {v: i for i, v in enumerate(users_filt)}
     df_interactions = df_interactions[
         df_interactions.user_id.isin(set(user_id_to_idx.keys()))
@@ -128,9 +136,13 @@ def process_interactions_data(book_id_to_idx):
     return df_interactions, user_id_to_idx
 
 
-def process_reviews_data(book_id_to_idx, user_id_to_idx):
+def process_reviews_data(
+    book_id_to_idx: Dict[int, int],
+    user_id_to_idx: Dict[int, int],
+    reviews_path: str = REVIEWS_DATA,
+) -> pd.DataFrame:
     reviews = load_data(
-        f"data/goodreads_reviews_young_adult.json.gz",
+        reviews_path,
         None,
         dict(
             book_id=set(map(str, book_id_to_idx.keys())),
@@ -143,10 +155,10 @@ def process_reviews_data(book_id_to_idx, user_id_to_idx):
     return df_reviews
 
 
-def split_data(user_idxs, data):
-    user_idxs_train, user_idxs_test = train_test_split(user_idxs, test_size=0.1)
-    user_idxs_train, user_idxs_dev = train_test_split(user_idxs_train, test_size=0.111)
-    user_idxs_train, user_idxs_val = train_test_split(user_idxs_train, test_size=0.125)
+def split_data(user_idxs, data: pd.DataFrame) -> Tuple[pd.DataFrame, ...]:
+    user_idxs_train, user_idxs_test = train_test_split(user_idxs, test_size=0.05)
+    user_idxs_train, user_idxs_dev = train_test_split(user_idxs_train, test_size=0.01)
+    user_idxs_train, user_idxs_val = train_test_split(user_idxs_train, test_size=0.01)
 
     data_train = data[data.user_idx.isin(set(user_idxs_train))].drop("rating", axis=1)
     data_test = data[data.user_idx.isin(set(user_idxs_test))]
@@ -155,7 +167,7 @@ def split_data(user_idxs, data):
     return data_train, data_test, data_dev, data_val
 
 
-def download_and_process_data():
+def download_and_process_data() -> Tuple[Tuple[pd.DataFrame, ...], pd.DataFrame]:
     maybe_download_files()
     df_books, book_id_to_idx = process_books_data()
 
@@ -184,19 +196,19 @@ def download_and_process_data():
     return split_data(user_idxs, data), df_books
 
 
-def recall_batch(y_true, y_pred):
+def recall_batch(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     true_positives = K.sum(K.round(y_true * y_pred))
     all_positives = K.sum(y_true)
     return true_positives / (all_positives + K.epsilon())
 
 
-def precision_batch(y_true, y_pred):
+def precision_batch(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     true_positives = K.sum(K.round(y_true * y_pred))
     predicted_positives = K.sum(K.round(y_pred))
     return true_positives / (predicted_positives + K.epsilon())
 
 
-def f1_batch(y_true, y_pred):
+def f1_batch(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     prec = precision_batch(y_true, y_pred)
     rec = recall_batch(y_true, y_pred)
     return 2 * ((prec * rec) / (prec + rec + K.epsilon()))

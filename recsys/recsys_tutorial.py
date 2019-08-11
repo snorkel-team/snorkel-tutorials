@@ -7,8 +7,8 @@
 # We also have some text reviews written by users.
 #
 # Our goal is to build a recommender system by training a classifier to predict whether a user will read and like any given book.
-# We represent users using the set of books they have interacted with, and train a model over a user-book pair to predict a `rating` (a `rating` of 1 means the user will read and like the book).
-# We represent a user by the set of books they interacted with.
+# We'll train our model over a user-book pair to predict a `rating` (a `rating` of 1 means the user will read and like the book).
+# To simplify inference, we'll represent a user by the set of books they interacted with (rather than learning a specific representation for each user).
 # Once we have this model trained, we can use it to recommend books to a user when they visit the site.
 # For example, we can just predict the rating for the user paired with a book for a few thousand likely books, then pick the books with the top ten predicted ratings.
 #
@@ -79,7 +79,12 @@ first_author_to_books = dict(
 )
 
 
-@labeling_function(resources=dict(book_to_first_author=book_to_first_author, first_author_to_books=first_author_to_books))
+@labeling_function(
+    resources=dict(
+        book_to_first_author=book_to_first_author,
+        first_author_to_books=first_author_to_books,
+    )
+)
 def shared_first_author(x, book_to_first_author, first_author_to_books):
     author = book_to_first_author[x.book_idx]
     same_author_books = first_author_to_books[author]
@@ -110,7 +115,9 @@ low_rating_strs = [
 high_rating_strs = ["5 stars", "five stars", "four stars", "4 stars", "4.5 stars"]
 
 
-@labeling_function(resources=dict(low_rating_strs=low_rating_strs, high_rating_strs=high_rating_strs))
+@labeling_function(
+    resources=dict(low_rating_strs=low_rating_strs, high_rating_strs=high_rating_strs)
+)
 def stars_in_review(x, low_rating_strs, high_rating_strs):
     if not isinstance(x.review_text, str):
         return ABSTAIN
@@ -186,8 +193,7 @@ LFAnalysis(L_dev, lfs).lf_summary(df_dev.rating)
 # %% [markdown]
 # ### Applying labeling functions to the training set
 #
-# We apply the labeling functions to the training set, and then filter out examples unlabeled by any LF, and combine the rest with the dev set to form our final training set.
-# We choose to train on our dev set in this case because it's relatively large (85.3k examples) and we didn't overfit to it when writing our LFs.
+# We apply the labeling functions to the training set, and then filter out examples unlabeled by any LF to form our final training set.
 
 # %%
 from snorkel.labeling.model.label_model import LabelModel
@@ -198,14 +204,12 @@ label_model.fit(L_train, n_epochs=5000, seed=123, log_freq=20, lr=0.01)
 preds_train = label_model.predict(L_train)
 
 # %%
-import pandas as pd
 from snorkel.labeling import filter_unlabeled_dataframe
 
 df_train_filtered, preds_train_filtered = filter_unlabeled_dataframe(
     df_train, preds_train, L_train
 )
 df_train_filtered["rating"] = preds_train_filtered
-df_combined = pd.concat([df_train_filtered, df_dev], axis=0)
 
 # %% [markdown]
 # ### Rating Prediction Model
@@ -246,7 +250,9 @@ def get_model(embed_dim=64, hidden_layer_sizes=[32]):
         inputs=[len_book_idxs, book_idxs, book_idx], outputs=[output_layer]
     )
     model.compile(
-        "Adagrad", "binary_crossentropy", metrics=["accuracy", f1_batch, precision_batch, recall_batch]
+        "Adagrad",
+        "binary_crossentropy",
+        metrics=["accuracy", f1_batch, precision_batch, recall_batch],
     )
     return model
 
@@ -315,7 +321,7 @@ def get_data_tensors(df):
 # %%
 model = get_model()
 
-X_train, Y_train = get_data_tensors(df_combined)
+X_train, Y_train = get_data_tensors(df_train_filtered)
 X_valid, Y_valid = get_data_tensors(df_valid)
 model.fit(
     X_train,
