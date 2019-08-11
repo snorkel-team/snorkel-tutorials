@@ -2,13 +2,11 @@ import glob
 import os
 import subprocess
 
-import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 
 
 def load_unlabeled_spam_dataset():
+    """Load spam training dataset without any labels."""
     if os.path.basename(os.getcwd()) == "snorkel-tutorials":
         os.chdir("intro")
     subprocess.call("bash download_data.sh", shell=True)
