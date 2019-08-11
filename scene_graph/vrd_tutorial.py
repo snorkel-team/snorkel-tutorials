@@ -57,8 +57,8 @@ import numpy as np
 # +
 from scene_graph.utils import load_vrd_data
 
-#setting sample=False will take ~3 hours to run (downloads full VRD dataset)
-sample = True 
+# setting sample=False will take ~3 hours to run (downloads full VRD dataset)
+sample = True
 is_travis = "TRAVIS" in os.environ
 train_df, valid_df, test_df = load_vrd_data(sample, is_travis)
 
@@ -210,14 +210,14 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 # +
 from snorkel.classification import DictDataLoader
 from scene_graph.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
-    
+
 train_df["labels"] = label_model.predict(L_train)
 
 if sample:
     TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/samples"
 else:
     TRAIN_DIR = "scene_graph/data/VRD/sg_dataset/sg_train_images"
-    
+
 train_dl = DictDataLoader(
     SceneGraphDataset("train_dataset", "train", TRAIN_DIR, train_df),
     batch_size=16,
@@ -287,7 +287,7 @@ from snorkel.classification import MultitaskClassifier, Trainer
 
 model = MultitaskClassifier([pred_cls_task])
 trainer = Trainer(
-    n_epochs=1, #increase for improved performance
+    n_epochs=1,  # increase for improved performance
     lr=1e-3,
     checkpointing=True,
     checkpointer_config={"checkpoint_dir": "checkpoint"},
@@ -297,4 +297,4 @@ trainer.fit(model, [train_dl])
 
 model.score([valid_dl])
 
-# We have successfully trained a visual relationship detection model! Using categorical and spatial intuition about how objects in a visual relationship interact with each other, we are able to assign high quality training labels to object pairs in the VRD dataset in a multi-class classification setting. 
+# We have successfully trained a visual relationship detection model! Using categorical and spatial intuition about how objects in a visual relationship interact with each other, we are able to assign high quality training labels to object pairs in the VRD dataset in a multi-class classification setting.
