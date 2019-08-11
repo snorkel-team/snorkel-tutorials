@@ -184,19 +184,19 @@ def download_and_process_data():
     return split_data(user_idxs, data), df_books
 
 
-def recall(y_true, y_pred):
+def recall_batch(y_true, y_pred):
     true_positives = K.sum(K.round(y_true * y_pred))
     all_positives = K.sum(y_true)
     return true_positives / (all_positives + K.epsilon())
 
 
-def precision(y_true, y_pred):
+def precision_batch(y_true, y_pred):
     true_positives = K.sum(K.round(y_true * y_pred))
     predicted_positives = K.sum(K.round(y_pred))
     return true_positives / (predicted_positives + K.epsilon())
 
 
-def f1(y_true, y_pred):
-    prec = precision(y_true, y_pred)
-    rec = recall(y_true, y_pred)
+def f1_batch(y_true, y_pred):
+    prec = precision_batch(y_true, y_pred)
+    rec = recall_batch(y_true, y_pred)
     return 2 * ((prec * rec) / (prec + rec + K.epsilon()))
