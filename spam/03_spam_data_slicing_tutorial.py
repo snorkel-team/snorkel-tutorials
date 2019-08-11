@@ -2,7 +2,7 @@
 # %% [markdown]
 # # ✂️ _Spam_ — Data Slicing Tutorial
 #
-# In real-world applications, _some model outcomes are often more important than others_, e.g. vulnerable cyclist detections in an autonomous driving task, or, in our running **spam** application, potentially malicious link redirects to external websites.
+# In real-world applications, some model outcomes are often more important than others — e.g. vulnerable cyclist detections in an autonomous driving task, or, in our running **spam** application, potentially malicious link redirects to external websites.
 #
 # Traditional machine learning systems optimize for overall quality, which may be too coarse-grained: models that achieve high overall performance might produce unacceptable failure rates on critical slices of the data — data subsets that might correspond to vulnerable cyclist detection in an autonomous driving task, or in our running spam detection application, external links to potentially malicious websites.
 #
@@ -36,6 +36,7 @@ pd.set_option("display.max_colwidth", -1)
 
 # Download the spaCy english model for preprocessing
 import spacy
+
 # ! python -m spacy download en
 
 # %% [markdown]
@@ -98,6 +99,7 @@ BATCH_SIZE = 32
 
 
 def create_dict_dataloader(X, Y, split, **kwargs):
+    """Create a DictDataLoader for bag of words features."""
     ds = DictDataset(
         name="spam_dataset",
         split=split,
@@ -126,7 +128,7 @@ dl_valid.dataset
 # %% [markdown]
 # ### Define `SnorkelClassifier`
 #
-# We'll define a simple Multi-Layer Perceptron (MLP) architecture to learn from the `bow_features`.
+# We define a simple Multi-Layer Perceptron (MLP) architecture to learn from the `bow_features`.
 #
 # _Note: the following might feel like extra steps to define what is a very simple architecture, but this will lend us additional flexibility later in the pipeline!_
 
@@ -181,7 +183,7 @@ from snorkel.classification import Trainer
 
 model = SnorkelClassifier([spam_task])
 trainer = Trainer(n_epochs=5, lr=1e-4, progress_bar=True)
-# trainer.fit(model, [dl_train, dl_valid])
+trainer.fit(model, [dl_train, dl_valid])
 
 # %% [markdown]
 # How well does our model do?
@@ -193,11 +195,10 @@ model.score([dl_train, dl_valid], as_dataframe=True)
 # ## 2. Perform error analysis
 #
 # In overall metrics (`f1`, `accuracy`) our model appears to perform well!
-#
-# However, we emphasize here that more often than not, we're interested in performance for application-critical subsets, or _slices_.
+# However, we emphasize we might actually be _more_ interested in performance for application-critical subsets, or _slices_.
 #
 # Let's perform an [`error_analysis`](https://snorkel.readthedocs.io/en/redux/source/snorkel.analysis.html#module-snorkel.analysis.error_analysis) to see where our model makes mistakes.
-# We'll collect the predictions from the model and visualize examples in specific error buckets.
+# We collect the predictions from the model and visualize examples in specific error buckets.
 
 # %%
 from snorkel.analysis.error_analysis import get_label_buckets
@@ -209,7 +210,7 @@ error_buckets = get_label_buckets(
 )
 
 # %% [markdown]
-# For application purposes, we might care especially about false negatives (true label was `1`, but model predicted `0`) — for the spam task, external links might point to malware, and we don't want to expose our users to these risks!
+# For application purposes, we might care especially about false negatives (i.e. true label was $1$, but model predicted $0$) — for the spam task, this error mode might expose users to external links that correspond to malware!
 
 # %%
 df_valid[["text", "label"]].iloc[error_buckets[(1, 0)]].head()
@@ -220,13 +221,16 @@ df_valid[["text", "label"]].iloc[error_buckets[(1, 0)]].head()
 # %% [markdown]
 # ## 3. Monitor data slices
 #
-# We leverage *slicing functions* (SFs) — an abstraction that shares syntax with *labeling functions*, which you should already be familiar with! (If not, please see the [intro tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb).) A key difference: whereas labeling functions output labels, slicing functions output binary _masks_ indicating whether an example is in the slice or not.
+# We leverage *slicing functions* (SFs) — an abstraction that shares syntax with *labeling functions*, which you should already be familiar with.
+# (If not, please see the [intro tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb).)
+# A key difference: whereas labeling functions output labels, slicing functions output binary _masks_ indicating whether an example is in the slice or not.
 
 # %% [markdown]
 # In the following cells, we define a slicing function that identifies these shortened links the spam dataset.
 # To do so, we write a regex that checks for the commonly-used `.ly` extension.
 #
-# You'll notice that the slicing function is noisily defined — SFs are often heuristics to quickly measure performance over important subsets of the data.
+# You'll notice that the slicing function is noisily defined — it doesn't represent the ground truth for all short links.
+# Instead, SFs are often heuristics to quickly measure performance over important subsets of the data.
 
 # %%
 import re
@@ -235,7 +239,7 @@ from snorkel.slicing.sf import slicing_function
 
 @slicing_function()
 def short_link(x):
-    """Spam comments post links to other channels."""
+    """Returns whether text matches common pattern for shortened ".ly" links."""
     return bool(re.search(r"\w+\.ly", x.text))
 
 
@@ -285,7 +289,7 @@ add_slice_labels(dl_test, spam_task, S_test, slice_names)
 dl_valid.dataset
 
 # %% [markdown]
-# With our updated dataloader, we want to evaluate our model on the defined slice. 
+# With our updated dataloader, we want to evaluate our model on the defined slice.
 # In the `SnorkelClassifier`, we can call `score` with an additional argument, `remap_labels`, to specify that the slice's prediction labels, `spam_task_slice:short_link_pred`, should be mapped to the `spam_task` for evaluation.
 
 # %%
@@ -332,10 +336,10 @@ scorer.score(
 #
 # In classification tasks, we might attempt to increase slice performance with techniques like _oversampling_ (i.e. with PyTorch's [`WeightedRandomSampler`](https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler)).
 # This would shift the training distribution to over-represent certain minority populations.
-# Intuitively, we'd like to show more `short_link` examples to the model so that the representation is better suited to handle these examples!
+# Intuitively, we'd like to show the model more `short_link` examples so that the representation is better suited to handle them.
 #
-# A technique like upsampling might work with a small number of slices, but with a large number of slices, it could quickly become intractable to tune upsampling weights per slice.
-# In the following section, we show a modeling approach that we call _Slice-based Learning_, which handle numerous slices using `SnorkelClassifier`.
+# A technique like upsampling might work with a small number of slices, but with hundreds or thousands or production slices, it could quickly become intractable to tune upsampling weights per slice.
+# In the following section, we show a modeling approach that we call _Slice-based Learning,_ which handles numerous slices using with slice-specific representation learning.
 
 # %% [markdown]
 # ### Write additional slicing functions (SFs)
@@ -358,11 +362,13 @@ def make_keyword_sf(keywords):
         resources=dict(keywords=keywords),
     )
 
+
 """Spam comments ask users to subscribe to their channels."""
 keyword_subscribe = make_keyword_sf(keywords=["subscribe"])
 
 """Spam comments make requests rather than commenting."""
 keyword_please = make_keyword_sf(keywords=["please", "plz"])
+
 
 @nlp_slicing_function()
 def has_person_nlp(x):
@@ -438,8 +444,10 @@ polarity_df[["text", "label"]].head()
 # ### Representation learning with slices
 
 # %% [markdown]
-# To cope with scale, we will attempt to learn and combine many slice-specific representations with an attention mechanism (for more, please see our technical report — coming soon!).
-# Using the helper, `convert_to_slice_tasks`, we have now have a list of slice tasks that appropriate constructs the `task_flow` to do just that!
+# To cope with scale, we will attempt to learn and combine many slice-specific representations with an attention mechanism.
+# (For details, please see our technical report — coming soon!)
+# Using the helper, `convert_to_slice_tasks`, we initialize slice-specific tasks to learn "expert task heads" for each slice, in the style of multi-task learning.
+# The original `spam_task` now contains the attention mechanism to then combine these slice experts.
 
 # %%
 from snorkel.slicing.utils import convert_to_slice_tasks
@@ -451,17 +459,17 @@ slice_tasks
 slice_model = SnorkelClassifier(slice_tasks)
 
 # %% [markdown]
-# We train this model, and note that we can monitor slice-specific performance during training.
-# This is a powerful way to track especially critical subsets of the data.
+# We train a single model initialized with all slice tasks.
+# We note that we can monitor slice-specific performance during training — this is a powerful way to track especially critical subsets of the data.
 #
-# _Note: This model includes more parameters (corresponding to additional slices) — we only train for 1 epoch here for demonstration purposes._
+# _Note: This model includes more parameters (corresponding to additional slices), and therefore requires more time to train — we set `num_epochs=1` for demonstration purposes._
 
 # %%
 trainer = Trainer(n_epochs=1, lr=1e-4, progress_bar=True)
 trainer.fit(slice_model, [dl_train, dl_valid])
 
 # %% [markdown]
-# At inference time, the primary task head (`spam_task`) will be making all final predictions.
+# At inference time, the primary task head (`spam_task`) will make all final predictions.
 # We'd like to evaluate all the slice heads on the original task head.
 # To do this, we use our `remap_labels` API, as we did earlier.
 # Note that this time, we map each `ind` head to `None` — it doesn't make sense to evaluate these labels on the base task head.
@@ -479,7 +487,7 @@ eval_mapping.update({label: None for label in Y_dict.keys() if "ind" in label})
 slice_model.score([dl_valid], remap_labels=eval_mapping, as_dataframe=True)
 
 # %% [markdown]
-# You've just defined slicing functions to monitor specific slices + improved slice-specific performance!
-# For more on the technical details of our modeling approach—our technical report is coming soon!
+# You've just defined slicing functions to monitor specific slices + improved slice-specific performance.
+# For more technical details about _Slice-based Learning,_ stay tuned — our technical report is coming soon!
 
 # %%
