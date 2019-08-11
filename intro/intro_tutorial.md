@@ -128,7 +128,7 @@ L_train = applier.apply(df_train)
 # Train the label model and compute the training labels
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=500, log_freq=50, seed=123)
-df_train['label'] = label_model.predict(L=L_train)
+df_train['label'] = label_model.predict(L=L_train, tie_break_policy='abstain')
 ```
 
 Note that we used the `LabelModel` to label data; however, on many data points, all the labeling functions abstain, and so the `LabelModel` abstains as well.
@@ -136,7 +136,7 @@ We'll filter these examples out of our training set now:
 
 
 ```python
-# TODO: Filter out abstains
+df_train = df_train[df_train.label != ABSTAIN]
 ```
 
 Our ultimate goal is to use the resulting labeled training data points to train a machine learning model that can **generalize beyond the coverage of the labeling functions and the `LabelModel`**.
