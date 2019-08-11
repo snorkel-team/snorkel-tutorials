@@ -392,7 +392,7 @@ def short_comment(x):
     return len(x.text.split()) < 5
 
 
-"""Levearage preprocessor in SF"""
+"""Leverage preprocessor in SF"""
 from textblob import TextBlob
 
 
