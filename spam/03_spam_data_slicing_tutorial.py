@@ -205,7 +205,6 @@ model.score([dl_train, dl_valid], as_dataframe=True)
 
 # %%
 from snorkel.analysis.error_analysis import get_label_buckets
-from snorkel.utils import probs_to_preds
 
 outputs = model.predict(dl_valid, return_preds=True)
 error_buckets = get_label_buckets(
