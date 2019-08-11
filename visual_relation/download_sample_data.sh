@@ -12,20 +12,20 @@ DIRS=("glove" "VRD/sg_dataset/samples")
 # Check if at least any file is missing. If so, reload all data.
 for directory_name in "${DIRS[@]}"
 do
-    if [ ! -d "scene_graph/data/$directory_name" ]; then
+    if [ ! -d "visual_relation/data/$directory_name" ]; then
         RELOAD=true
     fi
 done
 
 ANNOTATIONS_URL="https://www.dropbox.com/s/bnfhm6kt9xumik8/vrd.zip"
-IMAGES_URL="http://imagenet.stanford.edu/internal/jcjohns/scene_graphs/sg_dataset.zip"
+IMAGES_URL="http://imagenet.stanford.edu/internal/jcjohns/visual_relations/sg_dataset.zip"
 SAMPLE_IMAGES_URL="https://github.com/Prof-Lu-Cewu/Visual-Relationship-Detection.git"
 GLOVE_URL="http://nlp.stanford.edu/data/wordvecs/glove.6B.zip"
 
-if [ ! -d "scene_graph/data" ]; then
-    if [ -d "scene_graph/data/" ]; then rm -Rf "scene_graph/data/"; fi
-    mkdir -p scene_graph/data
-    cd scene_graph/data
+if [ ! -d "visual_relation/data" ]; then
+    if [ -d "visual_relation/data/" ]; then rm -Rf "visual_relation/data/"; fi
+    mkdir -p visual_relation/data
+    cd visual_relation/data
 
     # download and unzip metadata and annotations
     wget $ANNOTATIONS_URL
@@ -43,8 +43,8 @@ if [ ! -d "scene_graph/data" ]; then
     rm -r Visual-Relationship-Detection
     cd ../../../..
 
-    mkdir -p scene_graph/data/glove
-    cd scene_graph/data/glove
+    mkdir -p visual_relation/data/glove
+    cd visual_relation/data/glove
 
     wget $GLOVE_URL
     unzip glove.6B.zip
