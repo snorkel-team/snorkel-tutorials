@@ -35,10 +35,14 @@
 # For more details, check out the labeling functions [tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/spam_tutorial.ipynb).
 
 # %%
+import numpy as np
 import os
+import random
 
 # For reproducibility
 os.environ["PYTHONHASHSEED"] = "0"
+np.random.seed(0)
+random.seed(0)
 
 # Turn off TensorFlow logging messages
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -95,7 +99,6 @@ spacy = SpacyPreprocessor(text_field="text", doc_field="doc", memoize=True)
 
 # %%
 import names
-import numpy as np
 from snorkel.augmentation import transformation_function
 
 replacement_names = [names.get_full_name() for _ in range(50)]
@@ -205,13 +208,7 @@ def replace_adjective_with_synonym(x):
 
 # %%
 import pandas as pd
-import random
 from collections import OrderedDict
-
-# Make augmentations deterministic.
-seed = 1
-np.random.seed(seed)
-random.seed(seed)
 
 # Prevent truncating displayed sentences.
 pd.set_option("display.max_colwidth", 0)
@@ -243,7 +240,7 @@ pd.DataFrame(transformed_examples)
 
 # %% [markdown]
 # We notice a couple of things about the TFs.
-# * Sometimes they make trivial changes (_titles_ -> _title_ for replace_noun_with_synonym). This can still be helpful for training our model, because it teaches the model that singular and plural versions of words have similar meanings.
+# * Sometimes they make trivial changes (_website_ -> _web site_ for replace_noun_with_synonym). This can still be helpful for training our model, because it teaches the model that these variations have similar meanings.
 # * Sometimes they make the sentence less meaningful (e.g. swapping _young_ and _more_ for swap_adjectives).
 #
 # Data augmentation can be tricky for text inputs, so we expect most TFs to be a little flawed. But these TFs can  be useful despite the flaws; see [this paper](https://arxiv.org/pdf/1901.11196.pdf) for gains resulting from similar TFs.
@@ -290,7 +287,7 @@ session_conf = tf.compat.v1.ConfigProto(
     intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
 )
 
-tf.compat.v1.set_random_seed(1)
+tf.compat.v1.set_random_seed(0)
 sess = tf.compat.v1.Session(graph=tf.compat.v1.get_default_graph(), config=session_conf)
 tf.compat.v1.keras.backend.set_session(sess)
 
@@ -327,12 +324,12 @@ def train_and_test(train_set, train_labels, num_buckets=30000):
     lstm_model.fit(
         train_tokens,
         train_labels,
-        epochs=50,
+        epochs=25,
         validation_data=(valid_tokens, Y_valid),
         # Set up early stopping based on val set accuracy.
         callbacks=[
             tf.keras.callbacks.EarlyStopping(
-                monitor="val_acc", patience=10, verbose=1, restore_best_weights=True
+                monitor="val_acc", patience=5, verbose=1, restore_best_weights=True
             )
         ],
         verbose=0,
@@ -345,8 +342,8 @@ def train_and_test(train_set, train_labels, num_buckets=30000):
     return (test_preds == Y_test).mean()
 
 
-test_accuracy_original = train_and_test(df_train, Y_train)
 test_accuracy_augmented = train_and_test(df_train_augmented, Y_train_augmented)
+test_accuracy_original = train_and_test(df_train, Y_train)
 
 print(f"Test Accuracy when training on original dataset: {test_accuracy_original}")
 print(f"Test Accuracy when training on augmented dataset: {test_accuracy_augmented}")
