@@ -3,6 +3,8 @@ import os
 import subprocess
 from typing import List
 
+EXTRA_ENVIRONMENTS = ["style"]
+
 
 def get_modified_paths(travis_strict: bool) -> List[str]:
     # Call git diff --name-only HEAD $(git merge-base HEAD $TRAVIS_BRANCH)
@@ -52,9 +54,13 @@ def get_changed_tox_envs(all_envs: bool, travis_strict: bool, plan: bool) -> Non
     unique_directories = list(unique_directories)
     # If we only have one and it's a valid tox environment, run that one
     if len(unique_directories) == 1 and (unique_directories[0] in default_environments):
+        run_environments = unique_directories + EXTRA_ENVIRONMENTS
         if plan:
-            print(f"Single changed tutorial directory: {unique_directories[0]}")
-        print(unique_directories[0])
+            print(
+                f"Single changed tutorial directory: {unique_directories[0]}, "
+                f"running environments: {run_environments}"
+            )
+        print(",".join(run_environments))
     # Otherwise, run all environments
     else:
         if plan:
