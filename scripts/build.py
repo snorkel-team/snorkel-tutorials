@@ -4,7 +4,7 @@ import re
 import subprocess
 import tempfile
 import urllib
-from typing import List, Optional
+from typing import List
 
 import click
 import jupytext
@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO)
 
 NOTEBOOKS_CONFIG_FNAME = ".notebooks"
 SCRIPTS_CONFIG_FNAME = ".scripts"
+EXCLUDE_TAG = "md-exclude"
 
 # Credit to: https://gist.github.com/pchc2005/b5f13e136a9c9bb2984e5b92802fc7c9
 # Original source: https://gist.github.com/dperini/729294
@@ -153,10 +154,7 @@ def check_script(script_path: str) -> None:
 
 
 def build_markdown_notebook(
-    notebook: Notebook,
-    build_dir: str,
-    exclude_output: bool,
-    exclude_tags: Optional[List[str]],
+    notebook: Notebook, build_dir: str, exclude_output: bool
 ) -> None:
     assert os.path.exists(notebook.ipynb), f"No file {notebook.ipynb}"
     os.makedirs(build_dir, exist_ok=True)
@@ -166,14 +164,12 @@ def build_markdown_notebook(
         notebook.ipynb,
         "--to",
         "markdown",
+        f"--TagRemovePreprocessor.remove_cell_tags={{'{EXCLUDE_TAG}'}}",
         "--output-dir",
         build_dir,
     ]
     if exclude_output:
         args.append("--TemplateExporter.exclude_output=True")
-    if exclude_tags:
-        tag_str = ", ".join(f"'{tag}'" for tag in exclude_tags)
-        args.append(f"--TagRemovePreprocessor.remove_cell_tags={{{tag_str}}}")
     subprocess.run(args, check=True)
 
 
@@ -204,13 +200,10 @@ def test(tutorial_dir: str) -> None:
 @cli.command()
 @click.argument("tutorial_dir")
 @click.option("--exclude-output", is_flag=True)
-@click.option("--exclude-tag", multiple=True)
-def markdown(
-    tutorial_dir: str, exclude_output: bool, exclude_tag: Optional[List[str]]
-) -> None:
+def markdown(tutorial_dir: str, exclude_output: bool) -> None:
     build_dir = os.path.abspath(os.path.join(tutorial_dir, "..", "build"))
     for notebook in get_notebooks(tutorial_dir):
-        build_markdown_notebook(notebook, build_dir, exclude_output, exclude_tag)
+        build_markdown_notebook(notebook, build_dir, exclude_output)
 
 
 @cli.command()
