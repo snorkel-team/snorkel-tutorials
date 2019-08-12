@@ -204,13 +204,13 @@ def test(tutorial_dir: str) -> None:
 @cli.command()
 @click.argument("tutorial_dir")
 @click.option("--exclude-output", is_flag=True)
-@click.option("--exclude-tags", multiple=True)
+@click.option("--exclude-tag", multiple=True)
 def markdown(
-    tutorial_dir: str, exclude_output: bool, exclude_tags: Optional[List[str]]
+    tutorial_dir: str, exclude_output: bool, exclude_tag: Optional[List[str]]
 ) -> None:
     build_dir = os.path.abspath(os.path.join(tutorial_dir, "..", "build"))
     for notebook in get_notebooks(tutorial_dir):
-        build_markdown_notebook(notebook, build_dir, exclude_output, exclude_tags)
+        build_markdown_notebook(notebook, build_dir, exclude_output, exclude_tag)
 
 
 @cli.command()
