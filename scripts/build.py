@@ -4,7 +4,7 @@ import re
 import subprocess
 import tempfile
 import urllib
-from typing import List
+from typing import List, Optional
 
 import click
 import jupytext
@@ -152,7 +152,12 @@ def check_script(script_path: str) -> None:
         raise ValueError(f"Error running {script_path}")
 
 
-def build_html_notebook(notebook: Notebook, build_dir: str) -> None:
+def build_markdown_notebook(
+    notebook: Notebook,
+    build_dir: str,
+    exclude_output: bool,
+    exclude_tags: Optional[List[str]],
+) -> None:
     assert os.path.exists(notebook.ipynb), f"No file {notebook.ipynb}"
     os.makedirs(build_dir, exist_ok=True)
     args = [
@@ -160,10 +165,15 @@ def build_html_notebook(notebook: Notebook, build_dir: str) -> None:
         "nbconvert",
         notebook.ipynb,
         "--to",
-        "html",
+        "markdown",
         "--output-dir",
         build_dir,
     ]
+    if exclude_output:
+        args.append("--TemplateExporter.exclude_output=True")
+    if exclude_tags:
+        tag_str = ", ".join(f"'{tag}'" for tag in exclude_tags)
+        args.append(f"--TagRemovePreprocessor.remove_cell_tags={{{tag_str}}}")
     subprocess.run(args, check=True)
 
 
@@ -193,10 +203,14 @@ def test(tutorial_dir: str) -> None:
 
 @cli.command()
 @click.argument("tutorial_dir")
-def html(tutorial_dir: str) -> None:
+@click.option("--exclude-output", is_flag=True)
+@click.option("--exclude-tags", multiple=True)
+def markdown(
+    tutorial_dir: str, exclude_output: bool, exclude_tags: Optional[List[str]]
+) -> None:
     build_dir = os.path.abspath(os.path.join(tutorial_dir, "..", "build"))
     for notebook in get_notebooks(tutorial_dir):
-        build_html_notebook(notebook, build_dir)
+        build_markdown_notebook(notebook, build_dir, exclude_output, exclude_tags)
 
 
 @cli.command()
