@@ -49,12 +49,12 @@ def get_changed_tox_envs(all_envs: bool, travis_strict: bool, plan: bool) -> Non
         splits = p.split("/")
         # If there's a directory, parse it; otherwise, add placeholder "."
         unique_directories.add("." if len(splits) == 1 else splits[0])
+    unique_directories = list(unique_directories)
     # If we only have one and it's a valid tox environment, run that one
-    if len(set(default_environments).difference(unique_directories)) == 1:
-        changed_env = unique_directories.pop()
+    if len(unique_directories) == 1 and (unique_directories[0] in default_environments):
         if plan:
-            print(f"Single changed tutorial directory: {changed_env}")
-        print(changed_env)
+            print(f"Single changed tutorial directory: {unique_directories[0]}")
+        print(unique_directories[0])
     # Otherwise, run all environments
     else:
         if plan:
