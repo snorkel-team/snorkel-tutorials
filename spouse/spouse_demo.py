@@ -4,7 +4,7 @@
 # %% [markdown]
 # In this tutorial, we will see how Snorkel can be used for Information Extraction. We will walk through an example text classification task for information extraction, where we use labeling functions involving keywords and distant supervision.
 # ### Classification Task
-# <img src="imgs/sentence.jpg" width="700px;">
+# <img src="imgs/sentence.jpg" width="700px;" onerror="this.onerror=null; this.src='/doks-theme/assets/images/sentence.jpg';" align="center" style="display: block; margin-left: auto; margin-right: auto;">
 #
 # We want to classify each __candidate__ or pair of people mentioned in a sentence, as being married at some point or not.
 #
@@ -180,9 +180,7 @@ def lf_other_relationship(x, other):
 #
 # In addition to using factories that encode pattern matching heuristics, we can also write labeling functions that _distantly supervise_ examples. Here, we'll load in a list of known spouse pairs and check to see if the pair of persons in a candidate matches one of these.
 #
-# **DBpedia**
-# http://wiki.dbpedia.org/
-# Our database of known spouses comes from DBpedia, which is a community-driven resource similar to Wikipedia but for curating structured data. We'll use a preprocessed snapshot as our knowledge base for all labeling function development.
+# [**DBpedia**](http://wiki.dbpedia.org/): Our database of known spouses comes from DBpedia, which is a community-driven resource similar to Wikipedia but for curating structured data. We'll use a preprocessed snapshot as our knowledge base for all labeling function development.
 #
 # We can look at some of the example entries from DBPedia and use them in a simple distant supervision labeling function.
 #
