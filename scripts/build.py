@@ -1,7 +1,9 @@
 import logging
 import os
+import re
 import subprocess
 import tempfile
+import urllib
 from typing import List
 
 import click
@@ -13,6 +15,50 @@ logging.basicConfig(level=logging.INFO)
 
 NOTEBOOKS_CONFIG_FNAME = ".notebooks"
 SCRIPTS_CONFIG_FNAME = ".scripts"
+
+# Credit to: https://gist.github.com/pchc2005/b5f13e136a9c9bb2984e5b92802fc7c9
+# Original source: https://gist.github.com/dperini/729294
+MARKDOWN_URL_REGEX = re.compile(
+    "\("
+    # protocol identifier
+    "(?:(?:(?:https?|ftp):)?//)"
+    # user:pass authentication
+    "(?:\S+(?::\S*)?@)?" "(?:"
+    # IP address exclusion
+    # private & local networks
+    "(?!(?:10|127)(?:\.\d{1,3}){3})"
+    "(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})"
+    "(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})"
+    # IP address dotted notation octets
+    # excludes loopback network 0.0.0.0
+    # excludes reserved space >= 224.0.0.0
+    # excludes network & broadcast addresses
+    # (first & last IP address of each class)
+    "(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])"
+    "(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}"
+    "(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))"
+    "|"
+    # host & domain names, may end with dot
+    # can be replaced by a shortest alternative
+    # u"(?![-_])(?:[-\w\u00a1-\uffff]{0,63}[^-_]\.)+"
+    # u"(?:(?:[a-z\u00a1-\uffff0-9]-?)*[a-z\u00a1-\uffff0-9]+)"
+    # # domain name
+    # u"(?:\.(?:[a-z\u00a1-\uffff0-9]-?)*[a-z\u00a1-\uffff0-9]+)*"
+    "(?:"
+    "(?:"
+    "[a-z0-9\u00a1-\uffff]"
+    "[a-z0-9\u00a1-\uffff_-]{0,62}"
+    ")?"
+    "[a-z0-9\u00a1-\uffff]\."
+    ")+"
+    # TLD identifier name, may end with dot
+    "(?:[a-z\u00a1-\uffff]{2,}\.?)" ")"
+    # port number (optional)
+    "(?::\d{2,5})?"
+    # resource path (optional)
+    "(?:[/?#]\S*)?" "\)",
+    re.UNICODE | re.I,
+)
 
 
 class Notebook:
@@ -26,6 +72,24 @@ class Notebook:
     @property
     def ipynb(self) -> str:
         return f"{self.basename}.ipynb"
+
+
+def check_links(script_path: str) -> None:
+    with open(script_path, "r") as f:
+        contents = f.read()
+    link_matches = list(MARKDOWN_URL_REGEX.finditer(contents))
+    logging.info(f"Found {len(link_matches)} links in {script_path}")
+    for link_match in link_matches:
+        url = link_match.group(0).rstrip(")").lstrip("(")
+        req = urllib.request.Request(url, headers={"User-Agent": "Magic Browser"})
+        try:
+            urllib.request.urlopen(req, timeout=5)
+        except urllib.error.HTTPError as e:
+            raise ValueError(f"Bad link [{url}] found in {script_path}: {e}")
+        except (urllib.error.URLError, ConnectionResetError) as e:
+            logging.warn(
+                f"SKIPPING: Could not access [{url}] found in {script_path}: {e}"
+            )
 
 
 def call_jupytext(notebook: Notebook, out_fname: str, to_ipynb: bool) -> None:
@@ -72,6 +136,7 @@ def get_scripts(tutorial_dir: str) -> List[Notebook]:
 
 def check_notebook(notebook: Notebook) -> None:
     assert os.path.exists(notebook.py), f"No file {notebook.py}"
+    check_links(notebook.py)
     notebook_actual = jupytext.read(notebook.ipynb, fmt=dict(extension="ipynb"))
     with tempfile.NamedTemporaryFile(suffix=".ipynb") as f:
         call_jupytext(notebook, f.name, to_ipynb=True)
@@ -81,6 +146,7 @@ def check_notebook(notebook: Notebook) -> None:
 
 def check_script(script_path: str) -> None:
     assert os.path.exists(script_path), f"No file {script_path}"
+    check_links(script_path)
     check_run = subprocess.run(["python", script_path])
     if check_run.returncode:
         raise ValueError(f"Error running {script_path}")
