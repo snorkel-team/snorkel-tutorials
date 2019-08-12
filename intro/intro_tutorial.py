@@ -178,7 +178,7 @@ from nltk.corpus import wordnet as wn
 
 from snorkel.augmentation import transformation_function
 
-nltk.download("wordnet")
+nltk.download("wordnet", quiet=True)
 
 
 def get_synonyms(word):
