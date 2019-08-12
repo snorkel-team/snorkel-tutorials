@@ -31,7 +31,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 #
 # We'll walk through five basic steps:
 #
-# 1. **Writing Labeling Functions (LFs):** First, rather than hand-labeling any training data, we'll programatically label our _unlabeled_ dataset with LFs.
+# 1. **Writing Labeling Functions (LFs):** First, rather than hand-labeling any training data, we'll programmatically label our _unlabeled_ dataset with LFs.
 # 2. **Modeling & Combining LFs:** Next, we'll use Snorkel's `LabelModel` to automatically learn the accuracies of our LFs and reweight and combine their outputs into a single, confidence-weighted training label per data point.
 # 3. **Writing Transformation Functions (TFs) for Data Augmentation:** Then, we'll augment this labeled training set by writing a simple TF.
 # 4. **Writing _Slicing Functions (SFs)_ for Data Subset Selection:** We'll also preview writing an SF to identify a critical subset or _slice_ of our training set.
