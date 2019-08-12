@@ -302,17 +302,17 @@ df_train_filtered, Y_probs_train_filtered = filter_unlabeled_dataframe(
 
 # %%
 from tf_model import get_model, get_feature_arrays
+from utils import get_n_epochs
 
 model = get_model()
 tokens, idx1, idx2 = get_feature_arrays(df_train_filtered)
 
 batch_size = 64
-num_epochs = 30
 model.fit(
     (tokens, idx1, idx2),
     Y_probs_train_filtered,
     batch_size=batch_size,
-    epochs=num_epochs,
+    epochs=get_n_epochs(),
 )
 
 # %% [markdown]
