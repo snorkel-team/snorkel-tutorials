@@ -51,7 +51,7 @@ install:
   - pip install -U pip setuptools
   - pip install -U tox==3.13.0
   - python scripts/get_tox_envs.py --travis-strict --plan $ALL_ENVS
-  - tox --notest -e $(python scripts/get_changed_tox_envs.py --travis-strict $ALL_ENVS)
+  - tox --notest -e $(python scripts/get_tox_envs.py --travis-strict $ALL_ENVS)
 
 script:
-  - tox -e $(python scripts/get_changed_tox_envs.py --travis-strict $ALL_ENVS)
+  - tox -e $(python scripts/get_tox_envs.py --travis-strict $ALL_ENVS)
