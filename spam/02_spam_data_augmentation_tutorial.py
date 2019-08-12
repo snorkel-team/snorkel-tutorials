@@ -32,7 +32,7 @@
 # * **`text`**: Raw text content of the comment
 # * **`label`**: Whether the comment is `SPAM` (1) or `HAM` (0).
 #
-# For more details, check out the labeling functions [tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/spam_tutorial.ipynb).
+# For more details, check out the labeling functions [tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb).
 
 # %%
 import numpy as np
