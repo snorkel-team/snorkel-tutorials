@@ -8,7 +8,7 @@ import pandas as pd
 def load_unlabeled_spam_dataset():
     """Load spam training dataset without any labels."""
     if os.path.basename(os.getcwd()) == "snorkel-tutorials":
-        os.chdir("intro")
+        os.chdir("getting_started")
     try:
         subprocess.run(["bash", "download_data.sh"], check=True, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:

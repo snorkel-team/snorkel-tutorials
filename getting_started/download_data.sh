@@ -2,8 +2,8 @@
 set -euxo pipefail
 
 # Check that we are running from the right directory.
-if [ ! "${PWD##*/}" = "intro" ]; then
-    echo "Script must be run from intro directory" >&2
+if [ ! "${PWD##*/}" = "getting_started" ]; then
+    echo "Script must be run from getting_started directory" >&2
     exit 1
 fi
 
