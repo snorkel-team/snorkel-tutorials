@@ -21,6 +21,25 @@ jobs:
     - name: "Python 3.7: tutorial tests"
       python: 3.7
 
+jobs:
+  include:
+    - if: type = pull_request
+      name: "Python 3.6: affected tutorial tests"
+      python: 3.6
+      env: JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    - if: type = pull_request
+      name: "Python 3.7: affected tutorial tests"
+      python: 3.7
+      env: JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    - if: type != pull_request
+      name: "Python 3.6: all tutorial tests"
+      python: 3.6
+      env: ALL_ENVS=--all JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    - if: type != pull_request
+      name: "Python 3.7: all tutorial tests"
+      python: 3.7
+      env: ALL_ENVS=--all JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
 # Install JDK8 for PySpark tests
 before_install:
   - sudo add-apt-repository -y ppa:openjdk-r/ppa
@@ -31,7 +50,8 @@ before_install:
 install:
   - pip install -U pip setuptools
   - pip install -U tox==3.13.0
-  - tox --notest
+  - python scripts/get_tox_envs.py --travis-strict --plan $ALL_ENVS
+  - tox --notest -e $(python scripts/get_changed_tox_envs.py --travis-strict $ALL_ENVS)
 
 script:
-  - tox
+  - tox -e $(python scripts/get_changed_tox_envs.py --travis-strict $ALL_ENVS)
