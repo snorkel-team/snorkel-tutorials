@@ -78,15 +78,15 @@ def check_links(script_path: str) -> None:
     with open(script_path, "r") as f:
         contents = f.read()
     link_matches = list(MARKDOWN_URL_REGEX.finditer(contents))
-    logging.info(f"Found {len(link_matches)} links in {script_path}")
     for link_match in link_matches:
         url = link_match.group(0).rstrip(")").lstrip("(")
         req = urllib.request.Request(url, headers={"User-Agent": "Magic Browser"})
+        logging.info(f"Checking link [{url}]")
         try:
             urllib.request.urlopen(req, timeout=5)
         except urllib.error.HTTPError as e:
             raise ValueError(f"Bad link [{url}] found in {script_path}: {e}")
-        except (urllib.error.URLError, ConnectionResetError) as e:
+        except Exception as e:
             logging.warn(
                 f"SKIPPING: Could not access [{url}] found in {script_path}: {e}"
             )
@@ -136,9 +136,11 @@ def get_scripts(tutorial_dir: str) -> List[Notebook]:
 
 def check_notebook(notebook: Notebook) -> None:
     assert os.path.exists(notebook.py), f"No file {notebook.py}"
+    logging.info(f"Checking links in [{notebook.py}]")
     check_links(notebook.py)
     notebook_actual = jupytext.read(notebook.ipynb, fmt=dict(extension="ipynb"))
     with tempfile.NamedTemporaryFile(suffix=".ipynb") as f:
+        logging.info(f"Executing notebook [{notebook.py}]")
         call_jupytext(notebook, f.name, to_ipynb=True)
         notebook_expected = jupytext.read(f.name, fmt=dict(extension="ipynb"))
         compare_notebooks(notebook_actual, notebook_expected)
@@ -146,7 +148,9 @@ def check_notebook(notebook: Notebook) -> None:
 
 def check_script(script_path: str) -> None:
     assert os.path.exists(script_path), f"No file {script_path}"
+    logging.info(f"Checking links in [{script_path}]")
     check_links(script_path)
+    logging.info(f"Executing script [{script_path}]")
     check_run = subprocess.run(["python", script_path])
     if check_run.returncode:
         raise ValueError(f"Error running {script_path}")
