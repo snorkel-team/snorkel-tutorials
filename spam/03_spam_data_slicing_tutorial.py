@@ -430,7 +430,7 @@ eval_mapping.update({label: None for label in Y_dict.keys() if "ind" in label})
 
 # %% [markdown]
 # *Note: in this toy dataset, we might not see significant gains because our dataset is so small that (i) there are few examples the train split, giving little signal to learn over, and (ii) there are few examples in the test split, making our evaluation metrics very noisy.
-# For a demonstration of data slicing deployed in state-of-the-art models, please see our [SuperGLUE](https://github.com/HazyResearch/snorkel-superglue/tree/master/tutorials) tutorials.*
+# For a demonstration of data slicing deployed in state-of-the-art models, please see our [SuperGLUE](https://github.com/snorkel-team/snorkel-superglue/tree/master/tutorials) tutorials.*
 
 # %%
 slice_model.score([dl_valid, dl_test], remap_labels=eval_mapping, as_dataframe=True)
