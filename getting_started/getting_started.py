@@ -249,7 +249,7 @@ from sklearn.linear_model import LogisticRegression
 text_train = [row.text for i, row in df_train_augmented.iterrows()]
 X_train = CountVectorizer(ngram_range=(1, 2)).fit_transform(text_train)
 
-clf = LogisticRegression()
+clf = LogisticRegression(solver="lbfgs")
 clf.fit(X=X_train, y=df_train_augmented.label.values)
 
 # %% [markdown]
