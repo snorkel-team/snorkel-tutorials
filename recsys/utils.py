@@ -3,6 +3,7 @@ from datetime import datetime
 import gdown
 import gzip
 import json
+import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -10,6 +11,10 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import backend as K
+
+logging.basicConfig(level=logging.INFO)
+
+IS_TRAVIS = "TRAVIS" in os.environ
 
 YA_BOOKS_URL = "https://drive.google.com/uc?id=1gH7dG4yQzZykTpbHYsrw2nFknjUm0Mol"
 YA_INTERACTIONS_URL = "https://drive.google.com/uc?id=1NNX7SWcKahezLFNyiW88QFPAqOAYP5qg"
@@ -111,7 +116,7 @@ def process_interactions_data(
     min_user_count: int = 25,
     max_user_count: int = 200,
 ) -> Tuple[pd.DataFrame, Dict[int, int]]:
-    max_to_load = 50_000 if "TRAVIS" in os.environ else 5_000_000
+    max_to_load = 50_000 if IS_TRAVIS else 5_000_000
     interactions = load_data(
         interactions_path,
         max_to_load,
@@ -168,15 +173,18 @@ def split_data(user_idxs, data: pd.DataFrame) -> Tuple[pd.DataFrame, ...]:
 
 
 def download_and_process_data() -> Tuple[Tuple[pd.DataFrame, ...], pd.DataFrame]:
+    logging.info("Downloading raw data")
     maybe_download_files()
+    logging.info("Processing book data")
     df_books, book_id_to_idx = process_books_data()
-
+    logging.info("Processing interaction data")
     df_interactions, user_id_to_idx = process_interactions_data(book_id_to_idx)
     df_interactions_nz = df_interactions[df_interactions.rating != 0]
     ratings_map = {1: 0, 2: 0, 3: 0, 4: 1, 5: 1}
     df_interactions_nz["rating_4_5"] = df_interactions_nz.rating.map(ratings_map)
+    logging.info("Processing review data")
     df_reviews = process_reviews_data(book_id_to_idx, user_id_to_idx)
-
+    logging.info("Joining interaction data")
     # Compute book_idxs for each user.
     user_to_books = (
         df_interactions.groupby("user_idx")["book_idx"]
@@ -212,3 +220,8 @@ def f1_batch(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     prec = precision_batch(y_true, y_pred)
     rec = recall_batch(y_true, y_pred)
     return 2 * ((prec * rec) / (prec + rec + K.epsilon()))
+
+
+def get_n_epochs() -> int:
+    return 5 if IS_TRAVIS else 30
+

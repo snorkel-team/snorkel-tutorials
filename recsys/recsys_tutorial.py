@@ -20,10 +20,15 @@
 # In this dataset, we have user interactions and reviews for Young Adult novels from the Goodreads website, along with metadata (like `title` and `authors`) for the novels.
 
 # %%
+import logging
 import os
+
+logging.basicConfig(level=logging.INFO)
+
 
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("recsys")
+    
 
 # %% [markdown]
 # ## Loading Data
@@ -319,6 +324,8 @@ def get_data_tensors(df):
 # We now train the model on our combined training data (data labeled by LFs plus dev data).
 #
 # %%
+from utils import get_n_epochs
+
 model = get_model()
 
 X_train, Y_train = get_data_tensors(df_train_filtered)
@@ -329,7 +336,7 @@ model.fit(
     steps_per_epoch=300,
     validation_data=(X_valid, Y_valid),
     validation_steps=40,
-    epochs=30,
+    epochs=get_n_epochs(),
     verbose=1,
 )
 # %% [markdown]
