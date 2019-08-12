@@ -5,7 +5,9 @@ from typing import List
 
 
 def get_modified_paths(travis_strict: bool) -> List[str]:
-    base_branch = os.environ.get("$TRAVIS_BRANCH")
+    # Call git diff --name-only HEAD $(git merge-base HEAD $TRAVIS_BRANCH)
+    # to get paths affected by patch
+    base_branch = os.environ.get("TRAVIS_BRANCH")
     if base_branch is None:
         if travis_strict:
             raise ValueError("No environment variable $TRAVIS_BRANCH")
@@ -21,6 +23,7 @@ def get_modified_paths(travis_strict: bool) -> List[str]:
 
 
 def get_default_environments() -> List[str]:
+    # Call tox -l to get default environments
     cp = subprocess.run(["tox", "-l"], stdout=subprocess.PIPE)
     return [str(s, "utf-8") for s in cp.stdout.splitlines()]
 
