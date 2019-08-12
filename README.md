@@ -8,6 +8,7 @@ The Snorkel tutorials are grouped by application, with some applications having 
 * `visual_relation`: Is object A riding object B in the image, carrying it, or neither?
 * `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
 * `multitask` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+* `recsys` (Recommender Systems): Will this user read and like this book?
 * [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
@@ -93,6 +94,7 @@ It may be available as `pip` depending on how your system is configured.
 # [OPTIONAL] Activate a virtual environment
 pip3 install --upgrade virtualenv
 virtualenv -p python3 spam
+source spam/bin/activate
 
 # Install requirements (both shared and tutorial-specific)
 pip3 install -r requirements.txt
@@ -141,6 +143,7 @@ Here we provide an index pointing to different available tutorials by their task
     * Text Classification (Text): `spam`, `crowdsourcing`, `drybell`
     * Relation Extraction (Text): `spouse`
     * Visual Relationship Detection (Image): `visual_relation`
+    * Recommendations: `recsys`
 * Techniques
     * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `visual_relation`, `crowdsourcing`
     * Augmentation with Transformation Functions (TFs): `spam`
