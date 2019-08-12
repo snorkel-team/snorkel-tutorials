@@ -4,6 +4,7 @@ from snorkel.preprocess import preprocessor
 ABSTAIN = -1
 NEGATIVE = 0
 POSITIVE = 1
+TEST = 2
 
 
 @preprocessor()

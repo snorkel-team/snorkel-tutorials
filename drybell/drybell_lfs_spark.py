@@ -7,6 +7,7 @@ from drybell_lfs import load_celebrity_knowledge_base
 ABSTAIN = -1
 NEGATIVE = 0
 POSITIVE = 1
+TEST = 2
 
 
 @preprocessor()
