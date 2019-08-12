@@ -279,7 +279,7 @@ slice_scorer.score(
 # We'll take inspiration from the labeling tutorial to write additional slicing functions.
 
 # %%
-from snorkel.slicing import SlicingFunction, slicing_function
+from snorkel.slicing import SlicingFunction, slicing_function, nlp_slicing_function
 from snorkel.preprocess import preprocessor
 
 
@@ -311,6 +311,13 @@ def regex_check_out(x):
 def short_comment(x):
     """Ham comments are often short, such as 'cool video!'"""
     return len(x.text.split()) < 5
+
+
+# Leverage NLP-based SF (with Spacy preprocessing)
+@nlp_slicing_function()
+def has_person_nlp(x):
+    """Ham comments mention specific people and are short."""
+    return len(x.doc) < 20 and any([ent.label_ == "PERSON" for ent in x.doc.ents])
 
 
 # Leverage preprocessor in SF
@@ -346,6 +353,7 @@ extra_sfs = [
     keyword_please,
     regex_check_out,
     short_comment,
+    has_person_nlp,
     textblob_polarity,
 ]
 
