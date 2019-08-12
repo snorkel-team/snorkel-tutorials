@@ -9,7 +9,11 @@ def load_unlabeled_spam_dataset():
     """Load spam training dataset without any labels."""
     if os.path.basename(os.getcwd()) == "snorkel-tutorials":
         os.chdir("intro")
-    subprocess.call("bash download_data.sh", shell=True)
+    try:
+        subprocess.run(["bash", "download_data.sh"], check=True, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        print(e.stderr.decode())
+        raise e
     filenames = sorted(glob.glob("data/Youtube*.csv"))
     dfs = []
     for i, filename in enumerate(filenames, start=1):
