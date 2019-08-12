@@ -52,7 +52,8 @@ def docker_launch(tutorial_name: str, build: bool, port: int) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Process some integers.")
+    desc = "Build and run Docker images for Snorkel Tutorials."
+    parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("tutorial_name", help="Name of the tutorial (directory)")
     parser.add_argument(
         "--build", action="store_true", default=False, help="Build the Docker image?"
