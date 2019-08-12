@@ -7,7 +7,7 @@ import os
 
 # Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
-    os.chdir("intro")
+    os.chdir("getting_started")
 
 # %% [markdown]
 # ## Programmatically Building & Managing Training Data with Snorkel
