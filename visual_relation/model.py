@@ -75,7 +75,7 @@ class SceneGraphDataset(DictDataset):
             "sub_category": df["subject_category"].tolist(),
         }
         Y_dict = {
-            "scene_graph_task": torch.LongTensor(df["label"].to_numpy())
+            "visual_relation_task": torch.LongTensor(df["label"].to_numpy())
         }  # change to take in the rounded train labels
         super(SceneGraphDataset, self).__init__(name, split, X_dict, Y_dict)
 
@@ -123,7 +123,7 @@ class SceneGraphDataset(DictDataset):
 class WordEmb(nn.Module):
     """Extract and concat word embeddings for obj and sub categories."""
 
-    def __init__(self, glove_fn="scene_graph/data/glove/glove.6B.100d.txt"):
+    def __init__(self, glove_fn="visual_relation/data/glove/glove.6B.100d.txt"):
         super(WordEmb, self).__init__()
 
         self.word_embs = pandas.read_csv(
