@@ -16,7 +16,7 @@ exclude =
     .mypy_cache,
     .tox,
     .env**,
-    .venv,
+    .venv**,
     _build,
     build,
     dist
