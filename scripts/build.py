@@ -86,7 +86,7 @@ def check_links(script_path: str) -> None:
             urllib.request.urlopen(req, timeout=5)
         except urllib.error.HTTPError as e:
             raise ValueError(f"Bad link [{url}] found in {script_path}: {e}")
-        except (urllib.error.URLError, urllib.error.ConnectionResetError) as e:
+        except (urllib.error.URLError, ConnectionResetError) as e:
             logging.warn(
                 f"SKIPPING: Could not access [{url}] found in {script_path}: {e}"
             )
