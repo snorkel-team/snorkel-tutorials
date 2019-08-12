@@ -44,6 +44,7 @@ def get_changed_tox_envs(all_envs: bool, travis_strict: bool, plan: bool) -> Non
     unique_directories = set()
     for p in modified_paths:
         splits = p.split("/")
+        # If there's a directory, parse it; otherwise, add placeholder "."
         unique_directories.add("." if len(splits) == 1 else splits[0])
     # If we only have one and it's a valid tox environment, run that one
     if len(set(default_environments).difference(unique_directories)) == 1:
@@ -70,7 +71,10 @@ if __name__ == "__main__":
         help="Fail if not in Travis?",
     )
     parser.add_argument(
-        "--plan", action="store_true", default=False, help="Describe plan only?"
+        "--plan",
+        action="store_true",
+        default=False,
+        help="Print out plan for Travis execution?",
     )
     parser.add_argument(
         "--all",
