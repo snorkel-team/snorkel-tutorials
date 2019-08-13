@@ -7,7 +7,7 @@ The Snorkel tutorials are grouped by application, with some applications having 
 * `spouse`: Does this sentence imply that the two marked people are spouses?
 * `visual_relation`: Is object A riding object B in the image, carrying it, or neither?
 * `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
-* `mtl` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+* `multitask` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
 * [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
