@@ -172,16 +172,16 @@ from snorkel.labeling.model.label_model import LabelModel
 L_train = applier.apply(df_train)
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=5000, seed=123, log_freq=20, lr=0.01)
-Y_preds_train = label_model.predict(L_train)
+preds_train = label_model.predict(L_train)
 
 # %%
 import pandas as pd
 from snorkel.labeling import filter_unlabeled_dataframe
 
-df_train_filtered, Y_preds_train_filtered = filter_unlabeled_dataframe(
-    df_train, Y_preds_train, L_train
+df_train_filtered, preds_train_filtered = filter_unlabeled_dataframe(
+    df_train, preds_train, L_train
 )
-df_train_filtered["rating"] = Y_preds_train_filtered
+df_train_filtered["rating"] = preds_train_filtered
 df_combined = pd.concat([df_train_filtered, df_dev], axis=0)
 
 # %% [markdown]
@@ -275,9 +275,7 @@ def get_data_tensors(df):
     return (
         tensor_dict["len_book_idxs"],
         tensor_dict["book_idxs"],
-        tensor_dict["book_idx"],
-        tensor_dict["label"],
-    )
+        tensor_dict["book_idx"]), tensor_dict["label"]
 
 
 # %% [markdown]
@@ -286,13 +284,13 @@ def get_data_tensors(df):
 # %%
 model = get_model()
 
-data_tensors_train = get_data_tensors(df_combined)
-data_tensors_valid = get_data_tensors(df_valid)
+X_train, Y_train = get_data_tensors(df_combined)
+X_valid, Y_valid = get_data_tensors(df_valid)
 model.fit(
-    data_tensors_train[:-1],
-    data_tensors_train[-1],
+    X_train,
+    Y_train,
     steps_per_epoch=300,
-    validation_data=(data_tensors_valid[:-1], data_tensors_valid[-1]),
+    validation_data=(X_valid, Y_valid),
     validation_steps=40,
     epochs=30,
     verbose=1,
@@ -301,8 +299,8 @@ model.fit(
 # Finally, we evaluate the model's predicted ratings on our test data.
 #
 # %%
-data_tensors_test = get_data_tensors(df_test)
-model.evaluate(data_tensors_test[:-1], data_tensors_test[-1], steps=30)
+X_test, Y_test = get_data_tensors(df_test)
+model.evaluate(X_test, Y_test, steps=30)
 
 # %% [markdown]
 # ## Summary

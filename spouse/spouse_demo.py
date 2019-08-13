@@ -275,13 +275,13 @@ label_model.fit(L_train, Y_dev, n_epochs=5000, log_freq=500, seed=12345)
 from snorkel.analysis import metric_score
 from snorkel.utils import probs_to_preds
 
-Y_probs_dev = label_model.predict_proba(L_dev)
-Y_preds_dev = probs_to_preds(Y_probs_dev)
+probs_dev = label_model.predict_proba(L_dev)
+preds_dev = probs_to_preds(probs_dev)
 print(
-    f"Label model f1 score: {metric_score(Y_dev, Y_preds_dev, probs=Y_probs_dev, metric='f1')}"
+    f"Label model f1 score: {metric_score(Y_dev, preds_dev, probs=probs_dev, metric='f1')}"
 )
 print(
-    f"Label model roc-auc: {metric_score(Y_dev, Y_preds_dev, probs=Y_probs_dev, metric='roc_auc')}"
+    f"Label model roc-auc: {metric_score(Y_dev, preds_dev, probs=probs_dev, metric='roc_auc')}"
 )
 
 # %% [markdown]
@@ -292,9 +292,9 @@ print(
 # %%
 from snorkel.labeling import filter_unlabeled_dataframe
 
-Y_probs_train = label_model.predict_proba(L_train)
-df_train_filtered, Y_probs_train_filtered = filter_unlabeled_dataframe(
-    X=df_train, y=Y_probs_train, L=L_train
+probs_train = label_model.predict_proba(L_train)
+df_train_filtered, probs_train_filtered = filter_unlabeled_dataframe(
+    X=df_train, y=probs_train, L=L_train
 )
 
 # %% [markdown]
@@ -304,11 +304,12 @@ df_train_filtered, Y_probs_train_filtered = filter_unlabeled_dataframe(
 from tf_model import get_model, get_feature_arrays
 from utils import get_n_epochs
 
+X_train = get_feature_arrays(df_train_filtered)
 model = get_model()
 batch_size = 64
 model.fit(
-    get_feature_arrays(df_train_filtered),
-    Y_probs_train_filtered,
+    X_train,
+    probs_train_filtered,
     batch_size=batch_size,
     epochs=get_n_epochs(),
 )
@@ -317,13 +318,14 @@ model.fit(
 # Finally, we evaluate the trained model by measuring its F1 score and ROC_AUC.
 
 # %%
-Y_probs_test = model.predict(get_feature_arrays(df_test))
-Y_preds_test = probs_to_preds(Y_probs_test)
+X_test = get_feature_arrays(df_test)
+probs_test = model.predict(X_test)
+preds_test = probs_to_preds(probs_test)
 print(
-    f"Test F1 when trained with soft labels: {metric_score(Y_test, preds=Y_preds_test, metric='f1')}"
+    f"Test F1 when trained with soft labels: {metric_score(Y_test, preds=preds_test, metric='f1')}"
 )
 print(
-    f"Test ROC-AUC when trained with soft labels: {metric_score(Y_test, probs=Y_probs_test, metric='roc_auc')}"
+    f"Test ROC-AUC when trained with soft labels: {metric_score(Y_test, probs=probs_test, metric='roc_auc')}"
 )
 
 # %% [markdown]
