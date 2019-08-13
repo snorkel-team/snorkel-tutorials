@@ -117,20 +117,26 @@ class TutorialWebpage:
 
 
 def parse_web_yml(tutorial_dir: Optional[str]) -> List[TutorialWebpage]:
+    # Read .web.yml
     with open(WEB_YML, "r") as f:
         web_config = yaml.safe_load(f)
     tutorial_webpages = []
+    # Process webpage configs in order
     for i, cfg in enumerate(web_config["tutorials"]):
+        # If tutorial directory specified, skip if not in specified directory
         notebook_dir = cfg["notebook"].split("/")[0]
         if tutorial_dir is not None and notebook_dir != tutorial_dir:
             continue
+        # If full notebook path supplied, just use that
         if cfg["notebook"].endswith(".ipynb"):
             notebook = Notebook(os.path.abspath(cfg["notebook"]))
+        # If only directory supply, ensure that there's only one notebook
         else:
             notebooks = get_notebooks(cfg["notebook"])
             if len(notebooks) > 1:
                 raise ValueError(f"Multiple notebooks found in {cfg['notebook']}")
             notebook = notebooks[0]
+        # Create TutorialWebpage object
         tutorial_webpages.append(
             TutorialWebpage(
                 ipynb_path=notebook.ipynb,
@@ -228,6 +234,7 @@ def check_script(script_path: str) -> None:
 def build_markdown_notebook(tutorial: TutorialWebpage) -> None:
     assert os.path.exists(tutorial.ipynb), f"No file {tutorial.ipynb}"
     os.makedirs(BUILD_DIR, exist_ok=True)
+    # Call nbconvert
     args = [
         "jupyter",
         "nbconvert",
@@ -241,6 +248,7 @@ def build_markdown_notebook(tutorial: TutorialWebpage) -> None:
     if tutorial.exclude_output:
         args.append("--TemplateExporter.exclude_output=True")
     subprocess.run(args, check=True)
+    # Prepend header by reading generated file then writing back
     with open(tutorial.markdown_path(), "r") as f:
         content = f.read()
     with open(tutorial.markdown_path(), "w") as f:
