@@ -59,7 +59,7 @@ script:
   - tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
 
 after_success:
-  - if [[ ${BUILD_WEB} == "true" ]]; then
+  - if [[ ${BUILD_WEB} == "true" ]] && [[ ${TRAVIS_BRANCH} == "master" ]]; then
         echo "Deploying tutorials"
         bash ./scripts/push-tutorials.sh
     fi
