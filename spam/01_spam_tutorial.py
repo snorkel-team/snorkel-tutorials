@@ -743,8 +743,8 @@ from snorkel.labeling import MajorityLabelVoter
 
 # %%
 majority_model = MajorityLabelVoter()
-Y_pred_train = majority_model.predict(L=L_train)
-Y_pred_train
+Y_preds_train = majority_model.predict(L=L_train)
+Y_preds_train
 
 # %% [markdown]
 # However, as we can clearly see by looking the summary statistics of our LFs in the previous section, they are not all equally accurate, and should not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine the outputs of the LFs.
@@ -785,14 +785,14 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 # For example, let's take a look at 5 random false positives from the `dev` set, which might inspire some more LFs that vote `SPAM`.
 
 # %%
-Y_dev_prob = majority_model.predict_proba(L=L_dev)
-Y_dev_pred = Y_dev_prob >= 0.5
-buckets = get_label_buckets(Y_dev, Y_dev_pred[:, 1])
+Y_probs_dev = majority_model.predict_proba(L=L_dev)
+Y_preds_dev = Y_probs_dev >= 0.5
+buckets = get_label_buckets(Y_dev, Y_preds_dev[:, 1])
 
-df_dev_fp = df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]]
-df_dev_fp["probability"] = Y_dev_prob[buckets[(SPAM, HAM)], 1]
+df_fp_dev = df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]]
+df_fp_dev["probability"] = Y_probs_dev[buckets[(SPAM, HAM)], 1]
 
-df_dev_fp.sample(5, random_state=3)
+df_fp_dev.sample(5, random_state=3)
 
 
 # %% [markdown]

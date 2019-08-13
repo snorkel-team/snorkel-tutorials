@@ -16,7 +16,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # ## Loading Data
 
 # %% [markdown]
-# We start by running the `download_and_process_data` function. The function returns the `df_train`, `df_test`, `df_dev`, `df_val` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
+# We start by running the `download_and_process_data` function. The function returns the `df_train`, `df_test`, `df_dev`, `df_valid` dataframes, which correspond to our training, test, development, and validation sets. Each of those dataframes has the following fields:
 # * `user_idx`: A unique identifier for a user.
 # * `book_idx`: A unique identifier for a book that is being rated by the user.
 # * `book_idxs`: The set of books that the user has interacted with (read or planned to read).
@@ -29,7 +29,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # %%
 from utils import download_and_process_data
 
-(df_train, df_test, df_dev, df_val), df_books = download_and_process_data()
+(df_train, df_test, df_dev, df_valid), df_books = download_and_process_data()
 
 df_books.head()
 
@@ -172,17 +172,17 @@ from snorkel.labeling.model.label_model import LabelModel
 L_train = applier.apply(df_train)
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=5000, seed=123, log_freq=20, lr=0.01)
-Y_train_preds = label_model.predict(L_train)
+Y_preds_train = label_model.predict(L_train)
 
 # %%
 import pandas as pd
 from snorkel.labeling import filter_unlabeled_dataframe
 
-df_train_filtered, Y_train_preds_filtered = filter_unlabeled_dataframe(
-    df_train, Y_train_preds, L_train
+df_train_filtered, Y_preds_train_filtered = filter_unlabeled_dataframe(
+    df_train, Y_preds_train, L_train
 )
-df_train_filtered["rating"] = Y_train_preds_filtered
-combined_df_train = pd.concat([df_train_filtered, df_dev], axis=0)
+df_train_filtered["rating"] = Y_preds_train_filtered
+df_combined = pd.concat([df_train_filtered, df_dev], axis=0)
 
 # %% [markdown]
 # ### Rating Prediction Model
@@ -286,13 +286,13 @@ def get_data_tensors(df):
 # %%
 model = get_model()
 
-train_data_tensors = get_data_tensors(combined_df_train)
-val_data_tensors = get_data_tensors(df_val)
+data_tensors_train = get_data_tensors(df_combined)
+data_tensors_valid = get_data_tensors(df_valid)
 model.fit(
-    train_data_tensors[:-1],
-    train_data_tensors[-1],
+    data_tensors_train[:-1],
+    data_tensors_train[-1],
     steps_per_epoch=300,
-    validation_data=(val_data_tensors[:-1], val_data_tensors[-1]),
+    validation_data=(data_tensors_valid[:-1], data_tensors_valid[-1]),
     validation_steps=40,
     epochs=30,
     verbose=1,
@@ -301,8 +301,8 @@ model.fit(
 # Finally, we evaluate the model's predicted ratings on our test data.
 #
 # %%
-test_data_tensors = get_data_tensors(df_test)
-model.evaluate(test_data_tensors[:-1], test_data_tensors[-1], steps=30)
+data_tensors_test = get_data_tensors(df_test)
+model.evaluate(data_tensors_test[:-1], data_tensors_test[-1], steps=30)
 
 # %% [markdown]
 # ## Summary

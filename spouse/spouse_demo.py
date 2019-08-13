@@ -251,10 +251,10 @@ applier = PandasLFApplier(lfs)
 # %%
 from snorkel.labeling import LFAnalysis
 
-dev_L = applier.apply(df_dev)
-train_L = applier.apply(df_train)
+L_dev = applier.apply(df_dev)
+L_train = applier.apply(df_train)
 
-LFAnalysis(dev_L, lfs).lf_summary(Y_dev)
+LFAnalysis(L_dev, lfs).lf_summary(Y_dev)
 
 # %% [markdown]
 # ### Training the Label Model
@@ -265,7 +265,7 @@ LFAnalysis(dev_L, lfs).lf_summary(Y_dev)
 from snorkel.labeling import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
-label_model.fit(train_L, Y_dev, n_epochs=5000, log_freq=500, seed=12345)
+label_model.fit(L_train, Y_dev, n_epochs=5000, log_freq=500, seed=12345)
 
 # %% [markdown]
 # ### Label Model Metrics
@@ -275,7 +275,7 @@ label_model.fit(train_L, Y_dev, n_epochs=5000, log_freq=500, seed=12345)
 from snorkel.analysis import metric_score
 from snorkel.utils import probs_to_preds
 
-Y_probs_dev = label_model.predict_proba(dev_L)
+Y_probs_dev = label_model.predict_proba(L_dev)
 Y_preds_dev = probs_to_preds(Y_probs_dev)
 print(
     f"Label model f1 score: {metric_score(Y_dev, Y_preds_dev, probs=Y_probs_dev, metric='f1')}"
@@ -292,9 +292,9 @@ print(
 # %%
 from snorkel.labeling import filter_unlabeled_dataframe
 
-Y_probs_train = label_model.predict_proba(train_L)
+Y_probs_train = label_model.predict_proba(L_train)
 df_train_filtered, Y_probs_train_filtered = filter_unlabeled_dataframe(
-    X=df_train, y=Y_probs_train, L=train_L
+    X=df_train, y=Y_probs_train, L=L_train
 )
 
 # %% [markdown]
@@ -305,11 +305,9 @@ from tf_model import get_model, get_feature_arrays
 from utils import get_n_epochs
 
 model = get_model()
-tokens, idx1, idx2 = get_feature_arrays(df_train_filtered)
-
 batch_size = 64
 model.fit(
-    (tokens, idx1, idx2),
+    get_feature_arrays(df_train_filtered),
     Y_probs_train_filtered,
     batch_size=batch_size,
     epochs=get_n_epochs(),
@@ -319,14 +317,13 @@ model.fit(
 # Finally, we evaluate the trained model by measuring its F1 score and ROC_AUC.
 
 # %%
-test_tokens, test_idx1, test_idx2 = get_feature_arrays(df_test)
-probs = model.predict((test_tokens, test_idx1, test_idx2))
-preds = probs_to_preds(probs)
+Y_probs_test = model.predict(get_feature_arrays(df_test))
+Y_preds_test = probs_to_preds(Y_probs_test)
 print(
-    f"Test F1 when trained with soft labels: {metric_score(Y_test, preds=preds, metric='f1')}"
+    f"Test F1 when trained with soft labels: {metric_score(Y_test, preds=Y_preds_test, metric='f1')}"
 )
 print(
-    f"Test ROC-AUC when trained with soft labels: {metric_score(Y_test, probs=probs, metric='roc_auc')}"
+    f"Test ROC-AUC when trained with soft labels: {metric_score(Y_test, probs=Y_probs_test, metric='roc_auc')}"
 )
 
 # %% [markdown]

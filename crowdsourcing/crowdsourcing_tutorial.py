@@ -216,9 +216,9 @@ label_model.fit(L_train, n_epochs=100, seed=123, log_freq=20, l2=0.1, lr=0.01)
 # %%
 from snorkel.analysis import metric_score
 
-Y_dev_preds = label_model.predict(L_dev)
+Y_preds_dev = label_model.predict(L_dev)
 
-acc = metric_score(Y_dev, Y_dev_preds, probs=None, metric="accuracy")
+acc = metric_score(Y_dev, Y_preds_dev, probs=None, metric="accuracy")
 print(f"LabelModel Accuracy: {acc:.3f}")
 
 # %% [markdown]
@@ -232,7 +232,7 @@ print(f"LabelModel Accuracy: {acc:.3f}")
 # Let's generate a set of probabilistic labels for that training set.
 
 # %%
-Y_train_preds = label_model.predict(L_train)
+Y_preds_train = label_model.predict(L_train)
 
 # %% [markdown]
 # ## Use Soft Labels to Train End Model
@@ -257,8 +257,8 @@ def encode_text(text):
     return model(input_ids)[0].mean(1)[0].detach().numpy()
 
 
-train_vectors = np.array(list(df_train.tweet_text.apply(encode_text).values))
-test_vectors = np.array(list(df_test.tweet_text.apply(encode_text).values))
+vectors_train = np.array(list(df_train.tweet_text.apply(encode_text).values))
+vectors_test = np.array(list(df_test.tweet_text.apply(encode_text).values))
 
 # %% [markdown]
 # ### Model on soft labels
@@ -269,10 +269,10 @@ test_vectors = np.array(list(df_test.tweet_text.apply(encode_text).values))
 from sklearn.linear_model import LogisticRegression
 
 sklearn_model = LogisticRegression(solver="liblinear")
-sklearn_model.fit(train_vectors, Y_train_preds)
+sklearn_model.fit(vectors_train, Y_preds_train)
 
 # %%
-print(f"Accuracy of trained model: {sklearn_model.score(test_vectors, Y_test)}")
+print(f"Accuracy of trained model: {sklearn_model.score(vectors_test, Y_test)}")
 
 # %% [markdown]
 # We now have a trained model that can be applied to future examples without requiring crowdsourced labels, and with accuracy not much lower than the `LabelModel` that _does_ have access to crowdsourced labels!
