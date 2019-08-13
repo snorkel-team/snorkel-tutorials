@@ -143,7 +143,7 @@ Here we provide an index pointing to different available tutorials by their task
     * Text Classification (Text): `spam`, `crowdsourcing`, `drybell`
     * Relation Extraction (Text): `spouse`
     * Visual Relationship Detection (Image): `visual_relation`
-    * Recommendations: `recsys`
+    * Recommender systems: `recsys`
 * Techniques
     * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `visual_relation`, `crowdsourcing`
     * Augmentation with Transformation Functions (TFs): `spam`
