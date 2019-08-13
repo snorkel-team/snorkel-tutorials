@@ -60,6 +60,6 @@ script:
 
 after_success:
   - if [[ ${BUILD_WEB} == "true" ]] && [[ ${TRAVIS_BRANCH} == "master" ]]; then
-        echo "Deploying tutorials"
-        bash ./scripts/push-tutorials.sh
+        echo "Deploying tutorials";
+        bash ./scripts/push-tutorials.sh;
     fi
