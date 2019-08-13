@@ -15,7 +15,7 @@ from tensorflow.keras import backend as K
 
 logging.basicConfig(level=logging.INFO)
 
-IS_TRAVIS = "TRAVIS_BRANCH" in os.environ
+IS_TRAVIS = os.environ.get("TRAVIS") == "true"
 
 YA_BOOKS_URL = "https://drive.google.com/uc?id=1gH7dG4yQzZykTpbHYsrw2nFknjUm0Mol"
 YA_INTERACTIONS_URL = "https://drive.google.com/uc?id=1NNX7SWcKahezLFNyiW88QFPAqOAYP5qg"
