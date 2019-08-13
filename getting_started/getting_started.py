@@ -229,7 +229,7 @@ from snorkel.slicing import slicing_function
 @slicing_function()
 def short_link(x):
     """Return whether text matches common pattern for shortened ".ly" links."""
-    return bool(re.search(r"\w+\.ly", x.text))
+    return int(bool(re.search(r"\w+\.ly", x.text)))
 
 
 # %% [markdown]
