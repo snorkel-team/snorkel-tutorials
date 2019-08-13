@@ -51,13 +51,14 @@ def get_changed_tox_envs(all_envs: bool, travis_strict: bool, plan: bool) -> Non
         splits = p.split("/")
         # If there's a directory, parse it; otherwise, add placeholder "."
         unique_directories.add("." if len(splits) == 1 else splits[0])
-    unique_directories = list(unique_directories)
-    # If we only have one and it's a valid tox environment, run that one
-    if len(unique_directories) == 1 and (unique_directories[0] in default_environments):
+    unique_defaults = [d for d in unique_directories if d in default_environments]
+    # If all changed directories are among the defaults, then only run them
+    # plus EXTRA_ENVIRONMENTS.
+    if len(unique_defaults) == len(unique_directories):
         run_environments = unique_directories + EXTRA_ENVIRONMENTS
         if plan:
             print(
-                f"Single changed tutorial directory: {unique_directories[0]}, "
+                f"Changed tutorial directories: {unique_directories}, "
                 f"running environments: {run_environments}"
             )
         print(",".join(run_environments))
@@ -65,8 +66,9 @@ def get_changed_tox_envs(all_envs: bool, travis_strict: bool, plan: bool) -> Non
     else:
         if plan:
             print(
-                f"No single changed tutorial directory [{unique_directories}], "
-                "reverting to all environments"
+                "Change in non-tutorial directory."
+                f"All changes: [{unique_directories}]."
+                "Running on all environments."
             )
         print(",".join(default_environments))
 
