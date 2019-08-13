@@ -267,15 +267,15 @@ module_pool = nn.ModuleDict(
     }
 )
 
-# +
-from visual_relation.model import get_task_flow
+# %%
+from visual_relation.model import get_op_sequence
 
 # define task flow through modules
-task_flow = get_task_flow()
+op_sequence = get_op_sequence()
 pred_cls_task = Task(
     name="visual_relation_task",
     module_pool=module_pool,
-    task_flow=task_flow,
+    op_sequence=op_sequence,
     scorer=Scorer(metrics=["f1_micro"]),
 )
 # -
