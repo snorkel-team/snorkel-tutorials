@@ -1,7 +1,6 @@
 import glob
 import os
 import subprocess
-from functools import partial
 
 import torch
 import torch.nn as nn
@@ -12,11 +11,7 @@ from sklearn.model_selection import train_test_split
 from snorkel.analysis import Scorer
 from snorkel.classification.data import DictDataset, DictDataLoader
 from snorkel.classification.task import Operation
-from snorkel.classification import (
-    Task,
-    cross_entropy_from_outputs,
-    softmax_from_outputs,
-)
+from snorkel.classification import Task
 
 
 def load_spam_dataset(load_train_labels: bool = False, include_dev: bool = True):
@@ -100,23 +95,19 @@ def create_spam_task(bow_dim):
         }
     )
 
-    # Specify the desired `task_flow` through each module
-    task_flow = [
+    # Specify the desired `op_sequence` through each module
+    op_sequence = [
         Operation(
             name="input_op", module_name="mlp", inputs=[("_input_", "bow_features")]
         ),
-        Operation(
-            name="head_op", module_name="prediction_head", inputs=[("input_op", 0)]
-        ),
+        Operation(name="head_op", module_name="prediction_head", inputs=["input_op"]),
     ]
 
     # Define a Snorkel Task
     spam_task = Task(
         name="spam_task",
         module_pool=module_pool,
-        task_flow=task_flow,
-        loss_func=partial(cross_entropy_from_outputs, "head_op"),
-        output_func=partial(softmax_from_outputs, "head_op"),
+        op_sequence=op_sequence,
         scorer=Scorer(metrics=["accuracy", "f1"]),
     )
 
