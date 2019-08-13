@@ -102,7 +102,7 @@ def create_spam_task(bow_dim):
             name="input_op", module_name="mlp", inputs=[("_input_", "bow_features")]
         ),
         Operation(
-            name="head_op", module_name="prediction_head", inputs=[("input_op", 0)]
+            name="head_op", module_name="prediction_head", inputs=["input_op"]
         ),
     ]
 
