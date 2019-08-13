@@ -229,7 +229,7 @@ import numpy as np
 import tensorflow as tf
 from utils import precision_batch, recall_batch, f1_batch
 
-n_books = len(df_books)
+n_books = max([max(df.book_idx) for df in [df_train, df_test, df_dev, df_valid]])
 
 
 # Keras model to predict rating given book_idxs and book_idx.
@@ -237,7 +237,8 @@ def get_model(embed_dim=64, hidden_layer_sizes=[32]):
     # Compute embedding for book_idxs.
     len_book_idxs = tf.keras.layers.Input([])
     book_idxs = tf.keras.layers.Input([None])
-    book_idxs_emb = tf.keras.layers.Embedding(n_books, embed_dim)(book_idxs)
+    # book_idxs % n_books is to prevent crashing if a book_idx in book_idxs is > n_books.
+    book_idxs_emb = tf.keras.layers.Embedding(n_books, embed_dim)(book_idxs % n_books)
     book_idxs_emb = tf.math.divide(
         tf.keras.backend.sum(book_idxs_emb, axis=1), tf.expand_dims(len_book_idxs, 1)
     )
