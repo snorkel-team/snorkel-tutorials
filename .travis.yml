@@ -38,9 +38,9 @@ jobs:
       python: 3.6
       env: ALL_ENVS=--all JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
     - if: type != pull_request
-      name: "Python 3.7: all tutorial tests"
+      name: "Python 3.7: all tutorial tests + web build"
       python: 3.7
-      env: ALL_ENVS=--all JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      env: BUILD_WEB=true ALL_ENVS=--all JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
 # Install JDK8 for PySpark tests
 before_install:
@@ -48,18 +48,18 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y openjdk-8-jdk --no-install-recommends
   - sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
-  - sudo apt-get install -y coreutils --no-install-recommends
 
 install:
   - pip install -U pip setuptools
   - pip install -U tox==3.13.0
-  - python scripts/get_tox_envs.py --travis-strict --plan $ALL_ENVS
-  - tox --notest -e $(python scripts/get_tox_envs.py --travis-strict $ALL_ENVS)
+  - python scripts/get_tox_envs.py --plan $ALL_ENVS
+  - tox --notest -e $(python scripts/get_tox_envs.py $ALL_ENVS)
 
 script:
-  - tox -e $(python scripts/get_tox_envs.py --travis-strict $ALL_ENVS)
+  - tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
 
 after_success:
-  - test $TRAVIS_BRANCH = "master" && \
-    test $TRAVIS_PULL_REQUEST = "false" && \
-    bash ./scripts/push-tutorials.sh
+  - if [[ ${BUILD_WEB} == "true" ]]; then
+        echo "Deploying tutorials"
+        bash ./scripts/push-tutorials.sh
+    fi

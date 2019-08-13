@@ -76,9 +76,9 @@ def get_changed_tox_envs(all_envs: bool, travis_strict: bool, plan: bool) -> Non
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--travis-strict",
+        "--travis-strict/--no-travis-strict",
         action="store_true",
-        default=False,
+        default=True,
         help="Fail if not in Travis?",
     )
     parser.add_argument(
