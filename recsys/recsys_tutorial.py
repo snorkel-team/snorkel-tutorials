@@ -147,7 +147,7 @@ from textblob import TextBlob
 @preprocessor(memoize=True)
 def textblob_polarity(x):
     if isinstance(x.review_text, str):
-        x.blob = TextBlob(str(x.review_text))
+        x.blob = TextBlob(x.review_text)
     else:
         x.blob = None
     return x
