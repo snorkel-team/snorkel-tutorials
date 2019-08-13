@@ -101,9 +101,7 @@ def create_spam_task(bow_dim):
         Operation(
             name="input_op", module_name="mlp", inputs=[("_input_", "bow_features")]
         ),
-        Operation(
-            name="head_op", module_name="prediction_head", inputs=["input_op"]
-        ),
+        Operation(name="head_op", module_name="prediction_head", inputs=["input_op"]),
     ]
 
     # Define a Snorkel Task
