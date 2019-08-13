@@ -7,6 +7,8 @@ import numpy as np
 
 import pandas as pd
 
+IS_TRAVIS = "TRAVIS" in os.environ
+
 
 def load_data() -> Tuple[
     Tuple[pd.DataFrame, np.ndarray], pd.DataFrame, Tuple[pd.DataFrame, np.ndarray]
@@ -28,6 +30,9 @@ def load_data() -> Tuple[
 
     with open(os.path.join("data", "train_data.pkl"), "rb") as f:
         df_train = pickle.load(f)
+        if IS_TRAVIS:
+            # Reduce train set size to speed up travis.
+            df_train = df_train.iloc[:2000]
 
     with open(os.path.join("data", "test_data.pkl"), "rb") as f:
         df_test = pickle.load(f)
@@ -37,3 +42,7 @@ def load_data() -> Tuple[
     Y_dev = (1 + Y_dev) // 2
     Y_test = (1 + Y_test) // 2
     return ((df_dev, Y_dev), df_train, (df_test, Y_test))
+
+
+def get_n_epochs() -> int:
+    return 3 if IS_TRAVIS else 30

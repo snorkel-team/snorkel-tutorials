@@ -8,3 +8,24 @@
     * Run `tox -e my_tutorial_dir -- sync` to generate a notebook version from the Python script version. Run this command to update when changes are made to the tutorial script.
     * Run `tox -e my_tutorial_dir -- sync --py` to generate a Python script version from the notebook version. Run this command to update when changes are made to the tutorial notebook.
 6. Run `tox -e my_tutorial_dir` to test out your tutorial. This is also the test that Travis CI will use to check compliance before merges.
+
+## Rendering tutorials as Markdown
+
+In order to display tutorials as webpages, we convert the `.ipynb` versions to Markdown.
+This is again done with `tox`:
+
+```bash
+tox -e my_tutorial -- markdown
+```
+
+This will create a Markdown file under the `build` directory corresponding to the notebook.
+You can exclude cell outputs by using the `--exclude-output` flag.
+Additionally, you can prevent cells from being rendered in Markdown by adding `{"tag": ["md-exclude"]}`
+to the cell header in the `.py` file.
+For example:
+
+```python
+# %% {"tag": ["md-exclude"]}
+command.do_not_show()
+this_line.will_not_appear()
+```

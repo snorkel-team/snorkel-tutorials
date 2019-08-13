@@ -5,9 +5,10 @@ A collection of tutorials for [Snorkel](http://snorkel.org).
 The Snorkel tutorials are grouped by application, with some applications having multiple associated notebooks in their directory.
 * `spam`: Is this YouTube comment spam?
 * `spouse`: Does this sentence imply that the two marked people are spouses?
-* `scene_graph`: Is object A riding object B in the image, carrying it, or neither?
+* `visual_relation`: Is object A riding object B in the image, carrying it, or neither?
 * `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
-* `mtl` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+* `multitask` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+* `recsys` (Recommender Systems): Will this user read and like this book?
 * [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
@@ -93,6 +94,7 @@ It may be available as `pip` depending on how your system is configured.
 # [OPTIONAL] Activate a virtual environment
 pip3 install --upgrade virtualenv
 virtualenv -p python3 spam
+source spam/bin/activate
 
 # Install requirements (both shared and tutorial-specific)
 pip3 install -r requirements.txt
@@ -140,14 +142,14 @@ Here we provide an index pointing to different available tutorials by their task
 * Task
     * Text Classification (Text): `spam`, `crowdsourcing`, `drybell`
     * Relation Extraction (Text): `spouse`
-    * Visual Relationship Detection (Image): `scene_graph`
+    * Visual Relationship Detection (Image): `visual_relation`
+    * Recommender systems: `recsys`
 * Techniques
-    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `scene_graph`, `crowdsourcing`, `drybell`
+    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `visual_relation`, `crowdsourcing`
     * Augmentation with Transformation Functions (TFs): `spam`
     * Monitoring with Slicing Functions (SFs): `spam`
     * Using Crowd Worker Labels: `crowdsourcing`
-    * Multi-Task Learning (MTL): `multitask`, `scene_graph`, `spam`
-    * Large-Scale Production Pipeline: `drybell`
+    * Multi-Task Learning (MTL): `multitask`, `visual_relation`, `spam`
 * Integrations
     * TensorFlow/Keras: `spam`, `spouse`
     * Scikit-Learn: `spam`, `crowdsourcing`

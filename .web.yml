@@ -1,0 +1,33 @@
+tutorials:
+  - title: Snorkel Intro Tutorial
+    description: Labeling data for spam classification
+    notebook: spam/01_spam_tutorial.ipynb
+    exclude_output: true
+  - title: Introduction to Transformation Functions
+    description: Data augmentation for spam classification
+    notebook: spam/02_spam_data_augmentation_tutorial.ipynb
+    exclude_output: true
+  - title: Introduction to Slicing Functions
+    description: Monitoring models for spam classification
+    notebook: spam/03_spam_data_slicing_tutorial.ipynb
+    exclude_output: true
+  - title: Hybrid Crowd Labeling Workflows in Snorkel
+    description: Programmatic and crowdworker labels for sentiment analysis
+    notebook: crowdsourcing
+    exclude_output: true
+  - title: Building Recommender Systems in Snorkel
+    description: Labeling text reviews for book recommendations
+    notebook: recsys
+    exclude_output: true
+  - title: Visual Relation Detection in Snorkel
+    description: Labeling visual relationships in images
+    notebook: visual_relation
+    exclude_output: true
+  - title: Information Extraction in Snorkel
+    description: Labeling spouse mentions in sentences
+    notebook: spouse
+    exclude_output: true
+  - title: Introduction to Snorkel's Multitask Learning System
+    description: State-of-the-art pretraining and task flows
+    notebook: multitask
+    exclude_output: true
