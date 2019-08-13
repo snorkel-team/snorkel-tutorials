@@ -1,19 +1,17 @@
 import calendar
-from datetime import datetime
-import gdown
 import gzip
 import json
 import logging
 import os
+import pickle
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import gdown
 import numpy as np
 import pandas as pd
-import pickle
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import backend as K
-
-logging.basicConfig(level=logging.INFO)
 
 IS_TRAVIS = os.environ.get("TRAVIS") == "true"
 
