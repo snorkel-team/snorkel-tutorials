@@ -55,10 +55,10 @@ def get_changed_tox_envs(all_envs: bool, travis_strict: bool, plan: bool) -> Non
     # If all changed directories are among the defaults, then only run them
     # plus EXTRA_ENVIRONMENTS.
     if len(unique_defaults) == len(unique_directories):
-        run_environments = unique_directories + EXTRA_ENVIRONMENTS
+        run_environments = unique_defaults + EXTRA_ENVIRONMENTS
         if plan:
             print(
-                f"Changed tutorial directories: {unique_directories}, "
+                f"Changed tutorial directories: {unique_defaults}, "
                 f"running environments: {run_environments}"
             )
         print(",".join(run_environments))
