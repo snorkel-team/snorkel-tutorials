@@ -66,8 +66,8 @@ def get_changed_tox_envs(all_envs: bool, travis_strict: bool, plan: bool) -> Non
     else:
         if plan:
             print(
-                "Change in non-tutorial directory."
-                f"All changes: [{unique_directories}]."
+                "Change in non-tutorial directory. "
+                f"All changes: [{unique_directories}]. "
                 "Running on all environments."
             )
         print(",".join(default_environments))
