@@ -4,7 +4,8 @@ import re
 import subprocess
 import tempfile
 import urllib
-from typing import List
+import yaml
+from typing import List, Optional
 
 import click
 import jupytext
@@ -16,6 +17,20 @@ logging.basicConfig(level=logging.INFO)
 NOTEBOOKS_CONFIG_FNAME = ".notebooks"
 SCRIPTS_CONFIG_FNAME = ".scripts"
 EXCLUDE_TAG = "md-exclude"
+BUILD_DIR = "build"
+WEB_YML = ".web.yml"
+
+
+HEADER_TEMPLATE = """---
+layout: default
+title: {title}
+description: {description}
+excerpt: {description}
+order: {order}
+---
+
+"""
+
 
 # Credit to: https://gist.github.com/pchc2005/b5f13e136a9c9bb2984e5b92802fc7c9
 # Original source: https://gist.github.com/dperini/729294
@@ -73,6 +88,65 @@ class Notebook:
     @property
     def ipynb(self) -> str:
         return f"{self.basename}.ipynb"
+
+
+class TutorialWebpage:
+    def __init__(
+        self,
+        ipynb_path: str,
+        title: str,
+        description: str,
+        order: int,
+        exclude_output: bool,
+    ) -> None:
+        self.ipynb = ipynb_path
+        self.title = title
+        self.description = description
+        self.order = order
+        self.exclude_output = exclude_output
+
+    def markdown_path(self) -> str:
+        return os.path.join(
+            BUILD_DIR, f"{os.path.splitext(os.path.basename(self.ipynb))[0]}.md"
+        )
+
+    def get_header(self) -> str:
+        return HEADER_TEMPLATE.format(
+            title=self.title, description=self.description, order=self.order
+        )
+
+
+def parse_web_yml(tutorial_dir: Optional[str]) -> List[TutorialWebpage]:
+    # Read .web.yml
+    with open(WEB_YML, "r") as f:
+        web_config = yaml.safe_load(f)
+    tutorial_webpages = []
+    # Process webpage configs in order
+    for i, cfg in enumerate(web_config["tutorials"]):
+        # If tutorial directory specified, skip if not in specified directory
+        notebook_dir = cfg["notebook"].split("/")[0]
+        if tutorial_dir is not None and notebook_dir != tutorial_dir:
+            continue
+        # If full notebook path supplied, just use that
+        if cfg["notebook"].endswith(".ipynb"):
+            notebook = Notebook(os.path.abspath(cfg["notebook"]))
+        # If only directory supply, ensure that there's only one notebook
+        else:
+            notebooks = get_notebooks(cfg["notebook"])
+            if len(notebooks) > 1:
+                raise ValueError(f"Multiple notebooks found in {cfg['notebook']}")
+            notebook = notebooks[0]
+        # Create TutorialWebpage object
+        tutorial_webpages.append(
+            TutorialWebpage(
+                ipynb_path=notebook.ipynb,
+                title=cfg["title"],
+                description=cfg["description"],
+                order=i + 1,
+                exclude_output=cfg.get("exclude_output", False),
+            )
+        )
+    return tutorial_webpages
 
 
 def check_links(script_path: str) -> None:
@@ -157,24 +231,28 @@ def check_script(script_path: str) -> None:
         raise ValueError(f"Error running {script_path}")
 
 
-def build_markdown_notebook(
-    notebook: Notebook, build_dir: str, exclude_output: bool
-) -> None:
-    assert os.path.exists(notebook.ipynb), f"No file {notebook.ipynb}"
-    os.makedirs(build_dir, exist_ok=True)
+def build_markdown_notebook(tutorial: TutorialWebpage) -> None:
+    assert os.path.exists(tutorial.ipynb), f"No file {tutorial.ipynb}"
+    os.makedirs(BUILD_DIR, exist_ok=True)
+    # Call nbconvert
     args = [
         "jupyter",
         "nbconvert",
-        notebook.ipynb,
+        tutorial.ipynb,
         "--to",
         "markdown",
         f"--TagRemovePreprocessor.remove_cell_tags={{'{EXCLUDE_TAG}'}}",
         "--output-dir",
-        build_dir,
+        BUILD_DIR,
     ]
-    if exclude_output:
+    if tutorial.exclude_output:
         args.append("--TemplateExporter.exclude_output=True")
     subprocess.run(args, check=True)
+    # Prepend header by reading generated file then writing back
+    with open(tutorial.markdown_path(), "r") as f:
+        content = f.read()
+    with open(tutorial.markdown_path(), "w") as f:
+        f.write(tutorial.get_header() + content)
 
 
 def sync_notebook(notebook: Notebook) -> None:
@@ -202,12 +280,10 @@ def test(tutorial_dir: str) -> None:
 
 
 @cli.command()
-@click.argument("tutorial_dir")
-@click.option("--exclude-output", is_flag=True)
-def markdown(tutorial_dir: str, exclude_output: bool) -> None:
-    build_dir = os.path.abspath(os.path.join(tutorial_dir, "..", "build"))
-    for notebook in get_notebooks(tutorial_dir):
-        build_markdown_notebook(notebook, build_dir, exclude_output)
+@click.option("--tutorial-dir")
+def markdown(tutorial_dir: Optional[str]) -> None:
+    for tutorial_webpage in parse_web_yml(tutorial_dir):
+        build_markdown_notebook(tutorial_webpage)
 
 
 @cli.command()
