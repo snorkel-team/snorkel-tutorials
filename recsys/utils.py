@@ -20,6 +20,14 @@ YA_BOOKS_URL = "https://drive.google.com/uc?id=1gH7dG4yQzZykTpbHYsrw2nFknjUm0Mol
 YA_INTERACTIONS_URL = "https://drive.google.com/uc?id=1NNX7SWcKahezLFNyiW88QFPAqOAYP5qg"
 YA_REVIEWS_URL = "https://drive.google.com/uc?id=1M5iqCZ8a7rZRtsmY5KQ5rYnP9S0bQJVo"
 
+YA_BOOKS_SMALL_URL = "https://drive.google.com/uc?id=1HCn2FCmfdAgEIWgsWqiVzEGP1RJU1ZAx"
+YA_INTERACTIONS_SMALL_URL = (
+    "https://drive.google.com/uc?id=10idZHk_OGiOVmRz7LHfhSvr3_TFxPw7U"
+)
+YA_REVIEWS_SMALL_URL = (
+    "https://drive.google.com/uc?id=1zcZ2TgLxX19BH0m9JtyIM_L21opih5eK"
+)
+
 BOOK_DATA = "data/goodreads_books_young_adult.json.gz"
 INTERACTIONS_DATA = "data/goodreads_interactions_young_adult.json.gz"
 REVIEWS_DATA = "data/goodreads_reviews_young_adult.json.gz"
@@ -29,12 +37,20 @@ def maybe_download_files(data_dir: str = "data") -> None:
     if not os.path.exists(data_dir):
         os.makedirs(data_dir, exist_ok=True)
         os.chdir(data_dir)
-        # Books
-        gdown.download(YA_BOOKS_URL, output=None, quiet=None)
-        # Interactions
-        gdown.download(YA_INTERACTIONS_URL, output=None, quiet=None)
-        # Reviews
-        gdown.download(YA_REVIEWS_URL, output=None, quiet=None)
+        if IS_TRAVIS:
+            # Books
+            gdown.download(YA_BOOKS_SMALL_URL, output=None, quiet=None)
+            # Interactions
+            gdown.download(YA_INTERACTIONS_SMALL_URL, output=None, quiet=None)
+            # Reviews
+            gdown.download(YA_REVIEWS_SMALL_URL, output=None, quiet=None)
+        else:
+            # Books
+            gdown.download(YA_BOOKS_URL, output=None, quiet=None)
+            # Interactions
+            gdown.download(YA_INTERACTIONS_URL, output=None, quiet=None)
+            # Reviews
+            gdown.download(YA_REVIEWS_URL, output=None, quiet=None)
         os.chdir("..")
 
 
@@ -68,6 +84,8 @@ def load_data(
 def process_books_data(
     book_path: str = BOOK_DATA, min_ratings: int = 100, max_ratings: int = 15000
 ) -> Tuple[pd.DataFrame, Dict[int, int]]:
+    if IS_TRAVIS:
+        min_ratings = 1
     books = load_data(book_path, None)
     df_books = pd.DataFrame(books)
     df_books = df_books[
@@ -113,10 +131,10 @@ def process_books_data(
 def process_interactions_data(
     book_id_to_idx: Dict[int, int],
     interactions_path: str = INTERACTIONS_DATA,
-    min_user_count: int = 25,
+    min_user_count: int = 1 if IS_TRAVIS else 25,
     max_user_count: int = 200,
+    max_to_load: int = 5_000_000,
 ) -> Tuple[pd.DataFrame, Dict[int, int]]:
-    max_to_load = 50_000 if IS_TRAVIS else 5_000_000
     interactions = load_data(
         interactions_path,
         max_to_load,
@@ -224,4 +242,3 @@ def f1_batch(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 def get_n_epochs() -> int:
     return 5 if IS_TRAVIS else 30
-
