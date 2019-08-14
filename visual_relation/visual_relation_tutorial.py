@@ -16,15 +16,13 @@
 
 # # Visual Relationship Detection
 #
-# In this tutorial, we focus on the task of classifying visual relationships. For a given image, there might be many such relationships, defined formally as a `subject <predictate> object` (e.g. `person <riding> bike`).
-#
-# These are relationships among a pair of objects in images (e.g. "man riding bicycle"), where "man" and "bicycle" are the subject and object, respectively, and "riding" is the relationship predicate.
+# In this tutorial, we focus on the task of classifying visual relationships between objects in an image. For any given image, there might be many such relationships, defined formally as a `subject <predictate> object` (e.g. `person <riding> bike`). As an example, in the relationship `man riding bicycle`), "man" and "bicycle" are the subject and object, respectively, and "riding" is the relationship predicate.
 #
 # ![Visual Relationships](https://cs.stanford.edu/people/ranjaykrishna/vrd/dataset.png)
 #
-# For the purpose of this tutorial, we operate over the [Visual Relationship Detection (VRD) dataset](https://cs.stanford.edu/people/ranjaykrishna/vrd/) and focus on action relationships. We define our three class classification task as **identifying whether a pair of bounding boxes represents a particular relationship.**
+# In the examples of the relationships shown above, the red box represents the _subject_ while the green box represents the _object_. The _predicate_ (e.g. kick) denotes what relationship connects the subject and the object.
 #
-# In the examples of the relationships shown below, the red box represents the _subject_ while the green box represents the _object_. The _predicate_ (e.g. kick) denotes what relationship connects the subject and the object.
+# For the purpose of this tutorial, we operate over the [Visual Relationship Detection (VRD) dataset](https://cs.stanford.edu/people/ranjaykrishna/vrd/) and focus on action relationships. We define our classification task as **identifying which of three relationships holds between the objects represented by a pair of bounding boxes.**
 
 # +
 import os
@@ -41,14 +39,6 @@ if os.path.basename(os.getcwd()) == "visual_relation":
 # - `source_img`: filename for the corresponding image the relationship is in
 # - `subject_bbox`: coordinates of the bounding box for the object `[ymin, ymax, xmin, xmax]`
 # - `subject_category`: category of the subject
-
-# +
-# %load_ext autoreload
-# %autoreload 2
-
-import numpy as np
-
-# -
 
 # If you are running this notebook for the first time, it will take ~15 mins to download all the required sample data.
 #
@@ -88,15 +78,15 @@ from snorkel.labeling import labeling_function
 @labeling_function()
 def lf_ride_object(x):
     if x.subject_category == "person":
-        if x.object_category in ["bike", "snowboard", "motorcycle", "horse"]:
-            return RIDE
-    return ABSTAIN
-
-
-@labeling_function()
-def lf_ride_rare_object(x):
-    if x.subject_category == "person":
-        if x.object_category in ["bus", "truck", "elephant"]:
+        if x.object_category in [
+            "bike",
+            "snowboard",
+            "motorcycle",
+            "horse",
+            "bus",
+            "truck",
+            "elephant",
+        ]:
             return RIDE
     return ABSTAIN
 
@@ -118,7 +108,7 @@ def lf_carry_subject(x):
 
 
 @labeling_function()
-def lf_person(x):
+def lf_not_person(x):
     if x.subject_category != "person":
         return OTHER
     return ABSTAIN
@@ -128,11 +118,18 @@ def lf_person(x):
 
 # We now encode our spatial intuition, which includes measuring the distance between the bounding boxes and comparing their relative areas.
 
+YMIN = 0
+YMAX = 1
+XMIN = 2
+XMAX = 3
+
 # +
+import numpy as np
+
 # Distance-based LFs
 @labeling_function()
 def lf_ydist(x):
-    if x.subject_bbox[3] < x.object_bbox[3]:
+    if x.subject_bbox[XMAX] < x.object_bbox[XMAX]:
         return OTHER
     return ABSTAIN
 
@@ -144,17 +141,14 @@ def lf_dist(x):
     return ABSTAIN
 
 
+def area(bbox):
+    return (bbox[YMAX] - bbox[YMIN]) * (bbox[XMAX] - bbox[XMIN])
+
+
 # Size-based LF
 @labeling_function()
 def lf_area(x):
-    subject_area = (x.subject_bbox[1] - x.subject_bbox[0]) * (
-        x.subject_bbox[3] - x.subject_bbox[2]
-    )
-    object_area = (x.object_bbox[1] - x.object_bbox[0]) * (
-        x.object_bbox[3] - x.object_bbox[2]
-    )
-
-    if subject_area / object_area <= 0.5:
+    if area(x.subject_bbox) / area(x.object_bbox) <= 0.5:
         return OTHER
     return ABSTAIN
 
@@ -168,10 +162,9 @@ from snorkel.labeling import PandasLFApplier
 
 lfs = [
     lf_ride_object,
-    lf_ride_rare_object,
     lf_carry_object,
     lf_carry_subject,
-    lf_person,
+    lf_not_person,
     lf_ydist,
     lf_dist,
     lf_area,
@@ -209,7 +202,7 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 
 # +
 from snorkel.classification import DictDataLoader
-from visual_relation.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
+from visual_relation.model import SceneGraphDataset, CreateModel
 
 df_train["labels"] = label_model.predict(L_train)
 
@@ -235,57 +228,17 @@ dl_valid = DictDataLoader(
 
 # +
 import torchvision.models as models
-import torch.nn as nn
-
-from snorkel.analysis import Scorer
-from snorkel.classification import Task
-
 
 # initialize pretrained feature extractor
 cnn = models.resnet18(pretrained=True)
-
-# freeze the resnet weights
-for param in cnn.parameters():
-    param.requires_grad = False
-
-# define input features
-in_features = cnn.fc.in_features
-feature_extractor = nn.Sequential(*list(cnn.children())[:-1])
-
-# initialize FC layer: maps 3 sets of image features to class logits
-WEMB_SIZE = 100
-fc = nn.Linear(in_features * 3 + 2 * WEMB_SIZE, 3)
-init_fc(fc)
-
-# define layers
-module_pool = nn.ModuleDict(
-    {
-        "feat_extractor": feature_extractor,
-        "prediction_head": fc,
-        "feat_concat": FlatConcat(),
-        "word_emb": WordEmb(),
-    }
-)
-
-# %%
-from visual_relation.model import get_op_sequence
-
-# define task flow through modules
-op_sequence = get_op_sequence()
-pred_cls_task = Task(
-    name="visual_relation_task",
-    module_pool=module_pool,
-    op_sequence=op_sequence,
-    scorer=Scorer(metrics=["f1_micro"]),
-)
+model = CreateModel(cnn)
 # -
 
 # ### Train and Evaluate Model
 
 # +
-from snorkel.classification import MultitaskClassifier, Trainer
+from snorkel.classification import Trainer
 
-model = MultitaskClassifier([pred_cls_task])
 trainer = Trainer(
     n_epochs=1,  # increase for improved performance
     lr=1e-3,
