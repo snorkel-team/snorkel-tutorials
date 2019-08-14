@@ -2,7 +2,7 @@
 [![build](https://travis-ci.com/snorkel-team/snorkel-tutorials.svg?branch=master)](https://travis-ci.com/snorkel-team/snorkel-tutorials?branch=master)
 
 A collection of tutorials for [Snorkel](https://github.com/snorkel-team/snorkel).
-For more information, visit the [Snorkel Website](http://snorkel.org).
+For more information, visit the [Snorkel website](http://snorkel.org).
 
 ## Tutorials
 The Snorkel tutorials are grouped by application, with some applications having multiple associated notebooks in their directory.
