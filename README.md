@@ -115,7 +115,6 @@ These commands assume that your conda installation is Python 3.6+.
 
 ```bash
 # [OPTIONAL] Activate a virtual environment
-# Python 3.7.4 cause some issues e.g. https://github.com/tensorflow/tensorflow/issues/31523
 conda create --yes -n spam python=3.6 pytorch==1.1.0
 source activate spam
 
