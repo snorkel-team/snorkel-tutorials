@@ -8,13 +8,13 @@
 #
 # While the primary purpose of the Snorkel project is to support training data creation and management, it also comes with a PyTorch-based modeling framework intended to support flexible multi-task learning (e.g. slice-aware models).
 # Using this particular framework (as opposed to other excellent third party libraries) is entirely optional, but we have found it helpful in our own work and so provide it here.
-# In particular, because MTL in general often requires easily *adding new datasets, tasks, and metrics* (and just as easily removing them), each of these concepts have been decoupled in the snorkel MTL classifier.
+# In particular, because MTL in general often requires easily *adding new datasets, tasks, and metrics* (and just as easily removing them), each of these concepts has been decoupled in the snorkel MTL classifier.
 
 # %% [markdown]
 # ### Tutorial Overview
 
 # %% [markdown]
-# The purpose of this tutorial is to introduce the basic interfaces and flow of the multi-task learning tools within Snorkel.
+# The purpose of this tutorial is to introduce the basic interfaces and flow of multi-task learning tools within Snorkel.
 # We assume that you have prior experience with MTL, so we don't motivate or explain multi-task learning at large here.
 #
 # In this notebook, we will start by looking at a simple MTL model with only two tasks, each having distinct data and only one set of ground truth labels ("gold" labels). We'll also use a simple dataset where the raw data is directly usable as features, for simplicity (i.e., unlike text data, where we would first need to tokenize and transform the data into token ids).
@@ -48,7 +48,7 @@ set_seed(SEED)
 # %%
 import os
 
-# Make sure we're running from the spam/ directory
+# Make sure we're running from the multitask/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("multitask")
 # %%
@@ -150,7 +150,7 @@ for (split, square_X_split, square_Y_split) in [
 # These inputs will come from previously executed operations or the original input (denoted with the special keyword "_input_").
 # For inputs that are a dict instead of a Tensor (such as "_input_"), we include with the op name the name of a key to index with.
 #
-# As an example, below we verbosely define the module pool and task flow for the circle task:
+# As an example, we verbosely define the module pool and task flow for the circle task:
 
 # %%
 import torch.nn as nn
@@ -209,7 +209,7 @@ circle_task = Task(
 # %% [markdown]
 # We'll now define the square task, but more succinctly—for example, using the fact that the default name for an `Operation` is its `module_name` (since most tasks only use their modules once per forward pass).
 #
-# We'll also define the square task to share the first module in its task flow (`base_mlp`) with the circle task to demonstrate how to share modules. (Note that this is purely for illustrative purposes; for this toy task, it is very possible that this is not the optimal arrangement of modules).
+# We'll also define the square task to share the first module in its task flow (`base_mlp`) with the circle task to demonstrate how to share modules. (Note that this is purely for illustrative purposes; for this toy task, it is quite possible that this is not the optimal arrangement of modules).
 #
 # Finally, the most common task definitions we see in practice are classification tasks with cross-entropy loss and softmax on the output of the last module, and accuracy is most often the primary metric of interest, these are all the default values, so we can drop them here for brevity.
 
