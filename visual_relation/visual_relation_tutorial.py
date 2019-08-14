@@ -59,7 +59,7 @@ from visual_relation.utils import load_vrd_data
 
 # setting sample=False will take ~3 hours to run (downloads full VRD dataset)
 sample = True
-is_travis = "TRAVIS" in os.environ
+is_travis = os.environ.get("TRAVIS") == "true"
 df_train, df_valid, df_test = load_vrd_data(sample, is_travis)
 
 print("Train Relationships: ", len(df_train))
