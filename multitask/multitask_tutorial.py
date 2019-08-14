@@ -57,19 +57,22 @@ from utils import make_circle_dataset, make_square_dataset
 N = 1000  # Data points per dataset
 R = 1  # Unit distance
 
+X_train, X_valid, X_test = {}, {}, {}
+Y_train, Y_valid, Y_test = {}, {}, {}
+
 circle_train, circle_valid, circle_test = make_circle_dataset(N, R)
-(circle_X_train, circle_Y_train) = circle_train
-(circle_X_valid, circle_Y_valid) = circle_valid
-(circle_X_test, circle_Y_test) = circle_test
+(X_train['circle'], Y_train['circle']) = circle_train
+(X_valid['circle'], Y_valid['circle']) = circle_valid
+(X_test['circle'], Y_test['circle']) = circle_test
 
 square_train, square_valid, square_test = make_square_dataset(N, R)
-(square_X_train, square_Y_train) = square_train
-(square_X_valid, square_Y_valid) = square_valid
-(square_X_test, square_Y_test) = square_test
+(X_train['square'], Y_train['square']) = square_train
+(X_valid['square'], Y_valid['square']) = square_valid
+(X_test['square'], Y_test['square']) = square_test
 
 # %%
-print(f"Training data shape: {circle_X_train.shape}")
-print(f"Label space: {set(circle_Y_train)}")
+print(f"Training data shape: {X_train['circle'].shape}")
+print(f"Label space: {set(Y_train['circle'])}")
 
 # %% [markdown]
 # And we can view the ground truth labels of our tasks visually to confirm our intuition on what the decision boundaries look like.
@@ -80,12 +83,12 @@ import matplotlib.pyplot as plt
 
 fig, axs = plt.subplots(1, 2)
 
-scatter = axs[0].scatter(circle_X_train[:, 0], circle_X_train[:, 1], c=circle_Y_train)
+scatter = axs[0].scatter(X_train['circle'][:, 0], X_train['circle'][:, 1], c=Y_train['circle'])
 axs[0].set_aspect("equal", "box")
 axs[0].set_title("Circle Dataset", fontsize=10)
 axs[0].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-scatter = axs[1].scatter(square_X_train[:, 0], square_X_train[:, 1], c=square_Y_train)
+scatter = axs[1].scatter(X_train['square'][:, 0], X_train['square'][:, 1], c=Y_train['square'])
 axs[1].set_aspect("equal", "box")
 axs[1].set_title("Square Dataset", fontsize=10)
 axs[1].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
@@ -107,27 +110,13 @@ import torch
 from snorkel.classification import DictDataset, DictDataLoader
 
 dataloaders = []
-for (split, circle_X_split, circle_Y_split) in [
-    ("train", circle_X_train, circle_Y_train),
-    ("valid", circle_X_valid, circle_Y_valid),
-    ("test", circle_X_test, circle_Y_test),
-]:
-    X_dict = {"circle_data": torch.FloatTensor(circle_X_split)}
-    Y_dict = {"circle_task": torch.LongTensor(circle_Y_split)}
-    dataset = DictDataset("CircleDataset", split, X_dict, Y_dict)
-    dataloader = DictDataLoader(dataset, batch_size=32)
-    dataloaders.append(dataloader)
-
-for (split, square_X_split, square_Y_split) in [
-    ("train", square_X_train, square_Y_train),
-    ("valid", square_X_valid, square_Y_valid),
-    ("test", square_X_test, square_Y_test),
-]:
-    X_dict = {"square_data": torch.FloatTensor(square_X_split)}
-    Y_dict = {"square_task": torch.LongTensor(square_Y_split)}
-    dataset = DictDataset("SquareDataset", split, X_dict, Y_dict)
-    dataloader = DictDataLoader(dataset, batch_size=32)
-    dataloaders.append(dataloader)
+for task_name in ['circle', 'square']:
+    for split, X, Y in (("train", X_train, Y_train), ("valid", X_valid, Y_valid), ("test", X_test, Y_test)):
+        X_dict = {f"{task_name}_data": torch.FloatTensor(X[task_name])}
+        Y_dict = {f"{task_name}_task": torch.LongTensor(Y[task_name])}
+        dataset = DictDataset(f"{task_name}Dataset", split, X_dict, Y_dict)
+        dataloader = DictDataLoader(dataset, batch_size=32)
+        dataloaders.append(dataloader)
 
 # %% [markdown]
 # We now have 6 data loaders, one for each split (`train`, `valid`, `test`) of each task (`circle_task` and `square_task`).
@@ -287,9 +276,9 @@ from utils import make_inv_circle_dataset
 # We flip the inequality when generating the labels so that our positive
 # class is now _outside_ the circle.
 inv_circle_train, inv_circle_valid, inv_circle_test = make_inv_circle_dataset(N, R)
-(inv_circle_X_train, inv_circle_Y_train) = inv_circle_train
-(inv_circle_X_valid, inv_circle_Y_valid) = inv_circle_valid
-(inv_circle_X_test, inv_circle_Y_test) = inv_circle_test
+(X_train['inv_circle'], Y_train['inv_circle']) = inv_circle_train
+(X_valid['inv_circle'], Y_valid['inv_circle']) = inv_circle_valid
+(X_test['inv_circle'], Y_test['inv_circle']) = inv_circle_test
 
 # %%
 import matplotlib.pyplot as plt
@@ -297,18 +286,18 @@ import matplotlib.pyplot as plt
 fig, axs = plt.subplots(1, 3)
 
 scatter = axs[0].scatter(
-    inv_circle_X_train[:, 0], inv_circle_X_train[:, 1], c=inv_circle_Y_train
+    X_train['inv_circle'][:, 0], X_train['inv_circle'][:, 1], c=Y_train['inv_circle']
 )
 axs[0].set_aspect("equal", "box")
 axs[0].set_title("Inv Circle Dataset", fontsize=10)
 axs[0].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-scatter = axs[1].scatter(circle_X_train[:, 0], circle_X_train[:, 1], c=circle_Y_train)
+scatter = axs[1].scatter(X_train['circle'][:, 0], X_train['circle'][:, 1], c=Y_train['circle'])
 axs[1].set_aspect("equal", "box")
 axs[1].set_title("Circle Dataset", fontsize=10)
 axs[1].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-scatter = axs[2].scatter(square_X_train[:, 0], square_X_train[:, 1], c=square_Y_train)
+scatter = axs[2].scatter(X_train['square'][:, 0], X_train['square'][:, 1], c=Y_train['square'])
 axs[2].set_aspect("equal", "box")
 axs[2].set_title("Square Dataset", fontsize=10)
 axs[2].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
