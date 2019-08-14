@@ -117,16 +117,19 @@ These commands assume that your conda installation is Python 3.6+.
 
 ```bash
 # [OPTIONAL] Activate a virtual environment
-conda create --name spam
+conda create --yes -n spam python=3.6
 source activate spam
 
 # Install requirements (both shared and tutorial-specific)
-conda install --yes --file requirements.txt
-conda install --yes --file spam/requirements.txt
+pip install environment_kernels
+pip install -r requirements.txt
+pip install -r spam/requirements.txt
 
 # Launch the Jupyter notebook interface
 jupyter notebook spam
 ```
+
+Make sure to select the right kernel (`conda_spam`) when running the jupyter notebook.
 
 </p>
 </details>
