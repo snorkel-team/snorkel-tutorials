@@ -135,16 +135,19 @@ applier = PandasSFApplier(sfs)
 S_test = applier.apply(df_test)
 
 # %% [markdown]
-# Now, we initialize the [`SliceScorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer) using 1) an existing [`Scorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html) and 2) desired `slice_names` to see slice-specific performance.
+# Now, we initialize the [`SliceScorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer) using the desired `slice_names`.
 
 # %%
-from snorkel.analysis import Scorer
 from snorkel.slicing import SliceScorer
 
-scorer = Scorer(metrics=["accuracy", "f1"])
 slice_names = [sf.name for sf in sfs]
-slice_scorer = SliceScorer(scorer, slice_names)
-slice_scorer.score(
+slice_scorer = SliceScorer(slice_names, metrics=["accuracy", "f1"])
+
+# %% [markdown]
+# Using the [`score_slices`]() method, we can see both `overall` and slice-specific performance.
+
+# %%
+slice_scorer.score_slices(
     S=S_test, golds=Y_test, preds=preds_test, probs=probs_test, as_dataframe=True
 )
 
@@ -243,8 +246,8 @@ slice_names = [sf.name for sf in sfs]
 applier = PandasSFApplier(sfs)
 S_test = applier.apply(df_test)
 
-slice_scorer = SliceScorer(scorer, slice_names)
-slice_scorer.score(
+slice_scorer = SliceScorer(slice_names, metrics=["accuracy", "f1"])
+slice_scorer.score_slices(
     S=S_test, golds=Y_test, preds=preds_test, probs=probs_test, as_dataframe=True
 )
 
@@ -291,7 +294,6 @@ test_dl = create_dict_dataloader(
 # We'll now initialize a `SlicingClassifier`:
 # * `base_architecture`: We define a simple Multi-Layer Perceptron (MLP) in Pytorch to serve as the primary representation architecture. We note that the `BinarySlicingClassifier` is **agnostic to the base architecture** — you might leverage a Transformer model for text, or a ResNet for images.
 # * `head_dim`: identifies the final output feature dimension of the `base_architecture`
-# * `input_data_key`: corresponds to the desired input field from the `X_dict`
 # * `slice_names`: Specify the slices that we plan to train on with this classifier.
 
 # %%
@@ -381,9 +383,7 @@ trainer.fit(slice_model, [train_dl_slice, valid_dl_slice])
 
 # %% [markdown]
 # At inference time, the primary task head (`spam_task`) will make all final predictions.
-# We'd like to evaluate all the slice heads on the original task head.
-#
-# *NOTE:* we use the [`score_slices`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.BinarySlicingClassifier.html#snorkel.slicing.BinarySlicingClassifier.score_slices) method in `SlicingClassifier` — it remaps all slice-related labels, denoted `spam_task_slice:{slice_name}_pred`, to be evaluated on the `spam_task`.
+# We'd like to evaluate all the slice heads on the original task head — [`score_slices`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.BinarySlicingClassifier.html#snorkel.slicing.BinarySlicingClassifier.score_slices) remaps all slice-related labels, denoted `spam_task_slice:{slice_name}_pred`, to be evaluated on the `spam_task`.
 
 # %%
 slice_model.score_slices([valid_dl_slice, test_dl_slice], as_dataframe=True)
