@@ -72,11 +72,8 @@ def df_to_features(vectorizer, df, split):
 
 def create_dict_dataloader(X, Y, split, **kwargs):
     """Create a DictDataLoader for bag-of-words features."""
-    ds = DictDataset(
-        name="spam_dataset",
-        split=split,
-        X_dict={"bow_features": torch.FloatTensor(X)},
-        Y_dict={"spam_task": torch.LongTensor(Y)},
+    ds = DictDataset.from_tensors(
+        torch.FloatTensor(X), torch.LongTensor(Y), split
     )
     return DictDataLoader(ds, **kwargs)
 

@@ -269,8 +269,7 @@ slice_scorer.score(
 # To demonstrate this functionality, we'll first set up a the datasets + modeling pipeline in the PyTorch-based [`snorkel.classification`](https://snorkel.readthedocs.io/en/master/packages/classification.html) package.
 
 # %% [markdown]
-# First, we initialize a [`DictDataLoader`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.DictDataLoader.html) for each split.
-# This class in [`snorkel.classification`](https://snorkel.readthedocs.io/en/master/packages/classification.html) that provides extra flexibility with a dictionaries of data fields (`X_dict`) and labels (`Y_dict`).
+# First, we initialize a dataloaders for each split.
 
 # %%
 from utils import create_dict_dataloader
@@ -289,11 +288,11 @@ test_dl = create_dict_dataloader(
 )
 
 # %% [markdown]
-# We'll now initialize a `BinarySlicingClassifier`:
+# We'll now initialize a `SlicingClassifier`:
 # * `base_architecture`: We define a simple Multi-Layer Perceptron (MLP) in Pytorch to serve as the primary representation architecture. We note that the `BinarySlicingClassifier` is **agnostic to the base architecture** — you might leverage a Transformer model for text, or a ResNet for images.
 # * `head_dim`: identifies the final output feature dimension of the `base_architecture`
 # * `input_data_key`: corresponds to the desired input field from the `X_dict`
-# * `task_name`: corresponds to the corresponding input field from the `Y_dict`
+# * `slice_names`: Specify the slices that we plan to train on with this classifier.
 
 # %%
 from snorkel.slicing import SlicingClassifier
@@ -302,14 +301,13 @@ from utils import get_pytorch_mlp
 
 # Define model architecture
 bow_dim = X_train.shape[1]
-mlp = get_pytorch_mlp(hidden_dim=bow_dim, num_layers=2)
+hidden_dim = bow_dim
+mlp = get_pytorch_mlp(hidden_dim=hidden_dim, num_layers=2)
 
 # Init slice model
 slice_model = SlicingClassifier(
     base_architecture=mlp,
-    head_dim=bow_dim,
-    input_data_key="bow_features",
-    task_name="spam_task",
+    head_dim=hidden_dim,
     slice_names=[sf.name for sf in sfs],
 )
 
@@ -351,8 +349,6 @@ S_valid = applier.apply(df_valid)
 slice_model = SlicingClassifier(
     base_architecture=mlp,
     head_dim=bow_dim,
-    input_data_key="bow_features",
-    task_name="spam_task",
     slice_names=slice_names,
 )
 
