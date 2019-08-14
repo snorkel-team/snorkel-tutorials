@@ -1,6 +1,6 @@
 #### ESSENTIAL LIBRARIES
 
-git+https://github.com/snorkel-team/snorkel.git@redux
+git+https://github.com/snorkel-team/snorkel.git
 
 
 #### DEV TOOLS

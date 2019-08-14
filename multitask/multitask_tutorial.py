@@ -146,7 +146,7 @@ for (split, square_X_split, square_Y_split) in [
 # A `Task` represents a path through a neural network. In `MultitaskClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each example will make a forward pass.
 #
 # To specify this sequence of modules, each `Task` includes a **module pool** (a set of modules that it relies on) and an **operation sequence**.
-# Each [Operation](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Operation.html#snorkel.classification.Operation) specifies a module and the inputs that module expects.
+# Each [Operation](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.Operation.html#snorkel.classification.Operation) specifies a module and the inputs that module expects.
 # These inputs will come from previously executed operations or the original input (denoted with the special keyword "_input_").
 # For inputs that are a dict instead of a Tensor (such as "_input_"), we include with the op name the name of a key to index with.
 #
