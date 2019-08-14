@@ -27,7 +27,7 @@ tutorials:
     description: Labeling spouse mentions in documents
     notebook: spouse
     exclude_output: true
-  - title: Introduction to Snorkel's Multitask Learning System
-    description: State-of-the-art framework for multitask learning (i.e. pretraining, parameter sharing)
+  - title: Intro to Snorkel's Multitask Learning System
+    description: State-of-the-art framework for pretraining & parameter sharing
     notebook: multitask
     exclude_output: true
