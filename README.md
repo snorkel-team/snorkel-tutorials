@@ -1,4 +1,6 @@
 # Snorkel Tutorials
+[![build](https://travis-ci.com/snorkel-team/snorkel-tutorials.svg?branch=master)](https://travis-ci.com/snorkel-team/snorkel-tutorials?branch=master)
+
 A collection of tutorials for [Snorkel](http://snorkel.org).
 
 ## Tutorials
