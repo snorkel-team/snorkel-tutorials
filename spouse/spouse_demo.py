@@ -307,12 +307,7 @@ from utils import get_n_epochs
 X_train = get_feature_arrays(df_train_filtered)
 model = get_model()
 batch_size = 64
-model.fit(
-    X_train,
-    probs_train_filtered,
-    batch_size=batch_size,
-    epochs=get_n_epochs(),
-)
+model.fit(X_train, probs_train_filtered, batch_size=batch_size, epochs=get_n_epochs())
 
 # %% [markdown]
 # Finally, we evaluate the trained model by measuring its F1 score and ROC_AUC.

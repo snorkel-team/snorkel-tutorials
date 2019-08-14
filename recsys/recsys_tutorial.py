@@ -273,9 +273,13 @@ def get_data_tensors(df):
     )
     tensor_dict = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
     return (
-        tensor_dict["len_book_idxs"],
-        tensor_dict["book_idxs"],
-        tensor_dict["book_idx"]), tensor_dict["label"]
+        (
+            tensor_dict["len_book_idxs"],
+            tensor_dict["book_idxs"],
+            tensor_dict["book_idx"],
+        ),
+        tensor_dict["label"],
+    )
 
 
 # %% [markdown]
