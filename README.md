@@ -93,8 +93,8 @@ It may be available as `pip` depending on how your system is configured.
 ```bash
 # [OPTIONAL] Activate a virtual environment
 pip3 install --upgrade virtualenv
-virtualenv -p python3 spam
-source spam/bin/activate
+virtualenv -p python3 .envspam
+source .envspam/bin/activate
 
 # Install requirements (both shared and tutorial-specific)
 pip3 install -r requirements.txt
