@@ -57,7 +57,7 @@ df_train.head()
 # A key difference: whereas labeling functions output labels, slicing functions output binary _masks_ indicating whether an example is in the slice or not.
 
 # %% [markdown]
-# In the following cells, we use the [`@slicing_function()`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.slicing_function.html#snorkel.slicing.slicing_function) decorator to initialize an SF that identifies shortened links the spam dataset.
+# In the following cells, we use the [`@slicing_function()`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.slicing_function.html#snorkel.slicing.slicing_function) decorator to initialize an SF that identifies shortened links the spam dataset.
 # These links could redirect us to potentially dangerous websites, and we don't want our users to click them!
 # To select the subset of shortened links in our dataset, we write a regex that checks for the commonly-used `.ly` extension.
 #
@@ -81,7 +81,7 @@ sfs = [short_link]
 # ### Visualize slices
 
 # %% [markdown]
-# With a utility function, [`slice_dataframe`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.slice_dataframe.html#snorkel.slicing.slice_dataframe), we can visualize examples belonging to this slice in a `pandas.DataFrame`.
+# With a utility function, [`slice_dataframe`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.slice_dataframe.html#snorkel.slicing.slice_dataframe), we can visualize examples belonging to this slice in a `pandas.DataFrame`.
 
 # %%
 from snorkel.slicing import slice_dataframe
@@ -92,7 +92,7 @@ short_link_df[["text", "label"]]
 # %% [markdown]
 # ## 2. Train a discriminative model
 #
-# To start, we'll initialize a discriminative model using our [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html#snorkel.classification.MultitaskClassifier).
+# To start, we'll initialize a discriminative model using our [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html#snorkel.classification.MultitaskClassifier).
 # We'll assume that you are familiar with Snorkel's multitask model — if not, we'd recommend you check out our [Multitask Tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/multitask/multitask_tutorial.ipynb).
 #
 # In this section, we're ignoring slice information for modeling purposes; slices are used solely for monitoring fine-grained performance.
@@ -114,7 +114,7 @@ X_test, Y_test = df_to_torch_features(vectorizer, df_test, fit_train=False)
 # %% [markdown]
 # ### Create DataLoaders
 #
-# Next, we'll use the extracted Tensors to initialize a [`DictDataLoader`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.DictDataLoader.html) — as a quick recap, this is a Snorkel-specific class that inherits from the common PyTorch class and supports multiple data fields in the `X_dict` and labels in the `Y_dict`.
+# Next, we'll use the extracted Tensors to initialize a [`DictDataLoader`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.DictDataLoader.html) — as a quick recap, this is a Snorkel-specific class that inherits from the common PyTorch class and supports multiple data fields in the `X_dict` and labels in the `Y_dict`.
 #
 # In this task, we'd like to store the bag-of-words `bow_features` in our `X_dict`, and we have one set of labels (for now) correpsonding to the `spam_task`.
 
@@ -141,10 +141,10 @@ dl_test = create_dict_dataloader(
 dl_valid.dataset
 
 # %% [markdown]
-# ### Define [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html)
+# ### Define [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html)
 #
 # We define a simple Multi-Layer Perceptron (MLP) architecture to learn from the `bow_features`.
-# We do so by initializing a `spam_task` using Snorkel's [`Task`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Task.html) API.
+# We do so by initializing a `spam_task` using Snorkel's [`Task`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.Task.html) API.
 #
 # *We note that it's certainly possible to define an MLP in a simple framework (e.g. `sklearn`'s [`MLPClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html)), but the multitask API will lend us additional flexibility later in the pipeline!*
 
@@ -155,7 +155,7 @@ bow_dim = X_train.shape[1]
 spam_task = create_spam_task(bow_dim)
 
 # %% [markdown]
-# We'll initialize a  [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html) with the `spam_task` we've created, initialize a corresponding [`Trainer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Trainer.html), and `fit` to our dataloaders!
+# We'll initialize a  [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html) with the `spam_task` we've created, initialize a corresponding [`Trainer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.Trainer.html), and `fit` to our dataloaders!
 
 # %%
 from snorkel.classification import MultitaskClassifier, Trainer
@@ -176,7 +176,7 @@ model.score([dl_train, dl_valid], as_dataframe=True)
 # In overall metrics (e.g. `f1`, `accuracy`) our model appears to perform well!
 # However, we emphasize we might actually be **more interested in performance for application-critical subsets,** or _slices_.
 #
-# Let's perform an error analysis, using [`get_label_buckets`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/analysis/snorkel.analysis.get_label_buckets.html), to see where our model makes mistakes.
+# Let's perform an error analysis, using [`get_label_buckets`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/analysis/snorkel.analysis.get_label_buckets.html), to see where our model makes mistakes.
 # We collect the predictions from the model and visualize examples in specific error buckets.
 
 # %%
@@ -212,7 +212,7 @@ S_valid = applier.apply(df_valid)
 S_test = applier.apply(df_test)
 
 # %% [markdown]
-# Specifically, [`add_slice_labels`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.add_slice_labels.html#snorkel.slicing.add_slice_labels) will add two sets of labels for each slice:
+# Specifically, [`add_slice_labels`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.add_slice_labels.html#snorkel.slicing.add_slice_labels) will add two sets of labels for each slice:
 # * `spam_task_slice:{slice_name}_ind`: an indicator label, which corresponds to the outputs of the slicing functions.
 # These indicate whether each example is in the slice (`label=1`)or not (`label=0`).
 # * `spam_task_slice:{slice_name}_pred`: a _masked_ set of the original task labels (in this case, labeled `spam_task`) for each slice. Examples that are masked (with `label=-1`) will not contribute to loss or scoring.
@@ -230,7 +230,7 @@ dl_valid.dataset
 
 # %% [markdown]
 # With our updated dataloader, we want to evaluate our model on the defined slice.
-# In the  [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html), we can call [`score`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html#snorkel.classification.MultitaskClassifier.score) with an additional argument, `remap_labels`, to specify that the slice's prediction labels, `spam_task_slice:short_link_pred`, should be mapped to the `spam_task` for evaluation.
+# In the  [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html), we can call [`score`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html#snorkel.classification.MultitaskClassifier.score) with an additional argument, `remap_labels`, to specify that the slice's prediction labels, `spam_task_slice:short_link_pred`, should be mapped to the `spam_task` for evaluation.
 
 # %%
 model.score(
@@ -240,10 +240,10 @@ model.score(
 )
 
 # %% [markdown]
-# ### Performance monitoring with [`SliceScorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer)
+# ### Performance monitoring with [`SliceScorer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer)
 
 # %% [markdown]
-# If you're using a model other than [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html#snorkel-classification-multitaskclassifier), you can still evaluate on slices using the more general `SliceScorer` class.
+# If you're using a model other than [`MultitaskClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.MultitaskClassifier.html#snorkel-classification-multitaskclassifier), you can still evaluate on slices using the more general `SliceScorer` class.
 #
 # We define a `LogisticRegression` model from sklearn and show how we might visualize these slice-specific scores.
 
@@ -255,7 +255,7 @@ sklearn_model.fit(X=X_train, y=Y_train)
 sklearn_model.score(X_test, Y_test)
 
 # %% [markdown]
-# Now, we initialize the [`SliceScorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer) using 1) an existing [`Scorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html) and 2) desired `slice_names` to see slice-specific performance.
+# Now, we initialize the [`SliceScorer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer) using 1) an existing [`Scorer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html) and 2) desired `slice_names` to see slice-specific performance.
 
 # %%
 from snorkel.utils import preds_to_probs
@@ -393,7 +393,7 @@ add_slice_labels(dl_valid, spam_task, S_valid, slice_names)
 add_slice_labels(dl_test, spam_task, S_test, slice_names)
 
 # %% [markdown]
-# Using the helper, [`convert_to_slice_tasks`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.convert_to_slice_tasks.html), we can convert our original `spam_task` into slice-specific tasks.
+# Using the helper, [`convert_to_slice_tasks`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.convert_to_slice_tasks.html), we can convert our original `spam_task` into slice-specific tasks.
 # These will be used to learn "expert task heads" for each slice, in the style of multi-task learning.
 # The original `spam_task` now contains the attention mechanism to then combine these slice experts.
 
