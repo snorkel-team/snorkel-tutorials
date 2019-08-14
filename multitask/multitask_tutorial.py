@@ -61,14 +61,14 @@ X_train, X_valid, X_test = {}, {}, {}
 Y_train, Y_valid, Y_test = {}, {}, {}
 
 circle_train, circle_valid, circle_test = make_circle_dataset(N, R)
-(X_train['circle'], Y_train['circle']) = circle_train
-(X_valid['circle'], Y_valid['circle']) = circle_valid
-(X_test['circle'], Y_test['circle']) = circle_test
+(X_train["circle"], Y_train["circle"]) = circle_train
+(X_valid["circle"], Y_valid["circle"]) = circle_valid
+(X_test["circle"], Y_test["circle"]) = circle_test
 
 square_train, square_valid, square_test = make_square_dataset(N, R)
-(X_train['square'], Y_train['square']) = square_train
-(X_valid['square'], Y_valid['square']) = square_valid
-(X_test['square'], Y_test['square']) = square_test
+(X_train["square"], Y_train["square"]) = square_train
+(X_valid["square"], Y_valid["square"]) = square_valid
+(X_test["square"], Y_test["square"]) = square_test
 
 # %%
 print(f"Training data shape: {X_train['circle'].shape}")
@@ -83,12 +83,16 @@ import matplotlib.pyplot as plt
 
 fig, axs = plt.subplots(1, 2)
 
-scatter = axs[0].scatter(X_train['circle'][:, 0], X_train['circle'][:, 1], c=Y_train['circle'])
+scatter = axs[0].scatter(
+    X_train["circle"][:, 0], X_train["circle"][:, 1], c=Y_train["circle"]
+)
 axs[0].set_aspect("equal", "box")
 axs[0].set_title("Circle Dataset", fontsize=10)
 axs[0].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-scatter = axs[1].scatter(X_train['square'][:, 0], X_train['square'][:, 1], c=Y_train['square'])
+scatter = axs[1].scatter(
+    X_train["square"][:, 0], X_train["square"][:, 1], c=Y_train["square"]
+)
 axs[1].set_aspect("equal", "box")
 axs[1].set_title("Square Dataset", fontsize=10)
 axs[1].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
@@ -110,8 +114,12 @@ import torch
 from snorkel.classification import DictDataset, DictDataLoader
 
 dataloaders = []
-for task_name in ['circle', 'square']:
-    for split, X, Y in (("train", X_train, Y_train), ("valid", X_valid, Y_valid), ("test", X_test, Y_test)):
+for task_name in ["circle", "square"]:
+    for split, X, Y in (
+        ("train", X_train, Y_train),
+        ("valid", X_valid, Y_valid),
+        ("test", X_test, Y_test),
+    ):
         X_dict = {f"{task_name}_data": torch.FloatTensor(X[task_name])}
         Y_dict = {f"{task_name}_task": torch.LongTensor(Y[task_name])}
         dataset = DictDataset(f"{task_name}Dataset", split, X_dict, Y_dict)
@@ -276,9 +284,9 @@ from utils import make_inv_circle_dataset
 # We flip the inequality when generating the labels so that our positive
 # class is now _outside_ the circle.
 inv_circle_train, inv_circle_valid, inv_circle_test = make_inv_circle_dataset(N, R)
-(X_train['inv_circle'], Y_train['inv_circle']) = inv_circle_train
-(X_valid['inv_circle'], Y_valid['inv_circle']) = inv_circle_valid
-(X_test['inv_circle'], Y_test['inv_circle']) = inv_circle_test
+(X_train["inv_circle"], Y_train["inv_circle"]) = inv_circle_train
+(X_valid["inv_circle"], Y_valid["inv_circle"]) = inv_circle_valid
+(X_test["inv_circle"], Y_test["inv_circle"]) = inv_circle_test
 
 # %%
 import matplotlib.pyplot as plt
@@ -286,18 +294,22 @@ import matplotlib.pyplot as plt
 fig, axs = plt.subplots(1, 3)
 
 scatter = axs[0].scatter(
-    X_train['inv_circle'][:, 0], X_train['inv_circle'][:, 1], c=Y_train['inv_circle']
+    X_train["inv_circle"][:, 0], X_train["inv_circle"][:, 1], c=Y_train["inv_circle"]
 )
 axs[0].set_aspect("equal", "box")
 axs[0].set_title("Inv Circle Dataset", fontsize=10)
 axs[0].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-scatter = axs[1].scatter(X_train['circle'][:, 0], X_train['circle'][:, 1], c=Y_train['circle'])
+scatter = axs[1].scatter(
+    X_train["circle"][:, 0], X_train["circle"][:, 1], c=Y_train["circle"]
+)
 axs[1].set_aspect("equal", "box")
 axs[1].set_title("Circle Dataset", fontsize=10)
 axs[1].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
 
-scatter = axs[2].scatter(X_train['square'][:, 0], X_train['square'][:, 1], c=Y_train['square'])
+scatter = axs[2].scatter(
+    X_train["square"][:, 0], X_train["square"][:, 1], c=Y_train["square"]
+)
 axs[2].set_aspect("equal", "box")
 axs[2].set_title("Square Dataset", fontsize=10)
 axs[2].legend(*scatter.legend_elements(), loc="upper right", title="Labels")
