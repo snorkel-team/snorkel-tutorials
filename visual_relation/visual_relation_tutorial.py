@@ -60,11 +60,11 @@ from visual_relation.utils import load_vrd_data
 # setting sample=False will take ~3 hours to run (downloads full VRD dataset)
 sample = True
 is_travis = "TRAVIS" in os.environ
-train_df, valid_df, test_df = load_vrd_data(sample, is_travis)
+df_train, df_valid, df_test = load_vrd_data(sample, is_travis)
 
-print("Train Relationships: ", len(train_df))
-print("Dev Relationships: ", len(valid_df))
-print("Test Relationships: ", len(test_df))
+print("Train Relationships: ", len(df_train))
+print("Dev Relationships: ", len(df_valid))
+print("Test Relationships: ", len(df_test))
 # -
 
 # Note that the training `DataFrame` will have a labels field with all -1s. This denotes the lack of labels for that particular dataset. In this tutorial, we will assign probabilistic labels to the training set by writing labeling functions over attributes of the subject and objects!
@@ -86,7 +86,7 @@ from snorkel.labeling import labeling_function
 
 # Category-based LFs
 @labeling_function()
-def LF_ride_object(x):
+def lf_ride_object(x):
     if x.subject_category == "person":
         if x.object_category in ["bike", "snowboard", "motorcycle", "horse"]:
             return RIDE
@@ -94,7 +94,7 @@ def LF_ride_object(x):
 
 
 @labeling_function()
-def LF_ride_rare_object(x):
+def lf_ride_rare_object(x):
     if x.subject_category == "person":
         if x.object_category in ["bus", "truck", "elephant"]:
             return RIDE
@@ -102,7 +102,7 @@ def LF_ride_rare_object(x):
 
 
 @labeling_function()
-def LF_carry_object(x):
+def lf_carry_object(x):
     if x.subject_category == "person":
         if x.object_category in ["bag", "surfboard", "skis"]:
             return CARRY
@@ -110,7 +110,7 @@ def LF_carry_object(x):
 
 
 @labeling_function()
-def LF_carry_subject(x):
+def lf_carry_subject(x):
     if x.object_category == "person":
         if x.subject_category in ["chair", "bike", "snowboard", "motorcycle", "horse"]:
             return CARRY
@@ -118,7 +118,7 @@ def LF_carry_subject(x):
 
 
 @labeling_function()
-def LF_person(x):
+def lf_person(x):
     if x.subject_category != "person":
         return OTHER
     return ABSTAIN
@@ -131,14 +131,14 @@ def LF_person(x):
 # +
 # Distance-based LFs
 @labeling_function()
-def LF_ydist(x):
+def lf_ydist(x):
     if x.subject_bbox[3] < x.object_bbox[3]:
         return OTHER
     return ABSTAIN
 
 
 @labeling_function()
-def LF_dist(x):
+def lf_dist(x):
     if np.linalg.norm(np.array(x.subject_bbox) - np.array(x.object_bbox)) <= 1000:
         return OTHER
     return ABSTAIN
@@ -146,7 +146,7 @@ def LF_dist(x):
 
 # Size-based LF
 @labeling_function()
-def LF_area(x):
+def lf_area(x):
     subject_area = (x.subject_bbox[1] - x.subject_bbox[0]) * (
         x.subject_bbox[3] - x.subject_bbox[2]
     )
@@ -167,24 +167,24 @@ def LF_area(x):
 from snorkel.labeling import PandasLFApplier
 
 lfs = [
-    LF_ride_object,
-    LF_ride_rare_object,
-    LF_carry_object,
-    LF_carry_subject,
-    LF_person,
-    LF_ydist,
-    LF_dist,
-    LF_area,
+    lf_ride_object,
+    lf_ride_rare_object,
+    lf_carry_object,
+    lf_carry_subject,
+    lf_person,
+    lf_ydist,
+    lf_dist,
+    lf_area,
 ]
 
 applier = PandasLFApplier(lfs)
-L_train = applier.apply(train_df)
-L_valid = applier.apply(valid_df)
+L_train = applier.apply(df_train)
+L_valid = applier.apply(df_valid)
 
 # +
 from snorkel.labeling import LFAnalysis
 
-Y_valid = valid_df.label.values
+Y_valid = df_valid.label.values
 LFAnalysis(L_valid, lfs).lf_summary(Y_valid)
 # -
 
@@ -211,21 +211,21 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 from snorkel.classification import DictDataLoader
 from visual_relation.model import FlatConcat, SceneGraphDataset, WordEmb, init_fc
 
-train_df["labels"] = label_model.predict(L_train)
+df_train["labels"] = label_model.predict(L_train)
 
 if sample:
     TRAIN_DIR = "visual_relation/data/VRD/sg_dataset/samples"
 else:
     TRAIN_DIR = "visual_relation/data/VRD/sg_dataset/sg_train_images"
 
-train_dl = DictDataLoader(
-    SceneGraphDataset("train_dataset", "train", TRAIN_DIR, train_df),
+dl_train = DictDataLoader(
+    SceneGraphDataset("train_dataset", "train", TRAIN_DIR, df_train),
     batch_size=16,
     shuffle=True,
 )
 
-valid_dl = DictDataLoader(
-    SceneGraphDataset("valid_dataset", "valid", TRAIN_DIR, valid_df),
+dl_valid = DictDataLoader(
+    SceneGraphDataset("valid_dataset", "valid", TRAIN_DIR, df_valid),
     batch_size=16,
     shuffle=False,
 )
@@ -292,9 +292,9 @@ trainer = Trainer(
     checkpointing=True,
     checkpointer_config={"checkpoint_dir": "checkpoint"},
 )
-trainer.fit(model, [train_dl])
+trainer.fit(model, [dl_train])
 # -
 
-model.score([valid_dl])
+model.score([dl_valid])
 
 # We have successfully trained a visual relationship detection model! Using categorical and spatial intuition about how objects in a visual relationship interact with each other, we are able to assign high quality training labels to object pairs in the VRD dataset in a multi-class classification setting.

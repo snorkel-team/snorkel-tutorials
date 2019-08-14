@@ -306,7 +306,7 @@ def get_lstm_model(num_buckets, embed_dim=16, rnn_state_size=64):
 
 
 # %%
-def train_and_test(train_set, train_labels, num_buckets=30000):
+def train_and_test(train_set, Y_train, num_buckets=30000):
     def map_pad_or_truncate(string, max_length=30):
         """Tokenize text, pad or truncate to get max_length, and hash tokens."""
         ids = tf.keras.preprocessing.text.hashing_trick(
@@ -315,17 +315,17 @@ def train_and_test(train_set, train_labels, num_buckets=30000):
         return ids[:max_length] + [0] * (max_length - len(ids))
 
     # Tokenize training text and convert words to integers.
-    train_tokens = np.array(list(map(map_pad_or_truncate, train_set.text)))
+    X_train = np.array(list(map(map_pad_or_truncate, train_set.text)))
     lstm_model = get_lstm_model(num_buckets)
 
     # Tokenize validation set text and convert words to integers.
-    valid_tokens = np.array(list(map(map_pad_or_truncate, df_valid.text)))
+    X_valid = np.array(list(map(map_pad_or_truncate, df_valid.text)))
 
     lstm_model.fit(
-        train_tokens,
-        train_labels,
+        X_train,
+        Y_train,
         epochs=25,
-        validation_data=(valid_tokens, Y_valid),
+        validation_data=(X_valid, Y_valid),
         # Set up early stopping based on val set accuracy.
         callbacks=[
             tf.keras.callbacks.EarlyStopping(
@@ -336,10 +336,10 @@ def train_and_test(train_set, train_labels, num_buckets=30000):
     )
 
     # Tokenize validation set text and convert words to integers.
-    test_tokens = np.array(list(map(map_pad_or_truncate, df_test.text)))
-    test_probs = lstm_model.predict(test_tokens)
-    test_preds = test_probs[:, 0] > 0.5
-    return (test_preds == Y_test).mean()
+    X_test = np.array(list(map(map_pad_or_truncate, df_test.text)))
+    probs_test = lstm_model.predict(X_test)
+    preds_test = probs_test[:, 0] > 0.5
+    return (preds_test == Y_test).mean()
 
 
 test_accuracy_augmented = train_and_test(df_train_augmented, Y_train_augmented)

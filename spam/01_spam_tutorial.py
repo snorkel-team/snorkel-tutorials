@@ -743,8 +743,8 @@ from snorkel.labeling import MajorityLabelVoter
 
 # %%
 majority_model = MajorityLabelVoter()
-Y_pred_train = majority_model.predict(L=L_train)
-Y_pred_train
+preds_train = majority_model.predict(L=L_train)
+preds_train
 
 # %% [markdown]
 # However, as we can clearly see by looking the summary statistics of our LFs in the previous section, they are not all equally accurate, and should not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine the outputs of the LFs.
@@ -785,14 +785,14 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 # For example, let's take a look at 5 random false positives from the `dev` set, which might inspire some more LFs that vote `SPAM`.
 
 # %%
-Y_dev_prob = majority_model.predict_proba(L=L_dev)
-Y_dev_pred = Y_dev_prob >= 0.5
-buckets = get_label_buckets(Y_dev, Y_dev_pred[:, 1])
+probs_dev = majority_model.predict_proba(L=L_dev)
+preds_dev = probs_dev >= 0.5
+buckets = get_label_buckets(Y_dev, preds_dev[:, 1])
 
-df_dev_fp = df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]]
-df_dev_fp["probability"] = Y_dev_prob[buckets[(SPAM, HAM)], 1]
+df_fp_dev = df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]]
+df_fp_dev["probability"] = probs_dev[buckets[(SPAM, HAM)], 1]
 
-df_dev_fp.sample(5, random_state=3)
+df_fp_dev.sample(5, random_state=3)
 
 
 # %% [markdown]
@@ -808,8 +808,8 @@ def plot_probabilities_histogram(Y):
     plt.show()
 
 
-Y_probs_train = label_model.predict_proba(L=L_train)
-plot_probabilities_histogram(Y_probs_train[:, SPAM])
+probs_train = label_model.predict_proba(L=L_train)
+plot_probabilities_histogram(probs_train[:, SPAM])
 
 # %% [markdown]
 # ### Filtering out unlabeled data points
@@ -823,8 +823,8 @@ plot_probabilities_histogram(Y_probs_train[:, SPAM])
 from snorkel.labeling import filter_unlabeled_dataframe
 
 # %%
-df_train_filtered, Y_probs_train_filtered = filter_unlabeled_dataframe(
-    X=df_train, y=Y_probs_train, L=L_train
+df_train_filtered, probs_train_filtered = filter_unlabeled_dataframe(
+    X=df_train, y=probs_train, L=L_train
 )
 
 # %% [markdown]
@@ -916,15 +916,15 @@ early_stopping = tf.keras.callbacks.EarlyStopping(
 
 keras_model.fit(
     x=X_train,
-    y=Y_probs_train_filtered,
+    y=probs_train_filtered,
     validation_data=(X_valid, preds_to_probs(Y_valid, 2)),
     callbacks=[early_stopping],
     epochs=20,
     verbose=0,
 )
 
-Y_preds_test = keras_model.predict(x=X_test).argmax(axis=1)
-test_acc = metric_score(golds=Y_test, preds=Y_preds_test, metric="accuracy")
+preds_test = keras_model.predict(x=X_test).argmax(axis=1)
+test_acc = metric_score(golds=Y_test, preds=preds_test, metric="accuracy")
 print(f"Test Accuracy: {test_acc * 100:.1f}%")
 
 # %% [markdown]
@@ -959,8 +959,8 @@ keras_dev_model.fit(
     verbose=0,
 )
 
-Y_preds_test_dev = np.round(keras_dev_model.predict(x=X_test))
-test_acc = metric_score(golds=Y_test, preds=Y_preds_test_dev, metric="accuracy")
+preds_test_dev = np.round(keras_dev_model.predict(x=X_test))
+test_acc = metric_score(golds=Y_test, preds=preds_test_dev, metric="accuracy")
 print(f"Test Accuracy: {test_acc * 100:.1f}%")
 
 # %% [markdown]
@@ -976,7 +976,7 @@ print(f"Test Accuracy: {test_acc * 100:.1f}%")
 from snorkel.utils import probs_to_preds
 
 # %%
-Y_preds_train_filtered = probs_to_preds(probs=Y_probs_train_filtered)
+preds_train_filtered = probs_to_preds(probs=probs_train_filtered)
 
 # %% [markdown]
 # For example, this allows us to use standard models from Scikit-Learn.
@@ -986,7 +986,7 @@ from sklearn.linear_model import LogisticRegression
 
 # %%
 sklearn_model = LogisticRegression(C=0.001, solver="liblinear")
-sklearn_model.fit(X=X_train, y=Y_preds_train_filtered)
+sklearn_model.fit(X=X_train, y=preds_train_filtered)
 
 print(f"Test Accuracy: {sklearn_model.score(X=X_test, y=Y_test) * 100:.1f}%")
 
