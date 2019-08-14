@@ -27,7 +27,7 @@
 # ```
 #
 # The tutorial is divided into four parts:
-# 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle, originally introduced in "TubeSpam: Comment Spam Filtering on YouTube", ICMLA'15 (T.C. Alberto, J.V. Lochter, J.V. Almeida).
+# 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle, originally introduced in ["TubeSpam: Comment Spam Filtering on YouTube"](https://ieeexplore.ieee.org/document/7424299/), ICMLA'15 (T.C. Alberto, J.V. Lochter, J.V. Almeida).
 #
 # 2. **Writing Labeling Functions**: We write Python programs that take as input a data point and assign labels (or abstain) using heuristics, pattern matching, and third-party models.
 #
