@@ -23,8 +23,11 @@ push_tutorials() {
   git push https://$GITHUB_TOKEN@github.com/snorkel-team/website.git master -f > /dev/null 2>&1
 }
 
-echo "Deploying tutorials"
+echo "Setting up git"
 setup_git
+echo "Checking out website"
 checkout_website
+echo "Building tutorial web pages"
 build_tutorials
+echo "Pushing tutorial web pages"
 push_tutorials
