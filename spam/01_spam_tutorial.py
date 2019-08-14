@@ -99,23 +99,29 @@
 # * The fifth video is split 50/50 between a validation set (`valid`) and `test` set.
 
 # %% [markdown]
-# This next cell takes care of some notebook-specific housekeeping.
+# This next two cell takes care of some notebook-specific housekeeping.
 # You can ignore it.
 
 # %%
 # %matplotlib inline
 
+import numpy as np
+import random
 import os
-
-# For reproducibility
-os.environ["PYTHONHASHSEED"] = "0"
-
-# Turn off TensorFlow logging messages
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("spam")
+
+# Turn off TensorFlow logging messages
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# For reproducibility
+os.environ["PYTHONHASHSEED"] = "0"
+
+seed = 1
+np.random.seed(seed)
+random.seed(seed)
 
 # %% [markdown]
 # This next cell makes sure a spaCy English model is downloaded.
@@ -128,7 +134,6 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # %%
 from utils import load_spam_dataset
 
-# %%
 df_train, df_dev, df_valid, df_test = load_spam_dataset()
 
 # We pull out the label vectors for ease of use later
@@ -143,7 +148,6 @@ Y_test = df_test["label"].values
 # %%
 import pandas as pd
 
-# %%
 # Don't truncate text fields in the display
 pd.set_option("display.max_colwidth", 0)
 
@@ -230,13 +234,11 @@ df_train[["author", "text", "video"]].sample(20, random_state=2)
 from snorkel.labeling import labeling_function
 
 
-# %%
 @labeling_function()
 def check(x):
     return SPAM if "check" in x.text.lower() else ABSTAIN
 
 
-# %%
 @labeling_function()
 def check_out(x):
     return SPAM if "check out" in x.text.lower() else ABSTAIN
@@ -259,7 +261,6 @@ def check_out(x):
 # %%
 from snorkel.labeling import PandasLFApplier
 
-# %%
 lfs = [check_out, check]
 
 applier = PandasLFApplier(lfs=lfs)
@@ -300,7 +301,6 @@ print(f"check_out coverage: {coverage_check_out * 100:.1f}%")
 # %%
 from snorkel.labeling import LFAnalysis
 
-# %%
 LFAnalysis(L=L_train, lfs=lfs).lf_summary()
 
 # %%
@@ -318,7 +318,6 @@ LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 # %%
 from snorkel.analysis import get_label_buckets
 
-# %%
 buckets = get_label_buckets(Y_dev, L_dev[:, 1])
 df_dev.iloc[buckets[(HAM, SPAM)]]
 
@@ -351,7 +350,6 @@ df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
 import re
 
 
-# %%
 @labeling_function()
 def regex_check_out(x):
     return SPAM if re.search(r"check.*out", x.text, flags=re.I) else ABSTAIN
@@ -422,7 +420,6 @@ from snorkel.preprocess import preprocessor
 from textblob import TextBlob
 
 
-# %%
 @preprocessor(memoize=True)
 def textblob_sentiment(x):
     scores = TextBlob(x.text)
@@ -440,7 +437,6 @@ def textblob_sentiment(x):
 # %%
 import matplotlib.pyplot as plt
 
-# %%
 spam_polarities = [
     textblob_sentiment(x).polarity for _, x in df_dev.iterrows() if x.label == SPAM
 ]
@@ -550,7 +546,6 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 from snorkel.labeling import LabelingFunction
 
 
-# %%
 def keyword_lookup(x, keywords, label):
     if any(word in x.text.lower() for word in keywords):
         return label
@@ -649,7 +644,6 @@ def has_person(x):
 from snorkel.labeling.lf.nlp import nlp_labeling_function
 
 
-# %%
 @nlp_labeling_function()
 def has_person_nlp(x):
     """Ham comments mention specific people and are short."""
@@ -741,7 +735,6 @@ plot_label_frequency(L_train)
 # %%
 from snorkel.labeling import MajorityLabelVoter
 
-# %%
 majority_model = MajorityLabelVoter()
 preds_train = majority_model.predict(L=L_train)
 preds_train
@@ -760,7 +753,6 @@ preds_train
 # %%
 from snorkel.labeling import LabelModel
 
-# %%
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train=L_train, n_epochs=1000, lr=0.001, log_freq=100, seed=123)
 
@@ -822,7 +814,6 @@ plot_probabilities_histogram(probs_train[:, SPAM])
 # %%
 from snorkel.labeling import filter_unlabeled_dataframe
 
-# %%
 df_train_filtered, probs_train_filtered = filter_unlabeled_dataframe(
     X=df_train, y=probs_train, L=L_train
 )
@@ -844,17 +835,12 @@ df_train_filtered, probs_train_filtered = filter_unlabeled_dataframe(
 # %%
 from sklearn.feature_extraction.text import CountVectorizer
 
-# %%
-words_train = [row.text for i, row in df_train_filtered.iterrows()]
-words_dev = [row.text for i, row in df_dev.iterrows()]
-words_valid = [row.text for i, row in df_valid.iterrows()]
-words_test = [row.text for i, row in df_test.iterrows()]
-
 vectorizer = CountVectorizer(ngram_range=(1, 2))
-X_train = vectorizer.fit_transform(words_train)
-X_dev = vectorizer.transform(words_dev)
-X_valid = vectorizer.transform(words_valid)
-X_test = vectorizer.transform(words_test)
+X_train = vectorizer.fit_transform(df_train_filtered.text.tolist())
+
+X_dev = vectorizer.transform(df_dev.text.tolist())
+X_valid = vectorizer.transform(df_valid.text.tolist())
+X_test = vectorizer.transform(df_test.text.tolist())
 
 # %% [markdown]
 # ### Keras Classifier with Probabilistic Labels
@@ -871,13 +857,7 @@ X_test = vectorizer.transform(words_test)
 # This next cell makes our Keras results reproducible. You can ignore it.
 
 # %%
-import numpy as np
-import random
 import tensorflow as tf
-
-seed = 1
-np.random.seed(seed)
-random.seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto(
     intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
@@ -892,33 +872,17 @@ K.set_session(sess)
 # %%
 from snorkel.analysis import metric_score
 from snorkel.utils import preds_to_probs
+from utils import get_keras_logreg, get_keras_early_stopping
 
-# %%
 # Our model is a simple linear layer mapping from feature
 # vectors to the number of labels in our problem (2).
-keras_model = tf.keras.Sequential()
-keras_model.add(
-    tf.keras.layers.Dense(
-        units=2,
-        input_dim=X_train.shape[1],
-        activation=tf.nn.softmax,
-        kernel_regularizer=tf.keras.regularizers.l2(0.001),
-    )
-)
-optimizer = tf.keras.optimizers.Adam(lr=0.01)
-keras_model.compile(
-    optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
-)
-
-early_stopping = tf.keras.callbacks.EarlyStopping(
-    monitor="val_acc", patience=10, verbose=1, restore_best_weights=True
-)
+keras_model = get_keras_logreg(input_dim=X_train.shape[1])
 
 keras_model.fit(
     x=X_train,
     y=probs_train_filtered,
     validation_data=(X_valid, preds_to_probs(Y_valid, 2)),
-    callbacks=[early_stopping],
+    callbacks=[get_keras_early_stopping()],
     epochs=20,
     verbose=0,
 )
@@ -936,25 +900,13 @@ print(f"Test Accuracy: {test_acc * 100:.1f}%")
 # We can compare this to the score we could have gotten if we had used our small labeled `dev` set directly as training data instead of using it to guide the creation of LFs.
 
 # %%
-keras_dev_model = tf.keras.Sequential()
-keras_dev_model.add(
-    tf.keras.layers.Dense(
-        units=1,
-        input_dim=X_train.shape[1],
-        activation=tf.nn.sigmoid,
-        kernel_regularizer=tf.keras.regularizers.l2(0.001),
-    )
-)
-optimizer = tf.keras.optimizers.Adam(lr=0.001)
-keras_dev_model.compile(
-    optimizer=optimizer, loss="binary_crossentropy", metrics=["accuracy"]
-)
+keras_dev_model = get_keras_logreg(input_dim=X_train.shape[1], output_dim=1)
 
 keras_dev_model.fit(
     x=X_dev,
     y=Y_dev,
     validation_data=(X_valid, Y_valid),
-    callbacks=[early_stopping],
+    callbacks=[get_keras_early_stopping()],
     epochs=20,
     verbose=0,
 )
@@ -975,7 +927,6 @@ print(f"Test Accuracy: {test_acc * 100:.1f}%")
 # %%
 from snorkel.utils import probs_to_preds
 
-# %%
 preds_train_filtered = probs_to_preds(probs=probs_train_filtered)
 
 # %% [markdown]
@@ -984,7 +935,6 @@ preds_train_filtered = probs_to_preds(probs=probs_train_filtered)
 # %%
 from sklearn.linear_model import LogisticRegression
 
-# %%
 sklearn_model = LogisticRegression(C=0.001, solver="liblinear")
 sklearn_model.fit(X=X_train, y=preds_train_filtered)
 
