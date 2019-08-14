@@ -268,8 +268,8 @@ from snorkel.analysis import Scorer
 from snorkel.slicing import SliceScorer
 
 scorer = Scorer(metrics=["accuracy", "f1"])
-slice_scorer = SliceScorer(scorer, slice_names)
-slice_scorer.score(
+slice_scorer = SliceScorer(slice_names)
+slice_scorer.score_slices(
     S=S_test, golds=Y_test, preds=preds_test, probs=probs_test, as_dataframe=True
 )
 
@@ -356,8 +356,8 @@ slice_names = [sf.name for sf in sfs]
 applier = PandasSFApplier(sfs)
 S_test = applier.apply(df_test)
 
-slice_scorer = SliceScorer(scorer, slice_names)
-slice_scorer.score(
+slice_scorer = SliceScorer(slice_names)
+slice_scorer.score_slices(
     S=S_test, golds=Y_test, preds=preds_test, probs=probs_test, as_dataframe=True
 )
 
