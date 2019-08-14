@@ -1,7 +1,8 @@
 # Snorkel Tutorials
 [![build](https://travis-ci.com/snorkel-team/snorkel-tutorials.svg?branch=master)](https://travis-ci.com/snorkel-team/snorkel-tutorials?branch=master)
 
-A collection of tutorials for [Snorkel](http://snorkel.org).
+A collection of tutorials for [Snorkel](https://github.com/snorkel-team/snorkel).
+For more information, visit the [Snorkel Website](http://snorkel.org).
 
 ## Tutorials
 The Snorkel tutorials are grouped by application, with some applications having multiple associated notebooks in their directory.
@@ -14,6 +15,7 @@ The Snorkel tutorials are grouped by application, with some applications having 
 * [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
+If you are interested in requesting or contributing a new tutorial, let us know on the Snorkel [community forum](https://spectrum.chat/snorkel/tutorials?tab=posts).
 
 We recommend that all users **start with the `spam` tutorial** for a gentle introduction to the concepts and classes of Snorkel.
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
