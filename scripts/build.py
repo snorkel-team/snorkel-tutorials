@@ -169,7 +169,7 @@ def check_links(script_path: str) -> None:
         except urllib.error.HTTPError as e:
             raise ValueError(f"Bad link [{url}] found in {script_path}: {e}")
         except Exception as e:
-            logging.warn(
+            logging.warning(
                 f"SKIPPING: Could not access [{url}] found in {script_path}: {e}"
             )
 
