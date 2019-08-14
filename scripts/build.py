@@ -94,9 +94,9 @@ class TutorialWebpage:
     def __init__(
         self,
         ipynb_path: str,
-        title: str,
-        description: str,
-        order: int,
+        title: Optional[str],
+        description: Optional[str],
+        order: Optional[int],
         exclude_output: bool,
     ) -> None:
         self.ipynb = ipynb_path
@@ -110,7 +110,11 @@ class TutorialWebpage:
             BUILD_DIR, f"{os.path.splitext(os.path.basename(self.ipynb))[0]}.md"
         )
 
+    def has_header(self) -> bool:
+        return None not in [self.title, self.description, self.order]
+
     def get_header(self) -> str:
+        assert None not in [self.title, self.description, self.order]
         return HEADER_TEMPLATE.format(
             title=self.title, description=self.description, order=self.order
         )
@@ -122,27 +126,37 @@ def parse_web_yml(tutorial_dir: Optional[str]) -> List[TutorialWebpage]:
         web_config = yaml.safe_load(f)
     tutorial_webpages = []
     # Process webpage configs in order
-    for i, cfg in enumerate(web_config["tutorials"]):
+    i = 1
+    for cfg in web_config["tutorials"]:
         # If tutorial directory specified, skip if not in specified directory
-        notebook_dir = cfg["notebook"].split("/")[0]
+        notebook_path = cfg["notebook"]
+        notebook_dir = notebook_path.split("/")[0]
         if tutorial_dir is not None and notebook_dir != tutorial_dir:
             continue
         # If full notebook path supplied, just use that
-        if cfg["notebook"].endswith(".ipynb"):
-            notebook = Notebook(os.path.abspath(cfg["notebook"]))
+        if notebook_path.endswith(".ipynb"):
+            notebook = Notebook(os.path.abspath(notebook_path))
         # If only directory supply, ensure that there's only one notebook
         else:
-            notebooks = get_notebooks(cfg["notebook"])
+            notebooks = get_notebooks(notebook_path)
             if len(notebooks) > 1:
-                raise ValueError(f"Multiple notebooks found in {cfg['notebook']}")
+                raise ValueError(f"Multiple notebooks found in {notebook_path}")
             notebook = notebooks[0]
+        # If no title or description, don't generate order for header
+        title = cfg.get("title")
+        description = cfg.get("description")
+        if title is not None and description is not None:
+            order = i
+            i += 1
+        else:
+            order = None
         # Create TutorialWebpage object
         tutorial_webpages.append(
             TutorialWebpage(
                 ipynb_path=notebook.ipynb,
-                title=cfg["title"],
-                description=cfg["description"],
-                order=i + 1,
+                title=title,
+                description=description,
+                order=order,
                 exclude_output=cfg.get("exclude_output", False),
             )
         )
@@ -251,10 +265,11 @@ def build_markdown_notebook(tutorial: TutorialWebpage) -> None:
         args.append("--TemplateExporter.exclude_output=True")
     subprocess.run(args, check=True)
     # Prepend header by reading generated file then writing back
-    with open(tutorial.markdown_path(), "r") as f:
-        content = f.read()
-    with open(tutorial.markdown_path(), "w") as f:
-        f.write(tutorial.get_header() + content)
+    if tutorial.has_header():
+        with open(tutorial.markdown_path(), "r") as f:
+            content = f.read()
+        with open(tutorial.markdown_path(), "w") as f:
+            f.write(tutorial.get_header() + content)
 
 
 def sync_notebook(notebook: Notebook) -> None:
