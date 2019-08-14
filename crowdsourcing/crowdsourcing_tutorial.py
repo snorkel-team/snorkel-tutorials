@@ -39,7 +39,7 @@
 # Note that this very small dataset is primarily used for demonstration purposes here.
 # In a real setting, we would expect to have access to many more unlabeled tweets, which could help us to train a higher quality model.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import os
 
 # Make sure we're in the right directory
@@ -53,11 +53,11 @@ crowd_labels, df_train, df_dev, df_test = load_data()
 Y_dev = df_dev.sentiment.values
 Y_test = df_test.sentiment.values
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # First, let's take a look at our development set to get a sense of what the tweets look like.
 # We use the following label convention: 0 = Negative, 1 = Positive.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import pandas as pd
 
 # Don't truncate text fields in the display
@@ -65,11 +65,11 @@ pd.set_option("display.max_colwidth", 0)
 
 df_dev.head()
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # Now let's take a look at the crowd labels.
 # We'll convert these into labeling functions.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 crowd_labels.head()
 
 # %% [markdown]
@@ -114,7 +114,7 @@ worker_lfs = [make_worker_lf(worker_id) for worker_id in worker_dicts]
 # %% [markdown]
 # Let's take a quick look at how well they do on the development set.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import PandasLFApplier
 
 applier = PandasLFApplier(worker_lfs)
@@ -135,8 +135,8 @@ LFAnalysis(L_dev, worker_lfs).lf_summary(Y_dev).sample(5)
 # sets do they cover?
 
 # %%
-print(f"Training set coverage: {LFAnalysis(L_train).label_coverage(): 0.3f}")
-print(f"Dev set coverage: {LFAnalysis(L_dev).label_coverage(): 0.3f}")
+print(f"Training set coverage: {100 * LFAnalysis(L_train).label_coverage(): 0.1f}%")
+print(f"Dev set coverage: {100 * LFAnalysis(L_dev).label_coverage(): 0.1f}%")
 
 # %% [markdown]
 # ### Additional labeling functions
@@ -179,7 +179,7 @@ def polarity_negative_2(x):
 # %% [markdown]
 # ### Applying labeling functions to the training set
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 text_lfs = [polarity_positive, polarity_negative, polarity_negative_2]
 lfs = text_lfs + worker_lfs
 
@@ -197,13 +197,13 @@ LFAnalysis(L_dev, lfs).lf_summary(Y_dev).head()
 # to denoise and combine them.
 
 # %%
-print(f"Training set coverage: {LFAnalysis(L_train).label_coverage(): 0.3f}")
-print(f"Dev set coverage: {LFAnalysis(L_dev).label_coverage(): 0.3f}")
+print(f"Training set coverage: {100 * LFAnalysis(L_train).label_coverage(): 0.1f}%")
+print(f"Dev set coverage: {100 * LFAnalysis(L_dev).label_coverage(): 0.1f}%")
 
 # %% [markdown]
 # ## Train LabelModel And Generate Probabilistic Labels
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import LabelModel
 
 # Train LabelModel.
@@ -243,7 +243,7 @@ preds_train = label_model.predict(L_train)
 # Instead, we use a pre-trained model, [BERT](https://github.com/google-research/bert), to generate embeddings for each our tweets, and treat the embedding values as features.
 # This may take 5-10 minutes on a CPU, as the BERT model is very large.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 import numpy as np
 import torch
 from pytorch_transformers import BertModel, BertTokenizer
@@ -261,11 +261,11 @@ X_train = np.array(list(df_train.tweet_text.apply(encode_text).values))
 X_test = np.array(list(df_test.tweet_text.apply(encode_text).values))
 
 # %% [markdown]
-# ### Model on soft labels
+# ### Model on probabilistic labels
 # Now, we train a simple logistic regression model on the BERT features, using labels
 # obtained from our LabelModel.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from sklearn.linear_model import LogisticRegression
 
 sklearn_model = LogisticRegression(solver="liblinear")
