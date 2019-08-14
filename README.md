@@ -115,7 +115,7 @@ These commands assume that your conda installation is Python 3.6+.
 
 ```bash
 # [OPTIONAL] Activate a virtual environment
-conda create --yes -n spam python=3.6 pytorch==1.1.0
+conda create --yes -n spam python=3.6
 source activate spam
 
 # Install requirements (both shared and tutorial-specific)
