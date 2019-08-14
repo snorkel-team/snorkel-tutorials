@@ -90,33 +90,29 @@ class Notebook:
         return f"{self.basename}.ipynb"
 
 
-class TutorialWebpage:
-    def __init__(
-        self,
-        ipynb_path: str,
-        title: Optional[str],
-        description: Optional[str],
-        order: Optional[int],
-        exclude_output: bool,
-    ) -> None:
-        self.ipynb = ipynb_path
+class MarkdownHeader:
+    def __init__(self, title: str, description: str, order: int) -> None:
         self.title = title
         self.description = description
         self.order = order
+
+    def render(self):
+        return HEADER_TEMPLATE.format(
+            title=self.title, description=self.description, order=self.order
+        )
+
+
+class TutorialWebpage:
+    def __init__(
+        self, ipynb_path: str, header: Optional[MarkdownHeader], exclude_output: bool
+    ) -> None:
+        self.ipynb = ipynb_path
+        self.header = header
         self.exclude_output = exclude_output
 
     def markdown_path(self) -> str:
         return os.path.join(
             BUILD_DIR, f"{os.path.splitext(os.path.basename(self.ipynb))[0]}.md"
-        )
-
-    def has_header(self) -> bool:
-        return None not in [self.title, self.description, self.order]
-
-    def get_header(self) -> str:
-        assert None not in [self.title, self.description, self.order]
-        return HEADER_TEMPLATE.format(
-            title=self.title, description=self.description, order=self.order
         )
 
 
@@ -146,18 +142,15 @@ def parse_web_yml(tutorial_dir: Optional[str]) -> List[TutorialWebpage]:
         title = cfg.get("title")
         description = cfg.get("description")
         if title is not None and description is not None:
-            order = i
+            header = MarkdownHeader(title, description, i)
             i += 1
         else:
-            order = None
+            header = None
         # Create TutorialWebpage object
+        exclude = cfg.get("exclude_output", False)
         tutorial_webpages.append(
             TutorialWebpage(
-                ipynb_path=notebook.ipynb,
-                title=title,
-                description=description,
-                order=order,
-                exclude_output=cfg.get("exclude_output", False),
+                ipynb_path=notebook.ipynb, header=header, exclude_output=exclude
             )
         )
     return tutorial_webpages
@@ -265,11 +258,11 @@ def build_markdown_notebook(tutorial: TutorialWebpage) -> None:
         args.append("--TemplateExporter.exclude_output=True")
     subprocess.run(args, check=True)
     # Prepend header by reading generated file then writing back
-    if tutorial.has_header():
+    if tutorial.header is not None:
         with open(tutorial.markdown_path(), "r") as f:
             content = f.read()
         with open(tutorial.markdown_path(), "w") as f:
-            f.write(tutorial.get_header() + content)
+            f.write(tutorial.header.render() + content)
 
 
 def sync_notebook(notebook: Notebook) -> None:
