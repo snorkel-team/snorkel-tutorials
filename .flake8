@@ -15,8 +15,8 @@ exclude =
     .git,
     .mypy_cache,
     .tox,
-    .env,
-    .venv,
+    .env**,
+    .venv**,
     _build,
     build,
     dist
