@@ -1,13 +1,13 @@
 tutorials:
-  - title: Introduction to Labeling Functions
+  - title: Intro to Labeling Functions
     description: Labeling data for spam classification
     notebook: spam/01_spam_tutorial.ipynb
     exclude_output: true
-  - title: Introduction to Transformation Functions
+  - title: Intro to Transformation Functions
     description: Data augmentation for spam classification
     notebook: spam/02_spam_data_augmentation_tutorial.ipynb
     exclude_output: true
-  - title: Introduction to Slicing Functions
+  - title: Intro to Slicing Functions
     description: Monitoring critical data subsets for spam classification
     notebook: spam/03_spam_data_slicing_tutorial.ipynb
     exclude_output: true
