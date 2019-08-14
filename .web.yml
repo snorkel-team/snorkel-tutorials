@@ -31,3 +31,5 @@ tutorials:
     description: State-of-the-art framework for pretraining & parameter sharing
     notebook: multitask
     exclude_output: true
+  - notebook: getting_started
+    exclude_output: true

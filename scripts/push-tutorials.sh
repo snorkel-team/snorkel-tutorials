@@ -10,15 +10,21 @@ checkout_website() {
 }
 
 build_tutorials() {
-  rm -rf build website/_use_cases
+  # Clear artifacts
+  rm -rf build website/_use_cases website/_getting_started
+  # Generate markdown files
   tox -e markdown
+  # Special handling of getting_started.md
+  mkdir -p website/_getting_started
+  mv -f build/getting_started.md website/_getting_started
+  # Move the rest of the tutorials
   mkdir -p website/_use_cases
   mv -f build/*.md website/_use_cases
 }
 
 push_tutorials() {
   cd website
-  git add _use_cases
+  git add . -u
   git commit -m "[DEPLOY $TRAVIS_BUILD_NUMBER] Update tutorials"
   git push https://$GITHUB_TOKEN@github.com/snorkel-team/website.git master -f > /dev/null 2>&1
 }

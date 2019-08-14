@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# %% [markdown] {"tags": ["remove-md"]}
+# %% [markdown] {"tags": ["md-exclude"]}
 # # Getting Started with Snorkel
 
-# %% {"tags": ["remove-md"]}
+# %% {"tags": ["md-exclude"]}
 import os
 
 # Make sure we're running from the spam/ directory
