@@ -18,7 +18,6 @@
 # %% {"tags": ["md-exclude"]}
 import logging
 import os
-import pandas as pd
 from snorkel.utils import set_seed
 
 # For reproducibility
@@ -33,8 +32,16 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
 
-# Show full columns for viewing data
-pd.set_option("display.max_colwidth", -1)
+# %% [markdown] {"tags": ["md-exclude"]}
+# If you want to display all comment text untruncated, change `DISPLAY_ALL_TEXT` to `True` below.
+
+# %% {"tags": ["md-exclude"]}
+import pandas as pd
+
+
+DISPLAY_ALL_TEXT = False
+
+pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
 
 # %% [markdown]
 # _Note:_ this tutorial differs from the labeling tutorial in that we use ground truth labels in the train split for demo purposes.
@@ -114,7 +121,7 @@ from sklearn.linear_model import LogisticRegression
 
 sklearn_model = LogisticRegression(C=0.001, solver="liblinear")
 sklearn_model.fit(X=X_train, y=Y_train)
-print(f"Model Score: {sklearn_model.score(X_test, Y_test)}")
+print(f"Test set accuracy: {100 * sklearn_model.score(X_test, Y_test):.1f}%")
 
 # %%
 from snorkel.utils import preds_to_probs
