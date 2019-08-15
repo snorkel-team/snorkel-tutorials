@@ -25,11 +25,11 @@
 # 3. **Applying Transformation Functions to Augment Our Dataset**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
 # 4. **Training a Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # This next two cell takes care of some notebook-specific housekeeping.
 # You can ignore it.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import numpy as np
 import os
 import random
@@ -47,10 +47,10 @@ os.environ["PYTHONHASHSEED"] = str(seed)
 np.random.seed(0)
 random.seed(0)
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # If you want to display all comment text untruncated, change `DISPLAY_ALL_TEXT` to `True` below.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import pandas as pd
 
 
@@ -58,11 +58,11 @@ DISPLAY_ALL_TEXT = False
 
 pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # This next cell makes sure a spaCy English model is downloaded.
 # If this is your first time downloading this model, restart the kernel after executing the next cell.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 # Download the spaCy english model
 # ! python -m spacy download en_core_web_sm
 
@@ -163,7 +163,7 @@ def swap_adjectives(x):
 # %% [markdown]
 # We add some transformation functions that use `wordnet` from [NLTK](https://www.nltk.org/) to replace different parts of speech with their synonyms.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 import nltk
 from nltk.corpus import wordnet as wn
 
@@ -267,7 +267,7 @@ preview_tfs(df_train, tfs)
 # We give higher probabilities to the `replace_[X]_with_synonym` TFs, since those provide more information to the model.
 # The `n_per_original` argument determines how many augmented examples to generate per original example.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.augmentation import MeanFieldPolicy, PandasTFApplier
 
 policy = MeanFieldPolicy(
@@ -295,10 +295,10 @@ print(f"Augmented training set size: {len(df_train_augmented)}")
 #
 # Our final step is to use the augmented data to train a model. We train an LSTM (Long Short Term Memory) model, which is a very standard architecture for text processing tasks.
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # The next cell makes Keras results reproducible. You can ignore it.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import tensorflow as tf
 
 session_conf = tf.compat.v1.ConfigProto(
@@ -312,7 +312,7 @@ tf.compat.v1.keras.backend.set_session(sess)
 # %% [markdown]
 # Now we'll train our LSTM on both the original and augmented data sets to compare performance.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from utils import featurize_df_tokens, get_keras_lstm, get_keras_early_stopping
 
 X_train = featurize_df_tokens(df_train)
@@ -347,5 +347,13 @@ def train_and_test(
 acc_augmented = train_and_test(X_train_augmented, Y_train_augmented)
 acc_original = train_and_test(X_train, Y_train)
 
+# %%
+
 print(f"Test Accuracy (original training data): {100 * acc_original:.1f}%")
 print(f"Test Accuracy (augmented training data): {100 * acc_augmented:.1f}%")
+
+
+# %% [markdown]
+# So using the augmented dataset indeed improved our model!
+# There is a lot more you can do with data augmentation, so try a few ideas
+# our on your own!
