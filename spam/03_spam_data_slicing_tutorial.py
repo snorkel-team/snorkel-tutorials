@@ -326,7 +326,7 @@ from snorkel.classification import Trainer
 
 # For demonstration purposes, we set n_epochs=2
 trainer = Trainer(lr=1e-4, n_epochs=2)
-# trainer.fit(slice_model, [train_dl, valid_dl])
+trainer.fit(slice_model, [train_dl, valid_dl])
 
 # %% [markdown]
 # ### Representation learning with slices
