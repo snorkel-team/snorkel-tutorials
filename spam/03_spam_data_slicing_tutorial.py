@@ -222,6 +222,8 @@ def textblob_polarity(x):
 
 # %% {"tags": ["md-exclude-output"]}
 polarity_df = slice_dataframe(df_valid, textblob_polarity)
+
+# %%
 polarity_df[["text", "label"]].head()
 
 # %% [markdown]
