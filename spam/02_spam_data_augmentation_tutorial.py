@@ -24,7 +24,7 @@
 # [this blog post about our NeurIPS 2017 work on automatically learned data augmentation](https://snorkel.org/tanda/).
 #
 # The tutorial is divided into four parts:
-# 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
+# 1. **Loading Data**: We load a [YouTube comments dataset](http://www.dt.fee.unicamp.br/~tiago//youtubespamcollection/).
 # 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training examples to generate new training examples.
 # 3. **Applying Transformation Functions to Augment Our Dataset**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
 # 4. **Training a Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
@@ -34,9 +34,10 @@
 # You can ignore it.
 
 # %% {"tags": ["md-exclude"]}
-import numpy as np
 import os
 import random
+
+import numpy as np
 
 # Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":

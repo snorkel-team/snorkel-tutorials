@@ -28,7 +28,7 @@
 # ```
 #
 # The tutorial is divided into four parts:
-# 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle, originally introduced in ["TubeSpam: Comment Spam Filtering on YouTube"](https://ieeexplore.ieee.org/document/7424299/), ICMLA'15 (T.C. Alberto, J.V. Lochter, J.V. Almeida).
+# 1. **Loading Data**: We load a [YouTube comments dataset](http://www.dt.fee.unicamp.br/~tiago//youtubespamcollection/), originally introduced in ["TubeSpam: Comment Spam Filtering on YouTube"](https://ieeexplore.ieee.org/document/7424299/), ICMLA'15 (T.C. Alberto, J.V. Lochter, J.V. Almeida).
 #
 # 2. **Writing Labeling Functions**: We write Python programs that take as input a data point and assign labels (or abstain) using heuristics, pattern matching, and third-party models.
 #
@@ -40,7 +40,7 @@
 # ### Task: Spam Detection
 
 # %% [markdown]
-# We use a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) that consists of YouTube comments from 5 videos. The task is to classify each comment as being
+# We use a [YouTube comments dataset](http://www.dt.fee.unicamp.br/~tiago//youtubespamcollection/) that consists of YouTube comments from 5 videos. The task is to classify each comment as being
 #
 # * **`HAM`**: comments relevant to the video (even very simple ones), or
 # * **`SPAM`**: irrelevant (often trying to advertise something) or inappropriate messages
@@ -80,7 +80,7 @@
 # ## 1. Loading Data
 
 # %% [markdown]
-# We load the Kaggle dataset and create Pandas DataFrame objects for the train, validation, and test sets.
+# We load the YouTube comments dataset and create Pandas DataFrame objects for the train, validation, and test sets.
 # DataFrames are extremely popular in Python data analysis workloads, and Snorkel provides native support
 # for several DataFrame-like data structures, including Pandas, Dask, and PySpark.
 # For more information on working with Pandas DataFrames, see the [Pandas DataFrame guide](https://pandas.pydata.org/pandas-docs/stable/getting_started/dsintro.html).
