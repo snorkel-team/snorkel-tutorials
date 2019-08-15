@@ -15,9 +15,9 @@ def load_data() -> Tuple[
 ]:
     """
     Returns:
-        df_dev, Y_dev: Development set examples and 1D labels ndarray.
-        df_train: Training set examples dataframe.
-        df_test, Y_test: Test set examples dataframe and 1D labels ndarray.
+        df_dev, Y_dev: Development set data points and 1D labels ndarray.
+        df_train: Training set data points dataframe.
+        df_test, Y_test: Test set data points dataframe and 1D labels ndarray.
     """
     try:
         subprocess.run(["bash", "download_data.sh"], check=True, stderr=subprocess.PIPE)

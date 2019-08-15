@@ -6,7 +6,7 @@
 # Multi-task learning, or training a single model on multiple tasks, is becoming a standard tool for the modern ML practioner (see Ruder's [survey](http://ruder.io/multi-task/) from 2017 for a nice overview).
 # It often leads to computational gains (one model performing many tasks takes up less memory and storage) as well as performance gains (learning to do well on a related _auxiliary_ task can improve the model's ability on the _primary_ task).
 #
-# While the primary purpose of the Snorkel project is to support training data creation and management, it also comes with a PyTorch-based modeling framework intended to support flexible multi-task learning (e.g. slice-aware models).
+# While the primary purpose of the Snorkel project is to support training data creation and management, it also comes with a PyTorch-based modeling framework intended to support flexible multi-task learning (e.g. [slice-aware models]https://snorkel.org/use-cases/03-spam-data-slicing-tutorial).
 # Using this particular framework (as opposed to other excellent third party libraries) is entirely optional, but we have found it helpful in our own work and so provide it here.
 # In particular, because MTL in general often requires easily *adding new datasets, tasks, and metrics* (and just as easily removing them), each of these concepts has been decoupled in the snorkel MTL classifier.
 
@@ -142,7 +142,7 @@ for task_name in ["circle", "square"]:
 # ### Tasks
 
 # %% [markdown]
-# A `Task` represents a path through a neural network. In `MultitaskClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each example will make a forward pass.
+# A `Task` represents a path through a neural network. In `MultitaskClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each data point will make a forward pass.
 #
 # To specify this sequence of modules, each `Task` includes a **module pool** (a set of modules that it relies on) and an **operation sequence**.
 # Each [Operation](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.Operation.html#snorkel.classification.Operation) specifies a module and the inputs that module expects.
@@ -240,7 +240,7 @@ model = MultitaskClassifier([circle_task, square_task])
 # ### Train Model
 
 # %% [markdown]
-# Once the model is constructed, we can train it as we would a single-task model, using the `fit` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all examples  will be seen exactly once before any are seen twice.
+# Once the model is constructed, we can train it as we would a single-task model, using the `fit` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all data points  will be seen exactly once before any are seen twice.
 
 # %%
 from snorkel.classification import Trainer
@@ -388,4 +388,6 @@ model.score(all_dataloaders)
 # ## Summary
 
 # %% [markdown]
-# In this tutorial, we demonstrated how to specify arbitrary flows through a network with  multiple datasets, providing the flexiblity to easily implement design patterns such as multi-task learning. On this toy task with only two simple datasets and very simple hard parameter sharing (a shared trunk with different heads), the utility of this design may be less apparent. However, for more complicated network structures (e.g., slicing) or scenarios with frequent changing of the structure (e.g., due to popping new tasks on/off a massive MTL model), the flexibility of this design starts to shine. If there's an MTL network you'd like to build but can't figure out how to represent, post an issue and let us know!
+# In this tutorial, we demonstrated how to specify arbitrary flows through a network with multiple datasets, providing the flexiblity to easily implement design patterns such as multi-task learning. On this toy task with only two simple datasets and very simple hard parameter sharing (a shared trunk with different heads), the utility of this design may be less apparent.
+# However, for more complicated network structures (e.g., slicing) or scenarios with frequent changing of the structure (e.g., due to popping new tasks on/off a massive MTL model), the flexibility of this design starts to shine.
+# If there's an MTL network you'd like to build but can't figure out how to represent, post an issue and let us know!
