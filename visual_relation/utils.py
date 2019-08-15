@@ -58,7 +58,7 @@ def vrd_to_pandas(
 def load_vrd_data(sample=False, is_travis=False):
     """Download and load Pandas DataFrame of VRD relationships.
 
-    NOTE: Only loads semantic relationship examples.
+    NOTE: Only loads semantic relationship data points.
     """
 
     if sample or is_travis:

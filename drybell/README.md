@@ -19,7 +19,7 @@ Jennifer Smith donates entire fortune.      She has a lot of money. Now she has 
 ...
 ```
 
-Of course, with such a small (and very fake) data set, we don't expect to produce
+Of course, with such a small (and very fake) dataset, we don't expect to produce
 high quality models.
 The goal here is to demonstrate how Snorkel can be used in a large-scale production setting.
 We present two scripts —
