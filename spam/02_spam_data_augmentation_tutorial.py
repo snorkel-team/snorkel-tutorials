@@ -3,7 +3,7 @@
 # # Snorkel Transformation Functions Tutorial
 
 # %% [markdown]
-# In this tutorial, we will walk through the process of using Snorkel Transformation Functions (TFs) to classify YouTube comments as `SPAM` or `HAM` (not spam). For more details on the task, check out the main labeling functions [tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb).
+# In this tutorial, we will walk through the process of using Snorkel Transformation Functions (TFs) to classify YouTube comments as `SPAM` or `HAM` (not spam). For more details on the task, check out the [Introduction to LFs](https://snorkel.org/use-cases/01-spam-tutorial).
 # For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
 # You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
 #

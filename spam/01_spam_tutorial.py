@@ -1003,12 +1003,12 @@ print(f"Test Accuracy: {sklearn_model.score(X=X_test, y=Y_test) * 100:.1f}%")
 # ### Next Steps
 
 # %% [markdown]
-# If you enjoyed this tutorial and you've already checked out the Snorkel 101 Guide, check out the [`snorkel-tutorials` table of contents](https://github.com/snorkel-team/snorkel-tutorials#snorkel-tutorials) for other tutorials that you may find interesting, including demonstrations of how to use Snorkel
+# If you enjoyed this tutorial and you've already checked out the [Getting Started](http://snorkel.org/get-started/) tutorial, check out the [Tutorials](https://snorkel.org/use-cases/) page for other tutorials that you may find interesting, including demonstrations of how to use Snorkel
 #
-# * As part of a [hybrid crowdsourcing pipeline](https://github.com/snorkel-team/snorkel-tutorials/tree/master/crowdsourcing)
-# * For [scene-graph detection over images](https://github.com/snorkel-team/snorkel-tutorials/tree/master/visual_relation)
-# * For [information extraction over text](https://github.com/snorkel-team/snorkel-tutorials/tree/master/spouse)
-# * For [data augmentation](https://github.com/snorkel-team/snorkel-tutorials/tree/master/spam)
+# * As part of a [hybrid crowdsourcing pipeline](http://snorkel.org/use-cases/crowdsourcing-tutorial)
+# * For [scene-graph detection over images](http://snorkel.org/use-cases/visual_relation-tutorial)
+# * For [information extraction over text](http://snorkel.org/use-cases/spouse-tutorial)
+# * For [data augmentation](http://snorkel.org/use-cases/02-spam-data-augmentation-tutorial)
 #
-# and many more!
+# and more!
 # You can also visit the [Snorkel homepage](http://snorkel.org) or [Snorkel API documentation](https://snorkel.readthedocs.io) for more info!
