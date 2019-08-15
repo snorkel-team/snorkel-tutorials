@@ -18,7 +18,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # Snorkel currently exposes three key programmatic operations:
 # - **Labeling data**, e.g., using heuristic rules or distant supervision techniques
 # - **Transforming data**, e.g., rotating or stretching images to perform data augmentation
-# - **Slicing data** into different critical subsets for monitoring or target improvement
+# - **Slicing data** into different critical subsets for monitoring or targeted improvement
 #
 # Snorkel then automatically models, cleans, and integrates the resulting training data using novel, theoretically-grounded techniques.
 
@@ -66,7 +66,8 @@ SPAM = 1
 # Snorkel will automatically estimate their accuracies and correlations in a [provably consistent way](https://papers.nips.cc/paper/6523-data-programming-creating-large-training-sets-quickly), and then reweight and combine their output labels, leading to high-quality training labels.
 
 # %% [markdown]
-# In our text data setting here, labeling functions use keyword matchers:
+# In our text data setting here, labeling functions use:
+# Keyword matches:
 
 # %%
 from snorkel.labeling import labeling_function
@@ -121,11 +122,11 @@ def lf_textblob_polarity(x):
 
 # %% [markdown]
 # And much more!
-# For many more types of labeling functions — including over data modalities beyond text — see the other [tutorials](#) and [real-world examples](#).
+# For many more types of labeling functions — including over data modalities beyond text — see the other [tutorials](https://snorkel.org/use-cases/) and [real-world examples](https://snorkel.org/resources/).
 #
 # In general the process of developing labeling functions is, like any other development process, an iterative one that takes time.
 # However, in many cases it can be _orders-of-magnitude_ faster that hand-labeling training data.
-# For more detail on the process of developing labeling functions and other training data operators in Snorkel, see the [Spam LFs tutorial](http://snorkel.org/use-cases/01-spam-tutorial).
+# For more detail on the process of developing labeling functions and other training data operators in Snorkel, see the [Introduction Tutorials](http://snorkel.org/use-cases).
 
 # %% [markdown]
 # ## (2) Combining & Cleaning the Labels
@@ -242,7 +243,7 @@ def short_link(x):
 # ## (5) Training a Machine Learning Model
 #
 # The ultimate goal in Snorkel is to **create a training dataset**, which can then be plugged into an arbitrary machine learning framework (e.g. TensorFlow, Keras, PyTorch, Scikit-Learn, Ludwig, XGBoost) to train powerful machine learning models.
-# Here, to complete this initial walkthrough, we'll train an extremely simple model — a simple "bag of n-grams" logistic regression model in Scikit-Learn — using the weakly labeled and augmented training set we made with our labeling and transformation functions:
+# Here, to complete this initial walkthrough, we'll train an extremely simple model — a "bag of n-grams" logistic regression model in Scikit-Learn — using the weakly labeled and augmented training set we made with our labeling and transformation functions:
 
 # %%
 from sklearn.feature_extraction.text import CountVectorizer
