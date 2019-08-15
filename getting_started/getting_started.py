@@ -23,7 +23,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # Snorkel then automatically models, cleans, and integrates the resulting training data using novel, theoretically-grounded techniques.
 
 # %% [markdown]
-# <img src="img/snorkel_ops.png" onerror="this.onerror=null; this.src='/doks-theme/assets/images/layout/TrainingData.png';" align="center" style="display: block; margin-left: auto; margin-right: auto;">
+# <img src="img/Overview.png" onerror="this.onerror=null; this.src='/doks-theme/assets/images/layout/Overview.png';" align="center" style="display: block; margin-left: auto; margin-right: auto;">
 
 # %% [markdown]
 # In this quick walkthrough, we'll preview the high-level workflow and interfaces of Snorkel using a canonical machine learning problem: classifying spam.
