@@ -3,21 +3,25 @@
 # # 📈 Snorkel Intro Tutorial: Data Augmentation
 
 # %% [markdown]
-# In this tutorial, we will walk through the process of using transformation functions (TFs) to perform data augmentation.
+# In this tutorial, we will walk through the process of using *transformation functions* (TFs) to perform data augmentation.
 # Like the labeling tutorial, our goal is to train a classifier to YouTube comments as `SPAM` or `HAM` (not spam).
-# While data augmentation can be used in concert with labeling functions,
-# we assume that we have access to some labeled YouTube comments for training for the purposes of this tutorial.
+# In the [previous tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb),
+# we demonstrated how to label training sets programmatically with Snorkel.
+# In this tutorial, we'll assume that step has already been done, and start with labeled training data,
+# which we'll aim to augment using transformation functions.
 #
+# %% [markdown] {"tags": ["md-exclude"]}
 # * For more details on the task, check out the [labeling tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb)
 # * For an overview of Snorkel, visit [snorkel.org](http://snorkel.org)
 # * You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/)
 #
+#  %% [markdown]
 # Data augmentation is a popular technique for increasing the size of labeled training sets by applying class-preserving transformations to create copies of labeled data points.
 # In the image domain, it is a crucial factor in almost every state-of-the-art result today and is quickly gaining
 # popularity in text-based applications.
-# Snorkel models the data augmentation process by applying user-define transformation functions in sequence.
-# You can learn more about data augmentation in our [blog post about the
-# TANDA library](https://snorkel.org/tanda/).
+# Snorkel models the data augmentation process by applying user-define *transformation functions* (TFs) in sequence.
+# You can learn more about data augmentation in
+# [this blog post about our NeurIPS 2017 work on automatically learned data augmentation](https://snorkel.org/tanda/).
 #
 # The tutorial is divided into four parts:
 # 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
@@ -26,7 +30,7 @@
 # 4. **Training a Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
 
 # %% [markdown] {"tags": ["md-exclude"]}
-# This next two cell takes care of some notebook-specific housekeeping.
+# This next cell takes care of some notebook-specific housekeeping.
 # You can ignore it.
 
 # %% {"tags": ["md-exclude"]}
@@ -103,12 +107,14 @@ df_train.head()
 # More info can be found
 # [here](https://towardsdatascience.com/data-augmentation-in-nlp-2801a34dfc28) or
 # [here](https://towardsdatascience.com/these-are-the-easiest-data-augmentation-techniques-in-natural-language-processing-you-can-think-of-88e393fd610).
-# Applying these operations to a comment shouldn't change whether it is `SPAM` or not.
+# Our basic modeling assumption is that applying these operations to a comment generally shouldn't change whether it is `SPAM` or not.
 #
 # Transformation functions in Snorkel are created with the
 # [`transformation_function` decorator](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.transformation_function.html#snorkel.augmentation.transformation_function),
 # which wraps a function that takes in a single data point and returns a transformed version of the data point.
-# If no transformation is possible, the function should return `None`.
+# If no transformation is possible, a TF can return `None` or the original data point.
+# If all the TFs applied to a data point return `None`, the data point won't be included in
+# the augmented data set when we apply our TFs below.
 #
 # Just like the `labeling_function` decorator, the `transformation_function` decorator
 # accepts `pre` argument for `Preprocessor` objects.
@@ -124,7 +130,8 @@ spacy = SpacyPreprocessor(text_field="text", doc_field="doc", memoize=True)
 import names
 from snorkel.augmentation import transformation_function
 
-# Generate some random names to replace existing ones with
+# Pregenerate some random person names to replace existing ones with
+# for the transformation strategies below
 replacement_names = [names.get_full_name() for _ in range(50)]
 
 
@@ -247,30 +254,51 @@ preview_tfs(df_train, tfs)
 
 # %% [markdown]
 # We notice a couple of things about the TFs.
-# * Sometimes they make trivial changes (`"website"` to `"web site"` for replace_noun_with_synonym).
-#   This can still be helpful for training our model, because it teaches the model that these variations have similar meanings.
-# * Sometimes they make the sentence less meaningful (e.g. swapping `"young"` and `"more"` for swap_adjectives).
 #
-# Data augmentation can be tricky for text inputs, so we expect most TFs to be a little flawed.
-# But these TFs can be useful despite the flaws; see [this paper](https://arxiv.org/pdf/1901.11196.pdf) for gains resulting from similar TFs.
+# * Sometimes they make trivial changes (`"website"` to `"web site"` for replace_noun_with_synonym).
+#   This can still be helpful for training our model, because it teaches the model to be invariant to such small changes.
+# * Sometimes they introduce incorrect grammar to the sentence (e.g. `swap_adjectives` swapping `"young"` and `"more"` above).
+#
+# The TFs are expected to be heuristic strategies that indeed preserve the class most of the time, but
+# [don't need to be perfect](https://arxiv.org/pdf/1901.11196.pdf).
+# This is especially true when using automated
+# [data augmentation techniques](https://snorkel.org/tanda/)
+# which can learn to avoid particularly corrupted examples.
+# As we'll see below, Snorkel is compatible with such learned augmentation policies.
 
 # %% [markdown]
 # ## 3. Applying Transformation Functions
 
 # %% [markdown]
-# To apply one or more TFs that we've written to a collection of data points, we use a
-# [`PandasTFApplier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.PandasTFApplier.html)
-# because our data points are represented with a Pandas DataFrame.
-# We'll then define a `Policy` to determine what sequence of TFs to apply to each example.
-# In this case, we'll use a [`MeanFieldPolicy`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.MeanFieldPolicy.html)
-# that picks 2 TFs at random per example, with sampling probabilities given by `p`.
-# We give higher probabilities to the `replace_[X]_with_synonym` TFs, since those provide more information to the model.
+# We'll first define a `Policy` to determine what sequence of TFs to apply to each example.
+# We'll start with a [`RandomPolicy`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.RandomPolicy.html)
+# that samples `sequence_length=2` TFs to apply uniformly at random per example.
 # The `n_per_original` argument determines how many augmented examples to generate per original example.
 
-# %% {"tags": ["md-exclude-output"]}
-from snorkel.augmentation import MeanFieldPolicy, PandasTFApplier
+# %%
+from snorkel.augmentation import RandomPolicy
 
-policy = MeanFieldPolicy(
+random_policy = RandomPolicy(
+    len(tfs),
+    sequence_length=2,
+    n_per_original=2,
+    keep_original=True,
+)
+
+# %% [markdown]
+# In some cases, we can do better than uniform random sampling.
+# We might have domain knowledge that some TFs should be applied more frequently than others,
+# or have trained an [automated data augmentation model](https://snorkel.org/tanda/)
+# that learned a sampling distribution for the TFs.
+# Snorkel supports this use case with a
+# [`MeanFieldPolicy`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.MeanFieldPolicy.html),
+# which allows you to specify a sampling distribution for the TFs.
+# We give higher probabilities to the `replace_[X]_with_synonym` TFs, since those provide more information to the model.
+
+# %%
+from snorkel.augmentation import MeanFieldPolicy
+
+mean_field_policy = MeanFieldPolicy(
     len(tfs),
     sequence_length=2,
     n_per_original=2,
@@ -278,7 +306,15 @@ policy = MeanFieldPolicy(
     p=[0.05, 0.05, 0.3, 0.3, 0.3],
 )
 
-tf_applier = PandasTFApplier(tfs, policy)
+# %% [markdown]
+# To apply one or more TFs that we've written to a collection of data points according to our policy, we use a
+# [`PandasTFApplier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.PandasTFApplier.html)
+# because our data points are represented with a Pandas DataFrame.
+
+# %% {"tags": ["md-exclude-output"]}
+from snorkel.augmentation import PandasTFApplier
+
+tf_applier = PandasTFApplier(tfs, mean_field_policy)
 df_train_augmented = tf_applier.apply(df_train)
 Y_train_augmented = df_train_augmented["label"].values
 
@@ -288,7 +324,12 @@ print(f"Augmented training set size: {len(df_train_augmented)}")
 
 # %% [markdown]
 # We have almost doubled our dataset using TFs!
-# Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because sometimes TFs return `None` instead of a new example (e.g. `change_person` when applied to a sentence with no persons).
+# Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size,
+# because sometimes TFs return `None` instead of a new example
+# (e.g. `change_person` when applied to a sentence with no persons).
+# If you prefer to have exact proportions for your dataset, you can have TFs that can't perform a
+# valid transformation return the original data point rather than `None` (as they do here).
+
 
 # %% [markdown]
 # ## 4. Training A Model
@@ -330,13 +371,13 @@ def train_and_test(
     Y_test=Y_test,
     num_buckets=30000,
 ):
+    # Define a vanilla LSTM model with Keras
     lstm_model = get_keras_lstm(num_buckets)
     lstm_model.fit(
         X_train,
         Y_train,
         epochs=25,
         validation_data=(X_valid, Y_valid),
-        # Set up early stopping based on val set accuracy.
         callbacks=[get_keras_early_stopping(5)],
         verbose=0,
     )
@@ -348,7 +389,6 @@ acc_augmented = train_and_test(X_train_augmented, Y_train_augmented)
 acc_original = train_and_test(X_train, Y_train)
 
 # %%
-
 print(f"Test Accuracy (original training data): {100 * acc_original:.1f}%")
 print(f"Test Accuracy (augmented training data): {100 * acc_augmented:.1f}%")
 

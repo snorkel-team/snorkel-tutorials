@@ -80,7 +80,7 @@
 # ## 1. Loading Data
 
 # %% [markdown]
-# We load the Kaggle dataset and create Pandas DataFrame objects for each of the sets described above.
+# We load the Kaggle dataset and create Pandas DataFrame objects for the train, validation, and test sets.
 # DataFrames are extremely popular in Python data analysis workloads, and Snorkel provides native support
 # for several DataFrame-like data structures, including Pandas, Dask, and PySpark.
 # For more information on working with Pandas DataFrames, see the [Pandas DataFrame guide](https://pandas.pydata.org/pandas-docs/stable/getting_started/dsintro.html).
@@ -155,7 +155,7 @@ Y_test = df_test.label.values
 df_dev.sample(5, random_state=3)
 
 # %% [markdown]
-# The class distribution varies slightly from class to class, but all are approximately class-balanced.
+# The class distribution varies slightly between `SPAM` and `HAM`, but they're approximately class-balanced.
 # You can verify this by looking at the `dev` set labels.
 
 # %%
@@ -165,8 +165,6 @@ HAM = 0
 SPAM = 1
 
 print(f"Dev SPAM frequency: {100 * (df_dev.label.values == SPAM).mean():.1f}%")
-print(f"Valid SPAM frequency: {100 * (df_valid.label.values == SPAM).mean():.1f}%")
-print(f"Test SPAM frequency: {100 * (df_test.label.values == SPAM).mean():.1f}%")
 
 # %% [markdown]
 # ## 2. Writing Labeling Functions (LFs)
@@ -886,6 +884,7 @@ from snorkel.analysis import metric_score
 from snorkel.utils import preds_to_probs
 from utils import get_keras_logreg, get_keras_early_stopping
 
+# Define a vanilla logistic regression model with Keras
 keras_model = get_keras_logreg(input_dim=X_train.shape[1])
 
 keras_model.fit(
