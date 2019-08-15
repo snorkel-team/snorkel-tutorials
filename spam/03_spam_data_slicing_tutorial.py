@@ -86,7 +86,7 @@ short_link_df = slice_dataframe(df_valid, short_link)
 short_link_df[["text", "label"]]
 
 # %% [markdown]
-# ## 2. Monitor slice performance with [`SliceScorer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer)
+# ## 2. Monitor slice performance with [`Scorer.score_slices`]()
 
 # %% [markdown]
 # In this section, we'll demonstrate how we might monitor slice performance on the `short_link` slice — this approach is compatible with _any modeling framework_.
@@ -121,12 +121,12 @@ preds_test = sklearn_model.predict(X_test)
 probs_test = preds_to_probs(preds_test, 2)
 
 # %% [markdown]
-# ### Leverage `S` matrix in [`SliceScorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer)
+# ### Store slice metadata in `S`
 
 # %% [markdown]
 # We apply our list of `sfs` to the data using an SF applier.
 # For our data format, we leverage the [`PandasSFApplier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.PandasSFApplier.html#snorkel.slicing.PandasSFApplier).
-# The output of the `applier` is a $S \in \mathbb{R}^{n \times k}$ matrix, which indicates whether each of $n$ examples is in each of $k$ slices.
+# The output of the `applier` is an [`np.recarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html) which stores vectors in named fields indicating whether each of $n$ examples belongs to the corresponding slice.
 
 # %%
 from snorkel.slicing import PandasSFApplier
@@ -135,19 +135,18 @@ applier = PandasSFApplier(sfs)
 S_test = applier.apply(df_test)
 
 # %% [markdown]
-# Now, we initialize the [`SliceScorer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/slicing/snorkel.slicing.SliceScorer.html#snorkel.slicing.SliceScorer) using the desired `slice_names`.
+# Now, we initialize a [`Scorer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/analysis/snorkel.analysis.Scorer.html#snorkel.analysis.Scorer) using the desired `metrics`.
 
 # %%
-from snorkel.slicing import SliceScorer
+from snorkel.analysis import Scorer
 
-slice_names = [sf.name for sf in sfs]
-slice_scorer = SliceScorer(slice_names, metrics=["accuracy", "f1"])
+scorer = Scorer(metrics=["accuracy", "f1"])
 
 # %% [markdown]
 # Using the [`score_slices`]() method, we can see both `overall` and slice-specific performance.
 
 # %%
-slice_scorer.score_slices(
+scorer.score_slices(
     S=S_test, golds=Y_test, preds=preds_test, probs=probs_test, as_dataframe=True
 )
 
@@ -246,8 +245,7 @@ slice_names = [sf.name for sf in sfs]
 applier = PandasSFApplier(sfs)
 S_test = applier.apply(df_test)
 
-slice_scorer = SliceScorer(slice_names, metrics=["accuracy", "f1"])
-slice_scorer.score_slices(
+scorer.score_slices(
     S=S_test, golds=Y_test, preds=preds_test, probs=probs_test, as_dataframe=True
 )
 
@@ -268,7 +266,7 @@ slice_scorer.score_slices(
 # This might work with small number of slices, but with hundreds or thousands or production slices at scale, it could quickly become intractable to tune upsampling weights per slice.
 
 # %% [markdown]
-# ### Set up modeling pipeline with `BinarySlicingClassifier`
+# ### Set up modeling pipeline with [`SlicingClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html)
 #
 # Snorkel supports performance monitoring on slices using discriminative models from [`snorkel.slicing`](https://snorkel.readthedocs.io/en/master/packages/slicing.html).
 # To demonstrate this functionality, we'll first set up a the datasets + modeling pipeline in the PyTorch-based [`snorkel.classification`](https://snorkel.readthedocs.io/en/master/packages/classification.html) package.
@@ -328,7 +326,7 @@ from snorkel.classification import Trainer
 
 # For demonstration purposes, we set n_epochs=2
 trainer = Trainer(lr=1e-4, n_epochs=2)
-trainer.fit(slice_model, [train_dl, valid_dl])
+# trainer.fit(slice_model, [train_dl, valid_dl])
 
 # %% [markdown]
 # ### Representation learning with slices
