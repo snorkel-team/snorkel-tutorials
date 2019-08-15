@@ -202,7 +202,7 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 
 # +
 from snorkel.classification import DictDataLoader
-from visual_relation.model import SceneGraphDataset, CreateModel
+from visual_relation.model import SceneGraphDataset, create_model
 
 df_train["labels"] = label_model.predict(L_train)
 
@@ -231,7 +231,7 @@ import torchvision.models as models
 
 # initialize pretrained feature extractor
 cnn = models.resnet18(pretrained=True)
-model = CreateModel(cnn)
+model = create_model(cnn)
 # -
 
 # ### Train and Evaluate Model

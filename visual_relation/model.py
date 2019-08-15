@@ -205,7 +205,7 @@ def get_op_sequence():
 
 
 # Create model from pre loaded resnet cnn.
-def CreateModel(resnet_cnn):
+def create_model(resnet_cnn):
     # freeze the resnet weights
     for param in resnet_cnn.parameters():
         param.requires_grad = False
