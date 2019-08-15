@@ -25,7 +25,7 @@
 #
 # The tutorial is divided into four parts:
 # 1. **Loading Data**: We load a [YouTube comments dataset](http://www.dt.fee.unicamp.br/~tiago//youtubespamcollection/).
-# 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training examples to generate new training examples.
+# 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training data points to generate new training data points.
 # 3. **Applying Transformation Functions to Augment Our Dataset**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
 # 4. **Training a Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
 
@@ -99,10 +99,10 @@ df_train.head()
 # %% [markdown]
 # ## 2. Writing Transformation Functions (TFs)
 #
-# Transformation functions are functions that can be applied to a training example to create another valid training example of the same class.
+# Transformation functions are functions that can be applied to a training data point to create another valid training data point of the same class.
 # For example, for image classification problems, it is common to rotate or crop images in the training data to create new training inputs.
 # Transformation functions should be atomic e.g. a small rotation of an image, or changing a single word in a sentence.
-# We then compose multiple transformation functions when applying them to training examples.
+# We then compose multiple transformation functions when applying them to training data points.
 #
 # Common ways to augment text includes replacing words with their synonyms, or replacing names entities with other entities.
 # More info can be found
@@ -115,7 +115,7 @@ df_train.head()
 # which wraps a function that takes in a single data point and returns a transformed version of the data point.
 # If no transformation is possible, a TF can return `None` or the original data point.
 # If all the TFs applied to a data point return `None`, the data point won't be included in
-# the augmented data set when we apply our TFs below.
+# the augmented dataset when we apply our TFs below.
 #
 # Just like the `labeling_function` decorator, the `transformation_function` decorator
 # accepts `pre` argument for `Preprocessor` objects.
@@ -264,17 +264,17 @@ preview_tfs(df_train, tfs)
 # [don't need to be perfect](https://arxiv.org/pdf/1901.11196.pdf).
 # This is especially true when using automated
 # [data augmentation techniques](https://snorkel.org/tanda/)
-# which can learn to avoid particularly corrupted examples.
+# which can learn to avoid particularly corrupted data points.
 # As we'll see below, Snorkel is compatible with such learned augmentation policies.
 
 # %% [markdown]
 # ## 3. Applying Transformation Functions
 
 # %% [markdown]
-# We'll first define a `Policy` to determine what sequence of TFs to apply to each example.
+# We'll first define a `Policy` to determine what sequence of TFs to apply to each data point.
 # We'll start with a [`RandomPolicy`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.RandomPolicy.html)
-# that samples `sequence_length=2` TFs to apply uniformly at random per example.
-# The `n_per_original` argument determines how many augmented examples to generate per original example.
+# that samples `sequence_length=2` TFs to apply uniformly at random per data point.
+# The `n_per_original` argument determines how many augmented data points to generate per original data point.
 
 # %%
 from snorkel.augmentation import RandomPolicy
@@ -323,7 +323,7 @@ print(f"Augmented training set size: {len(df_train_augmented)}")
 # %% [markdown]
 # We have almost doubled our dataset using TFs!
 # Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size,
-# because sometimes TFs return `None` instead of a new example
+# because sometimes TFs return `None` instead of a new data point
 # (e.g. `change_person` when applied to a sentence with no persons).
 # If you prefer to have exact proportions for your dataset, you can have TFs that can't perform a
 # valid transformation return the original data point rather than `None` (as they do here).
@@ -349,7 +349,7 @@ sess = tf.compat.v1.Session(graph=tf.compat.v1.get_default_graph(), config=sessi
 tf.compat.v1.keras.backend.set_session(sess)
 
 # %% [markdown]
-# Now we'll train our LSTM on both the original and augmented data sets to compare performance.
+# Now we'll train our LSTM on both the original and augmented datasets to compare performance.
 
 # %% {"tags": ["md-exclude-output"]}
 from utils import featurize_df_tokens, get_keras_lstm, get_keras_early_stopping

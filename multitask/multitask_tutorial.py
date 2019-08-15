@@ -142,7 +142,7 @@ for task_name in ["circle", "square"]:
 # ### Tasks
 
 # %% [markdown]
-# A `Task` represents a path through a neural network. In `MultitaskClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each example will make a forward pass.
+# A `Task` represents a path through a neural network. In `MultitaskClassifier`, this path corresponds to a particular sequence of PyTorch modules through which each data point will make a forward pass.
 #
 # To specify this sequence of modules, each `Task` includes a **module pool** (a set of modules that it relies on) and an **operation sequence**.
 # Each [Operation](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.Operation.html#snorkel.classification.Operation) specifies a module and the inputs that module expects.
@@ -240,7 +240,7 @@ model = MultitaskClassifier([circle_task, square_task])
 # ### Train Model
 
 # %% [markdown]
-# Once the model is constructed, we can train it as we would a single-task model, using the `fit` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all examples  will be seen exactly once before any are seen twice.
+# Once the model is constructed, we can train it as we would a single-task model, using the `fit` method of a `Trainer` object. The `Trainer` supports multiple schedules or patterns for sampling from different dataloaders; the default is to randomly sample from them proportional to their number of batches, such that all data points  will be seen exactly once before any are seen twice.
 
 # %%
 from snorkel.classification import Trainer

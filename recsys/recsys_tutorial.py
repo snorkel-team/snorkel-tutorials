@@ -200,7 +200,7 @@ LFAnalysis(L_dev, lfs).lf_summary(df_dev.rating)
 # %% [markdown]
 # ### Applying labeling functions to the training set
 #
-# We apply the labeling functions to the training set, and then filter out examples unlabeled by any LF to form our final training set.
+# We apply the labeling functions to the training set, and then filter out data points unlabeled by any LF to form our final training set.
 
 # %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling.model.label_model import LabelModel
@@ -266,11 +266,11 @@ def get_model(embed_dim=64, hidden_layer_sizes=[32]):
 
 
 # %% [markdown]
-# We use triples of (`book_idxs`, `book_idx`, `rating`) from our dataframes as training examples. In addition, we want to train the model to recognize when a user will not read a book. To create examples for that, we randomly sample a `book_id` not in `book_idxs` and use that with a `rating` of 0 as a _random negative_ example. We create one such _random negative_ example for every positive (`rating` 1) example in our dataframe so that positive and negative examples are roughly balanced.
+# We use triples of (`book_idxs`, `book_idx`, `rating`) from our dataframes as training data points. In addition, we want to train the model to recognize when a user will not read a book. To create data points for that, we randomly sample a `book_id` not in `book_idxs` and use that with a `rating` of 0 as a _random negative_ data point. We create one such _random negative_ data point for every positive (`rating` 1) data point in our dataframe so that positive and negative data points are roughly balanced.
 
 # %%
-# Generator to turn dataframe into examples.
-def get_examples_generator(df):
+# Generator to turn dataframe into data points.
+def get_data_points_generator(df):
     def generator():
         for book_idxs, book_idx, rating in zip(df.book_idxs, df.book_idx, df.rating):
             # Remove book_idx from book_idxs so the model can't just look it up.
@@ -297,7 +297,7 @@ def get_examples_generator(df):
 
 
 def get_data_tensors(df):
-    # Use generator to get examples each epoch, along with shuffling and batching.
+    # Use generator to get data points each epoch, along with shuffling and batching.
     padded_shapes = {
         "len_book_idxs": [],
         "book_idxs": [None],
@@ -306,7 +306,7 @@ def get_data_tensors(df):
     }
     dataset = (
         tf.data.Dataset.from_generator(
-            get_examples_generator(df), {k: tf.int64 for k in padded_shapes}
+            get_data_points_generator(df), {k: tf.int64 for k in padded_shapes}
         )
         .shuffle(123)
         .repeat(None)

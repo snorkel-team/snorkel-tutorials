@@ -49,7 +49,7 @@ df_train, df_valid, df_test = load_spam_dataset(load_train_labels=True, split_de
 # %% [markdown]
 # ## 1. Write slicing functions
 #
-# We leverage *slicing functions* (SFs), which output binary _masks_ indicating whether an example is in the slice or not.
+# We leverage *slicing functions* (SFs), which output binary _masks_ indicating whether an data point is in the slice or not.
 # Each slice represents some noisily-defined subset of the data (corresponding to an SF) that we'd like to programmatically monitor.
 
 # %% [markdown]
@@ -77,7 +77,7 @@ sfs = [short_link]
 # ### Visualize slices
 
 # %% [markdown]
-# With a utility function, [`slice_dataframe`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.slice_dataframe.html#snorkel.slicing.slice_dataframe), we can visualize examples belonging to this slice in a `pandas.DataFrame`.
+# With a utility function, [`slice_dataframe`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.slice_dataframe.html#snorkel.slicing.slice_dataframe), we can visualize data points belonging to this slice in a `pandas.DataFrame`.
 
 # %%
 from snorkel.slicing import slice_dataframe
@@ -126,7 +126,7 @@ probs_test = preds_to_probs(preds_test, 2)
 # %% [markdown]
 # We apply our list of `sfs` to the data using an SF applier.
 # For our data format, we leverage the [`PandasSFApplier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.PandasSFApplier.html#snorkel.slicing.PandasSFApplier).
-# The output of the `applier` is an [`np.recarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html) which stores vectors in named fields indicating whether each of $n$ examples belongs to the corresponding slice.
+# The output of the `applier` is an [`np.recarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html) which stores vectors in named fields indicating whether each of $n$ data points belongs to the corresponding slice.
 
 # %%
 from snorkel.slicing import PandasSFApplier
@@ -213,9 +213,9 @@ def textblob_polarity(x):
 
 
 # %% [markdown]
-# Again, we'd like to visualize examples in a particular slice. This time, we'll inspect the `textblob_polarity` slice.
+# Again, we'd like to visualize data points in a particular slice. This time, we'll inspect the `textblob_polarity` slice.
 #
-# Most examples with high-polarity sentiments are strong opinions about the video — hence, they are usually relevant to the video, and the corresponding labels are $0$.
+# Most data points with high-polarity sentiments are strong opinions about the video — hence, they are usually relevant to the video, and the corresponding labels are $0$.
 # We might define a slice here for *product and marketing reasons*, it's important to make sure that we don't misclassify very positive comments from good users.
 
 # %%
@@ -257,7 +257,7 @@ scorer.score_slices(
 # ## 3. Improve slice performance
 #
 # In the following section, we demonstrate a modeling approach that we call _Slice-based Learning,_ which improves performance by adding extra slice-specific representational capacity to whichever model we're using.
-# Intuitively, we'd like to model to learn *representations that are better suited to handle examples in this slice*.
+# Intuitively, we'd like to model to learn *representations that are better suited to handle data points in this slice*.
 # In our approach, we model each slice as a separate "expert task" in the style of [multi-task learning](https://github.com/snorkel-team/snorkel-tutorials/blob/master/multitask/multitask_tutorial.ipynb); for further details of how slice-based learning works under the hood, check out the [code](https://github.com/snorkel-team/snorkel/blob/master/snorkel/slicing/utils.py) (with paper coming soon)!
 #
 # In other approaches, one might attempt to increase slice performance with techniques like _oversampling_ (i.e. with PyTorch's [`WeightedRandomSampler`](https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler)), effectively shifting the training distribution towards certain populations.
@@ -375,7 +375,7 @@ trainer.fit(slice_model, [train_dl_slice, valid_dl_slice])
 slice_model.score_slices([valid_dl_slice, test_dl_slice], as_dataframe=True)
 
 # %% [markdown]
-# *Note: in this toy dataset, we see high variance in slice performance, because our dataset is so small that (i) there are few examples the train split, giving little signal to learn over, and (ii) there are few examples in the test split, making our evaluation metrics very noisy.
+# *Note: in this toy dataset, we see high variance in slice performance, because our dataset is so small that (i) there are few data points in the train split, giving little signal to learn over, and (ii) there are few data points in the test split, making our evaluation metrics very noisy.
 # For a demonstration of data slicing deployed in state-of-the-art models, please see our [SuperGLUE](https://github.com/HazyResearch/snorkel-superglue/tree/master/tutorials) tutorials.*
 
 # %% [markdown]
