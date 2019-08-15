@@ -10,7 +10,7 @@
 # For our task, we have access to some labeled YouTube comments for training. We generate additional data by transforming the labeled comments using **_Transformation Functions_**.
 #
 # The tutorial is divided into four parts:
-# 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
+# 1. **Loading Data**: We load a [YouTube comments dataset](http://www.dt.fee.unicamp.br/~tiago//youtubespamcollection/).
 # 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training data points to generate new training data points.
 # 3. **Applying Transformation Functions**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
 # 4. **Training A Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
@@ -27,7 +27,7 @@
 # ## 1. Loading Data
 
 # %% [markdown]
-# We load the Kaggle dataset and create Pandas DataFrame objects for each of the sets described above.
+# We load the YouTube comments dataset and create Pandas DataFrame objects for each of the sets described above.
 # The two main columns in the DataFrames are:
 # * **`text`**: Raw text content of the comment
 # * **`label`**: Whether the comment is `SPAM` (1) or `HAM` (0).
