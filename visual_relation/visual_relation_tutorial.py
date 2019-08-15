@@ -9,7 +9,7 @@
 #
 # For the purpose of this tutorial, we operate over the [Visual Relationship Detection (VRD) dataset](https://cs.stanford.edu/people/ranjaykrishna/vrd/) and focus on action relationships. We define our classification task as **identifying which of three relationships holds between the objects represented by a pair of bounding boxes.**
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import os
 
 if os.path.basename(os.getcwd()) == "visual_relation":
@@ -28,7 +28,8 @@ if os.path.basename(os.getcwd()) == "visual_relation":
 # %% [markdown]
 # If you are running this notebook for the first time, it will take ~15 mins to download all the required sample data.
 #
-# The sampled version of the dataset **uses the same 26 examples across the train, dev, and test sets. This setting is meant to demonstrate how Snorkel works with this task, not to demonstrate performance.**
+# The sampled version of the dataset **uses the same 26 examples across the train, dev, and test sets.
+# This setting is meant to demonstrate quickly how Snorkel works with this task, not to demonstrate performance.**
 
 # %%
 from visual_relation.utils import load_vrd_data
@@ -145,7 +146,7 @@ def lf_area(x):
 # %% [markdown]
 # Note that the labeling functions have varying empirical accuracies and coverages. Due to class imbalance in our chosen relationships, labeling functions that label the `OTHER` class have higher coverage than labeling functions for `RIDE` or `CARRY`. This reflects the distribution of classes in the dataset as well.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import PandasLFApplier
 
 lfs = [
@@ -162,7 +163,7 @@ applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
 L_valid = applier.apply(df_valid)
 
-# %%
+# %% {"tags": ["md-exclude"]}
 from snorkel.labeling import LFAnalysis
 
 Y_valid = df_valid.label.values
@@ -227,7 +228,7 @@ model = create_model(cnn)
 # %% [markdown]
 # ### Train and Evaluate Model
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.classification import Trainer
 
 trainer = Trainer(
