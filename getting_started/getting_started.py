@@ -67,7 +67,7 @@ SPAM = 1
 
 # %% [markdown]
 # In our text data setting here, labeling functions use:
-# 
+#
 # Keyword matches:
 
 # %%
@@ -250,7 +250,8 @@ def short_link(x):
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 
-X_train = CountVectorizer(ngram_range=(1, 2)).fit_transform(df_train_augmented.text.tolist())
+train_text = df_train_augmented.text.tolist()
+X_train = CountVectorizer(ngram_range=(1, 2)).fit_transform(train_text)
 
 clf = LogisticRegression(solver="lbfgs")
 clf.fit(X=X_train, y=df_train_augmented.label.values)
