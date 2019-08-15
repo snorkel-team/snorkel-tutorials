@@ -147,11 +147,13 @@ These commands assume that your conda installation is Python 3.6+.
 ```bash
 # [OPTIONAL] Activate a virtual environment
 conda create --yes -n spam python=3.6
-source activate spam
+conda activate spam
 
 # Install requirements (both shared and tutorial-specific)
 pip install environment_kernels
-pip install -r requirements.txt
+# We specify PyTorch here to ensure compatibility, but it may not be necessary.
+conda install pytorch==1.1.0 -c pytorch
+conda install snorkel==0.9.0 -c conda-forge
 pip install -r spam/requirements.txt
 
 # Launch the Jupyter notebook interface
