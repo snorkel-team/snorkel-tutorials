@@ -12,13 +12,12 @@
 # 1. **Monitor** application-critical data subsets
 # 2. **Improve model performance** on slices
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # First, we'll set up our notebook for reproducibility and proper logging.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import logging
 import os
-import pandas as pd
 from snorkel.utils import set_seed
 
 # For reproducibility
@@ -33,8 +32,16 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
 
-# Show full columns for viewing data
-pd.set_option("display.max_colwidth", -1)
+# %% [markdown] {"tags": ["md-exclude"]}
+# If you want to display all comment text untruncated, change `DISPLAY_ALL_TEXT` to `True` below.
+
+# %% {"tags": ["md-exclude"]}
+import pandas as pd
+
+
+DISPLAY_ALL_TEXT = False
+
+pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
 
 # %% [markdown]
 # _Note:_ this tutorial differs from the labeling tutorial in that we use ground truth labels in the train split for demo purposes.
@@ -79,10 +86,12 @@ sfs = [short_link]
 # %% [markdown]
 # With a utility function, [`slice_dataframe`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.slice_dataframe.html#snorkel.slicing.slice_dataframe), we can visualize data points belonging to this slice in a `pandas.DataFrame`.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.slicing import slice_dataframe
 
 short_link_df = slice_dataframe(df_valid, short_link)
+
+# %%
 short_link_df[["text", "label"]]
 
 # %% [markdown]
@@ -112,7 +121,7 @@ from sklearn.linear_model import LogisticRegression
 
 sklearn_model = LogisticRegression(C=0.001, solver="liblinear")
 sklearn_model.fit(X=X_train, y=Y_train)
-sklearn_model.score(X_test, Y_test)
+print(f"Test set accuracy: {100 * sklearn_model.score(X_test, Y_test):.1f}%")
 
 # %%
 from snorkel.utils import preds_to_probs
@@ -128,7 +137,7 @@ probs_test = preds_to_probs(preds_test, 2)
 # For our data format, we leverage the [`PandasSFApplier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.PandasSFApplier.html#snorkel.slicing.PandasSFApplier).
 # The output of the `applier` is an [`np.recarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html) which stores vectors in named fields indicating whether each of $n$ data points belongs to the corresponding slice.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.slicing import PandasSFApplier
 
 applier = PandasSFApplier(sfs)
@@ -218,8 +227,10 @@ def textblob_polarity(x):
 # Most data points with high-polarity sentiments are strong opinions about the video — hence, they are usually relevant to the video, and the corresponding labels are $0$.
 # We might define a slice here for *product and marketing reasons*, it's important to make sure that we don't misclassify very positive comments from good users.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 polarity_df = slice_dataframe(df_valid, textblob_polarity)
+
+# %%
 polarity_df[["text", "label"]].head()
 
 # %% [markdown]
@@ -240,10 +251,11 @@ slice_names = [sf.name for sf in sfs]
 # %% [markdown]
 # Let's see how the `sklearn` model we learned before performs on these new slices!
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 applier = PandasSFApplier(sfs)
 S_test = applier.apply(df_test)
 
+# %%
 scorer.score_slices(
     S=S_test, golds=Y_test, preds=preds_test, probs=probs_test, as_dataframe=True
 )
@@ -335,7 +347,7 @@ trainer.fit(slice_model, [train_dl, valid_dl])
 # %% [markdown]
 # First, we'll generate the remaining `S` matrixes with the new set of slicing functions.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 applier = PandasSFApplier(sfs)
 S_train = applier.apply(df_train)
 S_valid = applier.apply(df_valid)
@@ -386,5 +398,3 @@ slice_model.score_slices([valid_dl_slice, test_dl_slice], as_dataframe=True)
 # This tutorial walked through the process authoring slices, monitoring model performance on specific slices, and improving model performance using slice information.
 # This programming abstraction provides a mechanism to heuristically identify critical data subsets.
 # For more technical details about _Slice-based Learning,_ stay tuned — our technical report is coming soon!
-
-# %%
