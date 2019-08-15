@@ -79,10 +79,12 @@ sfs = [short_link]
 # %% [markdown]
 # With a utility function, [`slice_dataframe`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.slice_dataframe.html#snorkel.slicing.slice_dataframe), we can visualize data points belonging to this slice in a `pandas.DataFrame`.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.slicing import slice_dataframe
 
 short_link_df = slice_dataframe(df_valid, short_link)
+
+# %%
 short_link_df[["text", "label"]]
 
 # %% [markdown]
@@ -128,7 +130,7 @@ probs_test = preds_to_probs(preds_test, 2)
 # For our data format, we leverage the [`PandasSFApplier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.PandasSFApplier.html#snorkel.slicing.PandasSFApplier).
 # The output of the `applier` is an [`np.recarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html) which stores vectors in named fields indicating whether each of $n$ data points belongs to the corresponding slice.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.slicing import PandasSFApplier
 
 applier = PandasSFApplier(sfs)
@@ -218,7 +220,7 @@ def textblob_polarity(x):
 # Most data points with high-polarity sentiments are strong opinions about the video — hence, they are usually relevant to the video, and the corresponding labels are $0$.
 # We might define a slice here for *product and marketing reasons*, it's important to make sure that we don't misclassify very positive comments from good users.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 polarity_df = slice_dataframe(df_valid, textblob_polarity)
 polarity_df[["text", "label"]].head()
 
@@ -240,10 +242,11 @@ slice_names = [sf.name for sf in sfs]
 # %% [markdown]
 # Let's see how the `sklearn` model we learned before performs on these new slices!
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 applier = PandasSFApplier(sfs)
 S_test = applier.apply(df_test)
 
+# %%
 scorer.score_slices(
     S=S_test, golds=Y_test, preds=preds_test, probs=probs_test, as_dataframe=True
 )
@@ -335,7 +338,7 @@ trainer.fit(slice_model, [train_dl, valid_dl])
 # %% [markdown]
 # First, we'll generate the remaining `S` matrixes with the new set of slicing functions.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 applier = PandasSFApplier(sfs)
 S_train = applier.apply(df_train)
 S_valid = applier.apply(df_valid)
