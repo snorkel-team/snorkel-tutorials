@@ -54,7 +54,7 @@ df_train.head()
 #
 # We leverage *slicing functions* (SFs) — an abstraction that shares syntax with *labeling functions*, which you should already be familiar with.
 # If not, please see the [intro tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb).
-# A key difference: whereas labeling functions output labels, slicing functions output binary _masks_ indicating whether an example is in the slice or not.
+# A key difference: whereas labeling functions output labels, slicing functions output binary _masks_ indicating whether a data point is in the slice or not.
 
 # %% [markdown]
 # In the following cells, we use the [`@slicing_function()`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.slicing_function.html#snorkel.slicing.slicing_function) decorator to initialize an SF that identifies shortened links the spam dataset.
@@ -81,7 +81,7 @@ sfs = [short_link]
 # ### Visualize slices
 
 # %% [markdown]
-# With a utility function, [`slice_dataframe`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.slice_dataframe.html#snorkel.slicing.slice_dataframe), we can visualize examples belonging to this slice in a `pandas.DataFrame`.
+# With a utility function, [`slice_dataframe`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.slice_dataframe.html#snorkel.slicing.slice_dataframe), we can visualize data points belonging to this slice in a `pandas.DataFrame`.
 
 # %%
 from snorkel.slicing import slice_dataframe
@@ -177,7 +177,7 @@ model.score([dl_train, dl_valid], as_dataframe=True)
 # However, we emphasize we might actually be **more interested in performance for application-critical subsets,** or _slices_.
 #
 # Let's perform an error analysis, using [`get_label_buckets`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/analysis/snorkel.analysis.get_label_buckets.html), to see where our model makes mistakes.
-# We collect the predictions from the model and visualize examples in specific error buckets.
+# We collect the predictions from the model and visualize data points in specific error buckets.
 
 # %%
 from snorkel.analysis import get_label_buckets
@@ -201,7 +201,7 @@ df_valid[["text", "label"]].iloc[error_buckets[(1, 0)]].head()
 
 # %% [markdown]
 # In order to monitor performance on our `short_link` slice, we add labels to an existing dataloader.
-# First, for our $n$ examples and $k$ slices in each split, we apply the SF to our data to create an $n \times k$ matrix. (So far, $k=1$).
+# First, for our $n$ data points and $k$ slices in each split, we apply the SF to our data to create an $n \times k$ matrix. (So far, $k=1$).
 
 # %%
 from snorkel.slicing import PandasSFApplier
@@ -214,7 +214,7 @@ S_test = applier.apply(df_test)
 # %% [markdown]
 # Specifically, [`add_slice_labels`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.add_slice_labels.html#snorkel.slicing.add_slice_labels) will add two sets of labels for each slice:
 # * `spam_task_slice:{slice_name}_ind`: an indicator label, which corresponds to the outputs of the slicing functions.
-# These indicate whether each example is in the slice (`label=1`)or not (`label=0`).
+# These indicate whether each data point is in the slice (`label=1`)or not (`label=0`).
 # * `spam_task_slice:{slice_name}_pred`: a _masked_ set of the original task labels (in this case, labeled `spam_task`) for each slice. Examples that are masked (with `label=-1`) will not contribute to loss or scoring.
 
 # %%
@@ -330,8 +330,8 @@ def textblob_polarity(x):
 
 
 # %% [markdown]
-# Like we saw above, we'd like to visualize examples in the slice.
-# In this case, most examples with high-polarity sentiments are strong opinions about the video — hence, they are usually relevant to the video, and the corresponding labels are $0$.
+# Like we saw above, we'd like to visualize data points in the slice.
+# In this case, most data points with high-polarity sentiments are strong opinions about the video — hence, they are usually relevant to the video, and the corresponding labels are $0$.
 
 # %%
 polarity_df = slice_dataframe(df_valid, textblob_polarity)
@@ -366,7 +366,7 @@ slice_scorer.score_slices(
 #
 # In classification tasks, we might attempt to increase slice performance with techniques like _oversampling_ (i.e. with PyTorch's [`WeightedRandomSampler`](https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler)).
 # This would shift the training distribution to over-represent certain minority populations.
-# Intuitively, we'd like to show the model more `short_link` examples so that the representation is better suited to handle them.
+# Intuitively, we'd like to show the model more `short_link` data points so that the representation is better suited to handle them.
 #
 # A technique like upsampling might work with a small number of slices, but with hundreds or thousands or production slices, it could quickly become intractable to tune upsampling weights per slice.
 # In the following section, we show a modeling approach that we call _Slice-based Learning,_ which handles numerous slices using with slice-specific representation learning.
@@ -429,7 +429,7 @@ eval_mapping = {label: "spam_task" for label in Y_dict.keys() if "pred" in label
 eval_mapping.update({label: None for label in Y_dict.keys() if "ind" in label})
 
 # %% [markdown]
-# *Note: in this toy dataset, we might not see significant gains because our dataset is so small that (i) there are few examples the train split, giving little signal to learn over, and (ii) there are few examples in the test split, making our evaluation metrics very noisy.
+# *Note: in this toy dataset, we might not see significant gains because our dataset is so small that (i) there are few data points the train split, giving little signal to learn over, and (ii) there are few data points in the test split, making our evaluation metrics very noisy.
 # For a demonstration of data slicing deployed in state-of-the-art models, please see our [SuperGLUE](https://github.com/HazyResearch/snorkel-superglue/tree/master/tutorials) tutorials.*
 
 # %%

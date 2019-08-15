@@ -150,7 +150,7 @@ df_train["label"] = label_model.predict(L=L_train, tie_break_policy="abstain")
 
 # %% [markdown]
 # Note that we used the `LabelModel` to label data; however, on many data points, all the labeling functions abstain, and so the `LabelModel` abstains as well.
-# We'll filter these examples out of our training set now:
+# We'll filter these data points out of our training set now:
 
 # %%
 df_train = df_train[df_train.label != ABSTAIN]

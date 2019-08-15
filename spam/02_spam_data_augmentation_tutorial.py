@@ -11,7 +11,7 @@
 #
 # The tutorial is divided into four parts:
 # 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
-# 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training examples to generate new training examples.
+# 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training data points to generate new training data points.
 # 3. **Applying Transformation Functions**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
 # 4. **Training A Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
 
@@ -19,7 +19,7 @@
 # ### Data Splits in Snorkel
 #
 # We split our data into 3 sets:
-# * **Training Set**: The largest split of the dataset. These are the examples used for training, and also the ones that transformation functions are applied on.
+# * **Training Set**: The largest split of the dataset. These are the data points used for training, and also the ones that transformation functions are applied on.
 # * **Validation Set**: A labeled set used to tune hyperparameters and/or perform early stopping while training the classifier.
 # * **Test Set**: A labeled set for final evaluation of our classifier. This set should only be used for final evaluation, _not_ tuning.
 
@@ -68,7 +68,7 @@ df_train.head()
 # %% [markdown]
 # ## 2. Writing Transformation Functions
 #
-# Transformation Functions are functions that can be applied to a training example to create another valid training example. For example, for image classification problems, it is common to rotate or crop images in the training data to create new training inputs. Transformation functions should be atomic e.g. a small rotation of an image, or changing a single word in a sentence. We then compose multiple transformation functions when applying them to training examples.
+# Transformation Functions are functions that can be applied to a training data point to create another valid training data point. For example, for image classification problems, it is common to rotate or crop images in the training data to create new training inputs. Transformation functions should be atomic e.g. a small rotation of an image, or changing a single word in a sentence. We then compose multiple transformation functions when applying them to training data points.
 #
 # Our task involves processing text. Some [common](https://towardsdatascience.com/data-augmentation-in-nlp-2801a34dfc28) [ways](https://towardsdatascience.com/these-are-the-easiest-data-augmentation-techniques-in-natural-language-processing-you-can-think-of-88e393fd610) to augment text includes replacing words with their synonyms, or replacing names entities with other entities. Applying these operations to a comment shouldn't change whether it is `SPAM` or not.
 #
@@ -224,7 +224,7 @@ transformed_examples = []
 for tf in tfs:
     for i, row in df_train.sample(frac=1, random_state=2).iterrows():
         transformed_or_none = tf(row)
-        # If TF returned a transformed example, record it in dict and move to next TF.
+        # If TF returned a transformed data point, record it in dict and move to next TF.
         if transformed_or_none is not None:
             transformed_examples.append(
                 OrderedDict(
@@ -250,7 +250,7 @@ pd.DataFrame(transformed_examples)
 
 # %% [markdown]
 # To apply one or more TFs that we've written to a collection of data points, we use a `TFApplier`.
-# Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasTFApplier` class. In addition, we can apply multiple TFs in a sequence to each example. A `policy` is used to determine what sequence of TFs to apply to each example. In this case, we just use a `MeanFieldPolicy` that picks 2 TFs at random per example, with probabilities given by `p`. We give higher probabilities to the replace_X_with_synonym TFs, since those provide more information to the model. The `n_per_original` argument determines how many augmented examples to generate per original example.
+# Because our data points are represented with a Pandas DataFrame in this tutorial, we use the `PandasTFApplier` class. In addition, we can apply multiple TFs in a sequence to each data point. A `policy` is used to determine what sequence of TFs to apply to each data point. In this case, we just use a `MeanFieldPolicy` that picks 2 TFs at random per data point, with probabilities given by `p`. We give higher probabilities to the replace_X_with_synonym TFs, since those provide more information to the model. The `n_per_original` argument determines how many augmented data points to generate per original data point.
 
 # %%
 from snorkel.augmentation import MeanFieldPolicy, PandasTFApplier
@@ -271,7 +271,7 @@ print(f"Original training set size: {len(df_train)}")
 print(f"Augmented training set size: {len(df_train_augmented)}")
 
 # %% [markdown]
-# We have almost doubled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because sometimes TFs return `None` instead of a new example (e.g. `change_person` when applied to a sentence with no persons).
+# We have almost doubled our dataset using TFs! Note that despite `n_per_original` being set to 2, our dataset may not exactly triple in size, because sometimes TFs return `None` instead of a new data point (e.g. `change_person` when applied to a sentence with no persons).
 
 # %% [markdown]
 # ## 4. Training A Model

@@ -178,7 +178,7 @@ def lf_other_relationship(x, other):
 # %% [markdown]
 # ### Distant Supervision Labeling Functions
 #
-# In addition to using factories that encode pattern matching heuristics, we can also write labeling functions that _distantly supervise_ examples. Here, we'll load in a list of known spouse pairs and check to see if the pair of persons in a candidate matches one of these.
+# In addition to using factories that encode pattern matching heuristics, we can also write labeling functions that _distantly supervise_ data points. Here, we'll load in a list of known spouse pairs and check to see if the pair of persons in a candidate matches one of these.
 #
 # [**DBpedia**](http://wiki.dbpedia.org/): Our database of known spouses comes from DBpedia, which is a community-driven resource similar to Wikipedia but for curating structured data. We'll use a preprocessed snapshot as our knowledge base for all labeling function development.
 #
@@ -287,7 +287,7 @@ print(
 # %% [markdown]
 # ### Part 4: Training our End Extraction Model
 #
-# In this final section of the tutorial, we'll use our noisy training labels to train our end machine learning model. We start by filtering out training examples which did not recieve a label from any LF, as these examples contain no signal.
+# In this final section of the tutorial, we'll use our noisy training labels to train our end machine learning model. We start by filtering out training data points which did not recieve a label from any LF, as these data points contain no signal.
 #
 # %%
 from snorkel.labeling import filter_unlabeled_dataframe
@@ -325,4 +325,4 @@ print(
 
 # %% [markdown]
 # ## Summary
-# In this tutorial, we showed how Snorkel can be used for Information Extraction. We demonstrated how to create LFs that leverage keywords and external knowledge bases (distant supervision). Finally, we showed how a model trained using the probabilistic outputs of the Label Model can achieve comparable performance while generalizing to all examples.
+# In this tutorial, we showed how Snorkel can be used for Information Extraction. We demonstrated how to create LFs that leverage keywords and external knowledge bases (distant supervision). Finally, we showed how a model trained using the probabilistic outputs of the Label Model can achieve comparable performance while generalizing to all data points.

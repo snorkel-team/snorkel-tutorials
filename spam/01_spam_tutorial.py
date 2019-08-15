@@ -71,9 +71,9 @@
 # * **Test Set**: A labeled set for final evaluation of our classifier. This set should only be used for final evaluation, _not_ error analysis.
 #
 #
-# While it is possible to develop labeling functions on the unlabeled training set only, users often find it more time-efficient to label a small dev set to provide a quick approximate signal on the accuracies and failure modes of their LFs (rather than scrolling through training examples and mentally assessing approximate accuracy).
+# While it is possible to develop labeling functions on the unlabeled training set only, users often find it more time-efficient to label a small dev set to provide a quick approximate signal on the accuracies and failure modes of their LFs (rather than scrolling through training data points and mentally assessing approximate accuracy).
 # Alternatively, users sometimes will have the validation set also serve as the development set.
-# Do the latter only with caution: because the labeling functions will be based on examples from the validation set, the validation set will no longer be an unbiased proxy for the test set.
+# Do the latter only with caution: because the labeling functions will be based on data points from the validation set, the validation set will no longer be an unbiased proxy for the test set.
 
 # %% [markdown]
 # ## 1. Loading Data
@@ -138,7 +138,7 @@ Y_test = df_test["label"].values
 
 
 # %% [markdown]
-# Let's view 5 example data points from the `dev` set.
+# Let's view 5 data points from the `dev` set.
 
 # %%
 import pandas as pd
@@ -191,12 +191,12 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 #
 # 1. Look at examples to generate ideas for LFs
 # 1. Write an initial version of an LF
-# 1. Spot check its performance by looking at its output on examples in the training set (or development set if available)
+# 1. Spot check its performance by looking at its output on data points in the training set (or development set if available)
 # 1. Refine and debug to improve coverage or accuracy as necessary
 #
 # Our goal for LF development is to create a high quality set of training labels for our unlabeled dataset,
 # not to label everything or directly create a model for inference using the LFs.
-# The training labels are used to train a separate discriminative model (in this case, one which just uses the comment text) in order to generalize to new, unseen examples.
+# The training labels are used to train a separate discriminative model (in this case, one which just uses the comment text) in order to generalize to new, unseen data points.
 # Using this model, we can make predictions for data points that our LFs don't cover.
 #
 # We'll walk through the development of two LFs using basic analysis tools in Snorkel, then provide a full set of LFs that we developed for this tutorial.
@@ -205,7 +205,7 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 # ### a) Exploring the development set for initial ideas
 
 # %% [markdown]
-# We'll start by looking at 20 random examples from the `train` set to generate some ideas for LFs.
+# We'll start by looking at 20 random data points from the `train` set to generate some ideas for LFs.
 
 # %%
 df_train[["author", "text", "video"]].sample(20, random_state=2)
@@ -293,8 +293,8 @@ print(f"check_out coverage: {coverage_check_out * 100:.1f}%")
 # * **Incorrect**: The number of data points this LF labels incorrectly (if gold labels are provided)
 # * **Empirical Accuracy**: The empirical accuracy of this LF (if gold labels are provided)
 #
-# For *Correct*, *Incorrect*, and *Empirical Accuracy*, we don't want to penalize the LF for examples where it abstained.
-# We calculate these statistics only over those examples where the LF output a label.
+# For *Correct*, *Incorrect*, and *Empirical Accuracy*, we don't want to penalize the LF for data points where it abstained.
+# We calculate these statistics only over those data points where the LF output a label.
 # Since we have labels for the `dev` set but not the `train` set, we'll compute these statistics for the `dev` set only by supplying `Y_dev`.
 
 # %%
@@ -311,7 +311,7 @@ LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 # We might want to pick the `check` rule, since both have high precision and `check` has higher coverage.
 # But let's look at our data to be sure.
 #
-# The helper method `get_label_buckets(...)` groups examples by their predicted label and true label.
+# The helper method `get_label_buckets(...)` groups data points by their predicted label and true label.
 # For example, we can find the indices of data points that the LF labeled `SPAM` that actually belong to class `HAM`.
 # This may give ideas for where the LF could be made more specific.
 
@@ -324,14 +324,14 @@ df_dev.iloc[buckets[(HAM, SPAM)]]
 
 # %% [markdown]
 # There's only one row here because `check` produced only one false positive on the `dev` set.
-# Now let's take a look at 10 random `train` set examples where `check` labeled `SPAM` to see if it matches our intuition or if we can identify some false positives.
+# Now let's take a look at 10 random `train` set data points where `check` labeled `SPAM` to see if it matches our intuition or if we can identify some false positives.
 
 # %%
 df_train.iloc[L_train[:, 1] == SPAM].sample(10, random_state=1)
 
 # %% [markdown]
 # No clear false positives here, but many look like they could be labeled by `check_out` as well.
-# Let's see 10 examples where `check_out` abstained, but `check` labeled.
+# Let's see 10 data points where `check_out` abstained, but `check` labeled.
 
 # %%
 buckets = get_label_buckets(L_train[:, 0], L_train[:, 1])
@@ -383,7 +383,7 @@ buckets = get_label_buckets(L_dev[:, 1], L_dev[:, 2])
 df_dev.iloc[buckets[(SPAM, ABSTAIN)]]
 
 # %% [markdown]
-# To understand the coverage difference between `check` and `regex_check_out`, let's take a look at 10 examples from the `train` set.
+# To understand the coverage difference between `check` and `regex_check_out`, let's take a look at 10 data points from the `train` set.
 # Remember: coverage isn't always good.
 # Adding false positives will increase coverage.
 
@@ -773,7 +773,7 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 
 # %% [markdown]
 # So our `LabelModel` improves over the majority vote baseline!
-# However, it is typically **not suitable as an inference-time model** to make predictions for unseen examples, due to (among other things) some data points having all abstain labels.
+# However, it is typically **not suitable as an inference-time model** to make predictions for unseen data points, due to (among other things) some data points having all abstain labels.
 # In the next section, we will use the output of the label model as  training labels to train a
 # discriminative classifier to see if we can improve performance further.
 # This classifier will only need the text of the comment to make predictions, making it much more suitable
@@ -816,7 +816,7 @@ plot_probabilities_histogram(probs_train[:, SPAM])
 
 # %% [markdown]
 # As we saw earlier, some of the data points in our `train` set received no labels from any of our LFs.
-# These examples convey no supervision signal and tend to hurt performance, so we filter them out before training using a
+# These data points convey no supervision signal and tend to hurt performance, so we filter them out before training using a
 # [built-in utility](https://snorkel.readthedocs.io/en/master/packages/_autosummary/labeling/snorkel.labeling.filter_unlabeled_dataframe.html#snorkel.labeling.filter_unlabeled_dataframe).
 
 # %%

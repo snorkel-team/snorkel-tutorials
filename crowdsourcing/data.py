@@ -32,7 +32,7 @@ def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
             | (gold_labels.sentiment == "Negative")
         )
     ]
-    labeled = labeled.sample(frac=1, random_state=123)  # Shuffle items.
+    labeled = labeled.sample(frac=1, random_state=123)  # Shuffle data points.
 
     crowd_labels = pd.read_csv("data/weather-non-agg-DFE.csv")
     # Keep only the tweets with available ground truth.

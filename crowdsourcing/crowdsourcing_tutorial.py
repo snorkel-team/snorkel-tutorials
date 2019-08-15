@@ -32,9 +32,9 @@
 # ## Loading Crowdsourcing Dataset
 
 # %% [markdown]
-# We start by loading our data which has 287 examples in total.
+# We start by loading our data which has 287 data points in total.
 # We take 50 for our development set and 50 for our test set.
-# The remaining 187 examples form our training set.
+# The remaining 187 data points form our training set.
 # Since the dataset is already small, we skip using a validation set.
 # Note that this very small dataset is primarily used for demonstration purposes here.
 # In a real setting, we would expect to have access to many more unlabeled tweets, which could help us to train a higher quality model.
@@ -75,7 +75,7 @@ crowd_labels.head()
 # %% [markdown]
 # ## Writing Labeling Functions
 # Each crowdworker can be thought of as a single labeling function,
-# as each worker labels a subset of examples,
+# as each worker labels a subset of data points,
 # and may have errors or conflicting labels with other workers / labeling functions.
 # So we create one labeling function per worker.
 # We'll simply return the label the worker submitted for a given tweet, and abstain
@@ -225,9 +225,9 @@ print(f"LabelModel Accuracy: {acc:.3f}")
 # We see that we get very high accuracy on the development set.
 # This is due to the abundance of high quality crowdworker labels.
 # **Since we don't have these high quality crowdsourcing labels for the
-# test set or new incoming examples, we can't use the LabelModel reliably
+# test set or new incoming data points, we can't use the LabelModel reliably
 # at inference time.**
-# In order to run inference on new incoming examples, we need to train a
+# In order to run inference on new incoming data points, we need to train a
 # discriminative model over the tweets themselves.
 # Let's generate a set of probabilistic labels for that training set.
 
@@ -275,7 +275,7 @@ sklearn_model.fit(X_train, preds_train)
 print(f"Accuracy of trained model: {sklearn_model.score(X_test, Y_test)}")
 
 # %% [markdown]
-# We now have a trained model that can be applied to future examples without requiring crowdsourced labels, and with accuracy not much lower than the `LabelModel` that _does_ have access to crowdsourced labels!
+# We now have a trained model that can be applied to future data points without requiring crowdsourced labels, and with accuracy not much lower than the `LabelModel` that _does_ have access to crowdsourced labels!
 
 # %% [markdown]
 # ## Summary
@@ -283,4 +283,4 @@ print(f"Accuracy of trained model: {sklearn_model.score(X_test, Y_test)}")
 # In this tutorial, we accomplished the following:
 # * We demonstrated how to combine crowdsourced labels with other programmatic LFs to improve coverage.
 # * We used the `LabelModel` to combine inputs from crowdworkers and other LFs to generate high quality probabilistic labels.
-# * We used our probabilistic labels to train a classifier for making predictions on new, unseen examples.
+# * We used our probabilistic labels to train a classifier for making predictions on new, unseen data points.
