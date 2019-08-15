@@ -58,7 +58,7 @@ df_books.head()
 # We look at a sample of the labeled development set.
 # As an example, we want our final recommendations model to be able to predict that a user who has interacted with `book_idxs` (25743, 22318, 7662, 6857, 83, 14495, 30664, ...) would either not read or not like the book with `book_idx` 22764 (first row), while a user who has interacted with `book_idxs` (3880, 18078, 9092, 29933, 1511, 8560, ...) would read and like the book with `book_idx` 3181 (second row).
 
-# %% {"tags": ["md-exclude"]}
+# %%
 df_dev.sample(frac=1, random_state=12).head()
 
 # %% [markdown]
@@ -99,9 +99,7 @@ def shared_first_author(x, book_to_first_author, first_author_to_books):
 
 # %% [markdown]
 # We can also leverage the long text reviews written by users to guess whether they liked or disliked a book.
-# %% [markdown] {"tags": ["md-exclude"]}
 # For example, the third `df_dev` entry above has a review with the text `'4.5 STARS'`, which indicates that the user liked the book.
-# %% [markdown]
 # We write a simple LF that looks for similar phrases to guess the user's rating of a book.
 # We interpret >= 4 stars to indicate a positive rating, while < 4 stars is negative.
 
@@ -195,6 +193,8 @@ lfs = [
 
 applier = PandasLFApplier(lfs)
 L_dev = applier.apply(df_dev)
+
+# %%
 LFAnalysis(L_dev, lfs).lf_summary(df_dev.rating)
 
 # %% [markdown]
@@ -345,11 +345,11 @@ model.fit(
 # %% [markdown]
 # Finally, we evaluate the model's predicted ratings on our test data.
 #
-# %% {"tags": ["md-exclude-output"]}
+# %%
 X_test, Y_test = get_data_tensors(df_test)
 _ = model.evaluate(X_test, Y_test, steps=30)
 
-# %% [markdown] {"tags": ["md-exclude"]}
+# %% [markdown]
 # Our model has generalized quite well to our test set!
 # Note that we should additionally measure ranking metrics, like precision@10, before deploying to production.
 

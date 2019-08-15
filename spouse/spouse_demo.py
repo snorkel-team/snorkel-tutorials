@@ -255,7 +255,7 @@ from snorkel.labeling import LFAnalysis
 L_dev = applier.apply(df_dev)
 L_train = applier.apply(df_train)
 
-# %% {"tags": ["md-exclude"]}
+# %%
 LFAnalysis(L_dev, lfs).lf_summary(Y_dev)
 
 # %% [markdown]
