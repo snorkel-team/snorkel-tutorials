@@ -28,7 +28,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # %% [markdown]
 # In this quick walkthrough, we'll preview the high-level workflow and interfaces of Snorkel using a canonical machine learning problem: classifying spam.
 # We'll use a public [YouTube comments dataset](http://www.dt.fee.unicamp.br/~tiago//youtubespamcollection/), and see how **Snorkel can enable training a machine learning model without _any_ hand-labeled training data!**
-# For more detailed versions of the sections in this walkthrough, see the corresponding tutorials: ([Spam LFs](http://snorkel.org/use-cases/01-spam-tutorial), [Spam TFs](http://snorkel.org/use-cases/02-spam-data-augmentation-tutorial), [Spam SFs](http://snorkel.org/use-cases/03-spam-data-slicing-tutorial)).
+# For more detailed versions of the sections in this walkthrough, see the corresponding tutorials: ([Spam LFs](https://snorkel.org/use-cases/01-spam-tutorial), [Spam TFs](https://snorkel.org/use-cases/02-spam-data-augmentation-tutorial), [Spam SFs](https://snorkel.org/use-cases/03-spam-data-slicing-tutorial)).
 
 # %% [markdown]
 # We'll walk through five basic steps:
@@ -126,7 +126,7 @@ def lf_textblob_polarity(x):
 #
 # In general the process of developing labeling functions is, like any other development process, an iterative one that takes time.
 # However, in many cases it can be _orders-of-magnitude_ faster that hand-labeling training data.
-# For more detail on the process of developing labeling functions and other training data operators in Snorkel, see the [Introduction Tutorials](http://snorkel.org/use-cases).
+# For more detail on the process of developing labeling functions and other training data operators in Snorkel, see the [Introduction Tutorials](https://snorkel.org/use-cases).
 
 # %% [markdown]
 # ## 2) Combining & Cleaning the Labels
@@ -215,7 +215,7 @@ df_train_augmented = tf_applier.apply(df_train)
 # %% [markdown]
 # Note that a common challenge with data augmentation is figuring out how to tune and apply different transformation functions to best augment a training set.
 # This is most commonly done as an ad hoc manual process; however, in Snorkel, various approaches for using automatically learned data augmentation _policies_ are supported.
-# For more detail, see the [Spam TFs tutorial](http://snorkel.org/use-cases/02-spam-data-augmentation-tutorial).
+# For more detail, see the [Spam TFs tutorial](https://snorkel.org/use-cases/02-spam-data-augmentation-tutorial).
 
 # %% [markdown]
 # ## 4) Writing a Slicing Function
@@ -238,7 +238,7 @@ def short_link(x):
 
 # %% [markdown]
 # We can now use Snorkel to monitor the performance over this slice, and to add representational capacity to our model in order to potentially increase performance on this slice.
-# For a walkthrough of these steps, see the [Spam SFs tutorial](http://snorkel.org/use-cases/03-spam-data-slicing-tutorial).
+# For a walkthrough of these steps, see the [Spam SFs tutorial](https://snorkel.org/use-cases/03-spam-data-slicing-tutorial).
 
 # %% [markdown]
 # ## 5) Training a Classifier
@@ -257,4 +257,4 @@ clf.fit(X=X_train, y=df_train_augmented.label.values)
 
 # %% [markdown]
 # And that's it — you've trained your first model **without hand-labeling _any_ training data!**
-# Next, to learn more about Snorkel, check out the [tutorials](http://snorkel.org/use-cases/), [resources](http://snorkel.org/resources), and [documentation](https://snorkel.readthedocs.io) for much more on how to use Snorkel to power your own machine learning applications.
+# Next, to learn more about Snorkel, check out the [tutorials](https://snorkel.org/use-cases/), [resources](https://snorkel.org/resources), and [documentation](https://snorkel.readthedocs.io) for much more on how to use Snorkel to power your own machine learning applications.
