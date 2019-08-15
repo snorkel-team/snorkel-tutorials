@@ -27,8 +27,8 @@
 # +
 import os
 
-if os.path.basename(os.getcwd()) == "visual_relation":
-    os.chdir("..")
+if os.path.basename(os.getcwd()) == "snorkel-tutorials":
+    os.chdir("visual_relation")
 # -
 
 # ### 1. Load Dataset
@@ -45,7 +45,7 @@ if os.path.basename(os.getcwd()) == "visual_relation":
 # The sampled version of the dataset **uses the same 26 data points across the train, dev, and test sets. This setting is meant to demonstrate how Snorkel works with this task, not to demonstrate performance.**
 
 # +
-from visual_relation.utils import load_vrd_data
+from utils import load_vrd_data
 
 # setting sample=False will take ~3 hours to run (downloads full VRD dataset)
 sample = True
@@ -202,14 +202,14 @@ label_model.score(L_valid, Y_valid, metrics=["f1_micro"])
 
 # +
 from snorkel.classification import DictDataLoader
-from visual_relation.model import SceneGraphDataset, create_model
+from model import SceneGraphDataset, create_model
 
 df_train["labels"] = label_model.predict(L_train)
 
 if sample:
-    TRAIN_DIR = "visual_relation/data/VRD/sg_dataset/samples"
+    TRAIN_DIR = "data/VRD/sg_dataset/samples"
 else:
-    TRAIN_DIR = "visual_relation/data/VRD/sg_dataset/sg_train_images"
+    TRAIN_DIR = "data/VRD/sg_dataset/sg_train_images"
 
 dl_train = DictDataLoader(
     SceneGraphDataset("train_dataset", "train", TRAIN_DIR, df_train),

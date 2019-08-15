@@ -20,10 +20,10 @@
 # In this notebook, we will start by looking at a simple MTL model with only two tasks, each having distinct data and only one set of ground truth labels ("gold" labels). We'll also use a simple dataset where the raw data is directly usable as features, for simplicity (i.e., unlike text data, where we would first need to tokenize and transform the data into token ids).
 # At the end, you'll fill in the missing details to add a third task to the model.
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # ## Environment Setup
 
-# %%
+# %% {"tags": ["md-exclude"]}
 # %matplotlib inline
 
 from snorkel.utils import set_seed
@@ -41,11 +41,13 @@ set_seed(SEED)
 #
 # 1. Inside a **unit circle** centered on the origin (label 0 = `False`, label 1 = `True`)
 # 2. Inside a **unit square** centered on the origin (label 0 = `False`, label 1 = `True`)
-#
+
+# %% [markdown] {"tags": ["md-exclude"]}
 # We'll visualize these decision boundaries in a few cells.
-#
+
+# %% [markdown]
 # _Note: We don't expect these specific toy tasks to necessarily improve one another, but this is often a benefit of joint training in MTL settings when a model is trained on similar tasks._
-# %%
+# %% {"tags": ["md-exclude"]}
 import os
 
 # Make sure we're running from the multitask/ directory
@@ -74,11 +76,11 @@ square_train, square_valid, square_test = make_square_dataset(N, R)
 print(f"Training data shape: {X_train['circle'].shape}")
 print(f"Label space: {set(Y_train['circle'])}")
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # And we can view the ground truth labels of our tasks visually to confirm our intuition on what the decision boundaries look like.
 # In the plots below, the purple points represent class 0 and the yellow points represent class 1.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import matplotlib.pyplot as plt
 
 fig, axs = plt.subplots(1, 2)
@@ -288,7 +290,7 @@ inv_circle_train, inv_circle_valid, inv_circle_test = make_inv_circle_dataset(N,
 (X_valid["inv_circle"], Y_valid["inv_circle"]) = inv_circle_valid
 (X_test["inv_circle"], Y_test["inv_circle"]) = inv_circle_test
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import matplotlib.pyplot as plt
 
 fig, axs = plt.subplots(1, 3)
@@ -367,7 +369,7 @@ model = MultitaskClassifier([circle_task, square_task])  # Filled in by you
 # %% [markdown]
 # We can use the same trainer and training settings as before.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 trainer.fit(model, all_dataloaders)
 model.score(all_dataloaders)
 

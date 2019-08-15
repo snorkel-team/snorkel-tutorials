@@ -64,9 +64,7 @@ def load_vrd_data(sample=False, is_travis=False):
     if sample or is_travis:
         try:
             subprocess.run(
-                ["bash", "visual_relation/download_sample_data.sh"],
-                check=True,
-                stderr=subprocess.PIPE,
+                ["bash", "download_sample_data.sh"], check=True, stderr=subprocess.PIPE
             )
         except subprocess.CalledProcessError as e:
             print(e.stderr.decode())
@@ -74,23 +72,17 @@ def load_vrd_data(sample=False, is_travis=False):
     else:
         try:
             subprocess.run(
-                ["bash", "visual_relation/download_full_data.sh"],
-                check=True,
-                stderr=subprocess.PIPE,
+                ["bash", "download_full_data.sh"], check=True, stderr=subprocess.PIPE
             )
         except subprocess.CalledProcessError as e:
             print(e.stderr.decode())
             raise e
 
-    relationships_train = json.load(
-        open("visual_relation/data/VRD/annotations_train.json")
-    )
-    relationships_test = json.load(
-        open("visual_relation/data/VRD/annotations_test.json")
-    )
+    relationships_train = json.load(open("data/VRD/annotations_train.json"))
+    relationships_test = json.load(open("data/VRD/annotations_test.json"))
 
-    objects = json.load(open("visual_relation/data/VRD/objects.json"))
-    predicates = json.load(open("visual_relation/data/VRD/predicates.json"))
+    objects = json.load(open("data/VRD/objects.json"))
+    predicates = json.load(open("data/VRD/predicates.json"))
     semantic_predicates = [
         "carry",
         "cover",
@@ -117,9 +109,9 @@ def load_vrd_data(sample=False, is_travis=False):
     }
 
     # TODO: hack to work with small sample of data for tox
-    if os.path.isdir("visual_relation/data/VRD/sg_dataset/samples"):
+    if os.path.isdir("data/VRD/sg_dataset/samples"):
         # pass in list of images as keys_list
-        keys_list = os.listdir("visual_relation/data/VRD/sg_dataset/samples")
+        keys_list = os.listdir("data/VRD/sg_dataset/samples")
         test_df = vrd_to_pandas(
             relationships_test,
             objects,
@@ -128,7 +120,7 @@ def load_vrd_data(sample=False, is_travis=False):
             keys_list=keys_list,
         )
         return test_df, test_df, test_df
-    elif os.path.isdir("visual_relation/data/VRD/sg_dataset/sg_train_images"):
+    elif os.path.isdir("data/VRD/sg_dataset/sg_train_images"):
         train_df = vrd_to_pandas(
             relationships_train,
             objects,
