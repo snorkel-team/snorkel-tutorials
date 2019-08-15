@@ -16,7 +16,8 @@ logging.basicConfig(level=logging.INFO)
 
 NOTEBOOKS_CONFIG_FNAME = ".notebooks"
 SCRIPTS_CONFIG_FNAME = ".scripts"
-EXCLUDE_TAG = "md-exclude"
+EXCLUDE_CELL_TAG = "md-exclude"
+EXCLUDE_OUTPUT_TAG = "md-exclude-output"
 BUILD_DIR = "build"
 WEB_YML = ".web.yml"
 
@@ -27,9 +28,16 @@ title: {title}
 description: {description}
 excerpt: {description}
 order: {order}
+github_link: {github_link}
 ---
 
 """
+
+
+GITHUB_LINK_TEMPLATE = (
+    "https://github.com/snorkel-team/snorkel-tutorials/"
+    "blob/master/{notebook_path}"
+)
 
 
 # Credit to: https://gist.github.com/pchc2005/b5f13e136a9c9bb2984e5b92802fc7c9
@@ -90,29 +98,38 @@ class Notebook:
         return f"{self.basename}.ipynb"
 
 
+class MarkdownHeader:
+    def __init__(
+        self, title: str, description: str, order: int, github_link: str
+    ) -> None:
+        self.title = title
+        self.description = description
+        self.order = order
+        self.github_link = github_link
+
+    def render(self):
+        return HEADER_TEMPLATE.format(
+            title=self.title,
+            description=self.description,
+            order=self.order,
+            github_link=self.github_link,
+        )
+
+
 class TutorialWebpage:
     def __init__(
         self,
         ipynb_path: str,
-        title: str,
-        description: str,
-        order: int,
-        exclude_output: bool,
+        header: Optional[MarkdownHeader],
+        exclude_all_output: bool,
     ) -> None:
         self.ipynb = ipynb_path
-        self.title = title
-        self.description = description
-        self.order = order
-        self.exclude_output = exclude_output
+        self.header = header
+        self.exclude_all_output = exclude_all_output
 
     def markdown_path(self) -> str:
         return os.path.join(
             BUILD_DIR, f"{os.path.splitext(os.path.basename(self.ipynb))[0]}.md"
-        )
-
-    def get_header(self) -> str:
-        return HEADER_TEMPLATE.format(
-            title=self.title, description=self.description, order=self.order
         )
 
 
@@ -122,28 +139,38 @@ def parse_web_yml(tutorial_dir: Optional[str]) -> List[TutorialWebpage]:
         web_config = yaml.safe_load(f)
     tutorial_webpages = []
     # Process webpage configs in order
-    for i, cfg in enumerate(web_config["tutorials"]):
+    i = 1
+    for cfg in web_config["tutorials"]:
         # If tutorial directory specified, skip if not in specified directory
-        notebook_dir = cfg["notebook"].split("/")[0]
+        notebook_path = cfg["notebook"]
+        notebook_dir = notebook_path.split("/")[0]
         if tutorial_dir is not None and notebook_dir != tutorial_dir:
             continue
         # If full notebook path supplied, just use that
-        if cfg["notebook"].endswith(".ipynb"):
-            notebook = Notebook(os.path.abspath(cfg["notebook"]))
+        if notebook_path.endswith(".ipynb"):
+            notebook = Notebook(os.path.abspath(notebook_path))
         # If only directory supply, ensure that there's only one notebook
         else:
-            notebooks = get_notebooks(cfg["notebook"])
+            notebooks = get_notebooks(notebook_path)
             if len(notebooks) > 1:
-                raise ValueError(f"Multiple notebooks found in {cfg['notebook']}")
+                raise ValueError(f"Multiple notebooks found in {notebook_path}")
             notebook = notebooks[0]
+        # If no title or description, don't generate order for header
+        title = cfg.get("title")
+        description = cfg.get("description")
+        if title is not None and description is not None:
+            full_notebook_path = notebook.ipynb.split("/snorkel-tutorials/")[-1]
+            github_link = GITHUB_LINK_TEMPLATE.format(notebook_path=full_notebook_path)
+            header = MarkdownHeader(title, description, i, github_link)
+            i += 1
+        else:
+            header = None
         # Create TutorialWebpage object
         tutorial_webpages.append(
             TutorialWebpage(
                 ipynb_path=notebook.ipynb,
-                title=cfg["title"],
-                description=cfg["description"],
-                order=i + 1,
-                exclude_output=cfg.get("exclude_output", False),
+                header=header,
+                exclude_all_output=cfg.get("exclude_all_output", False),
             )
         )
     return tutorial_webpages
@@ -162,7 +189,7 @@ def check_links(script_path: str) -> None:
         except urllib.error.HTTPError as e:
             raise ValueError(f"Bad link [{url}] found in {script_path}: {e}")
         except Exception as e:
-            logging.warn(
+            logging.warning(
                 f"SKIPPING: Could not access [{url}] found in {script_path}: {e}"
             )
 
@@ -243,18 +270,20 @@ def build_markdown_notebook(tutorial: TutorialWebpage) -> None:
         tutorial.ipynb,
         "--to",
         "markdown",
-        f"--TagRemovePreprocessor.remove_cell_tags={{'{EXCLUDE_TAG}'}}",
+        f"--TagRemovePreprocessor.remove_cell_tags={{'{EXCLUDE_CELL_TAG}'}}",
+        f"--TagRemovePreprocessor.remove_all_outputs_tags={{'{EXCLUDE_OUTPUT_TAG}'}}",
         "--output-dir",
         BUILD_DIR,
     ]
-    if tutorial.exclude_output:
+    if tutorial.exclude_all_output:
         args.append("--TemplateExporter.exclude_output=True")
     subprocess.run(args, check=True)
     # Prepend header by reading generated file then writing back
-    with open(tutorial.markdown_path(), "r") as f:
-        content = f.read()
-    with open(tutorial.markdown_path(), "w") as f:
-        f.write(tutorial.get_header() + content)
+    if tutorial.header is not None:
+        with open(tutorial.markdown_path(), "r") as f:
+            content = f.read()
+        with open(tutorial.markdown_path(), "w") as f:
+            f.write(tutorial.header.render() + content)
 
 
 def sync_notebook(notebook: Notebook) -> None:

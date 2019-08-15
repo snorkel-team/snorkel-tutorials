@@ -1,5 +1,8 @@
 # Snorkel Tutorials
-A collection of tutorials for [Snorkel](http://snorkel.org).
+[![build](https://travis-ci.com/snorkel-team/snorkel-tutorials.svg?branch=master)](https://travis-ci.com/snorkel-team/snorkel-tutorials?branch=master)
+
+A collection of tutorials for [Snorkel](https://github.com/snorkel-team/snorkel).
+For more information, visit the [Snorkel website](http://snorkel.org).
 
 ## Tutorials
 The Snorkel tutorials are grouped by application, with some applications having multiple associated notebooks in their directory.
@@ -12,6 +15,7 @@ The Snorkel tutorials are grouped by application, with some applications having 
 * [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
+If you are interested in requesting or contributing a new tutorial, let us know on the Snorkel [community forum](https://spectrum.chat/snorkel/tutorials?tab=posts).
 
 We recommend that all users **start with the `spam` tutorial** for a gentle introduction to the concepts and classes of Snorkel.
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
@@ -93,8 +97,8 @@ It may be available as `pip` depending on how your system is configured.
 ```bash
 # [OPTIONAL] Activate a virtual environment
 pip3 install --upgrade virtualenv
-virtualenv -p python3 spam
-source spam/bin/activate
+virtualenv -p python3 .envspam
+source .envspam/bin/activate
 
 # Install requirements (both shared and tutorial-specific)
 pip3 install -r requirements.txt
@@ -115,16 +119,19 @@ These commands assume that your conda installation is Python 3.6+.
 
 ```bash
 # [OPTIONAL] Activate a virtual environment
-conda create --name spam
+conda create --yes -n spam python=3.6
 source activate spam
 
 # Install requirements (both shared and tutorial-specific)
-conda install --yes --file requirements.txt
-conda install --yes --file spam/requirements.txt
+pip install environment_kernels
+pip install -r requirements.txt
+pip install -r spam/requirements.txt
 
 # Launch the Jupyter notebook interface
 jupyter notebook spam
 ```
+
+Make sure to select the right kernel (`conda_spam`) when running the jupyter notebook.
 
 </p>
 </details>

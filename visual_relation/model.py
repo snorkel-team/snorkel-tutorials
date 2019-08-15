@@ -9,7 +9,8 @@ import torch.nn as nn
 from PIL import Image
 from torchvision import transforms
 
-from snorkel.classification import DictDataset, Operation
+from snorkel.analysis import Scorer
+from snorkel.classification import DictDataset, MultitaskClassifier, Operation, Task
 from snorkel.classification.data import XDict, YDict
 
 
@@ -201,3 +202,39 @@ def get_op_sequence():
         concat_op,
         prediction_op,
     ]
+
+
+# Create model from pre loaded resnet cnn.
+def create_model(resnet_cnn):
+    # freeze the resnet weights
+    for param in resnet_cnn.parameters():
+        param.requires_grad = False
+
+    # define input features
+    in_features = resnet_cnn.fc.in_features
+    feature_extractor = nn.Sequential(*list(resnet_cnn.children())[:-1])
+
+    # initialize FC layer: maps 3 sets of image features to class logits
+    WEMB_SIZE = 100
+    fc = nn.Linear(in_features * 3 + 2 * WEMB_SIZE, 3)
+    init_fc(fc)
+
+    # define layers
+    module_pool = nn.ModuleDict(
+        {
+            "feat_extractor": feature_extractor,
+            "prediction_head": fc,
+            "feat_concat": FlatConcat(),
+            "word_emb": WordEmb(),
+        }
+    )
+
+    # define task flow through modules
+    op_sequence = get_op_sequence()
+    pred_cls_task = Task(
+        name="visual_relation_task",
+        module_pool=module_pool,
+        op_sequence=op_sequence,
+        scorer=Scorer(metrics=["f1_micro"]),
+    )
+    return MultitaskClassifier([pred_cls_task])

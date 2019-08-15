@@ -12,14 +12,15 @@
 ## Rendering tutorials as Markdown
 
 In order to display tutorials as webpages, we convert the `.ipynb` versions to Markdown.
-This is again done with `tox`:
+To generate all Markdown files listed in `.web.yml`, use
 
 ```bash
-tox -e my_tutorial -- markdown
+tox -e markdown
 ```
 
-This will create a Markdown file under the `build` directory corresponding to the notebook.
-You can exclude cell outputs by using the `--exclude-output` flag.
+Again, this will generate files in the `build` directory.
+Details on configuring with `.web.yml` are in that file.
+
 Additionally, you can prevent cells from being rendered in Markdown by adding `{"tag": ["md-exclude"]}`
 to the cell header in the `.py` file.
 For example:
@@ -28,4 +29,15 @@ For example:
 # %% {"tag": ["md-exclude"]}
 command.do_not_show()
 this_line.will_not_appear()
+```
+
+You can also prevent cells from rendering output in Markdown by adding
+`{"tag": ["md-exclude-output"]}` to the cell header in the `.py` file.
+For example:
+
+```python
+# %% {"tag": ["md-exclude-output"]}
+command.will_show()
+this_line.will_appear()
+print(my_object)  # The output will not show
 ```

@@ -7,7 +7,7 @@ import numpy as np
 
 import pandas as pd
 
-IS_TRAVIS = "TRAVIS" in os.environ
+IS_TRAVIS = os.environ.get("TRAVIS") == "true"
 
 
 def load_data() -> Tuple[
