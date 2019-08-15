@@ -19,7 +19,7 @@
 # "Item Recommendation on Monotonic Behavior Chains", RecSys'18 (Mengting Wan, Julian McAuley), and "Fine-Grained Spoiler Detection from Large-Scale Review Corpora", ACL'19 (Mengting Wan, Rishabh Misra, Ndapa Nakashole, Julian McAuley).
 # In this dataset, we have user interactions and reviews for Young Adult novels from the Goodreads website, along with metadata (like `title` and `authors`) for the novels.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import logging
 import os
 
@@ -47,7 +47,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 #
 # In addition, `download_and_process_data` also returns the `df_books` dataframe, which contains one row per book, along with metadata for that book (such as `title` and `first_author`).
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from utils import download_and_process_data
 
 (df_train, df_test, df_dev, df_valid), df_books = download_and_process_data()
@@ -180,7 +180,7 @@ def polarity_negative(x):
     return ABSTAIN
 
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import PandasLFApplier, LFAnalysis
 
 lfs = [
@@ -193,6 +193,8 @@ lfs = [
 
 applier = PandasLFApplier(lfs)
 L_dev = applier.apply(df_dev)
+
+# %%
 LFAnalysis(L_dev, lfs).lf_summary(df_dev.rating)
 
 # %% [markdown]
@@ -200,7 +202,7 @@ LFAnalysis(L_dev, lfs).lf_summary(df_dev.rating)
 #
 # We apply the labeling functions to the training set, and then filter out examples unlabeled by any LF to form our final training set.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling.model.label_model import LabelModel
 
 L_train = applier.apply(df_train)
@@ -208,7 +210,7 @@ label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, n_epochs=5000, seed=123, log_freq=20, lr=0.01)
 preds_train = label_model.predict(L_train)
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import filter_unlabeled_dataframe
 
 df_train_filtered, preds_train_filtered = filter_unlabeled_dataframe(
@@ -324,7 +326,7 @@ def get_data_tensors(df):
 # %% [markdown]
 # We now train the model on our combined training data (data labeled by LFs plus dev data).
 #
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from utils import get_n_epochs
 
 model = get_model()
