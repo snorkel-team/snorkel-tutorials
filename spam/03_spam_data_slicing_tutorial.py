@@ -86,7 +86,7 @@ short_link_df = slice_dataframe(df_valid, short_link)
 short_link_df[["text", "label"]]
 
 # %% [markdown]
-# ## 2. Monitor slice performance with [`Scorer.score_slices`]()
+# ## 2. Monitor slice performance with [`Scorer.score_slices`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/analysis/snorkel.analysis.Scorer.html#snorkel.analysis.Scorer.score_slices)
 
 # %% [markdown]
 # In this section, we'll demonstrate how we might monitor slice performance on the `short_link` slice — this approach is compatible with _any modeling framework_.
@@ -143,7 +143,7 @@ from snorkel.analysis import Scorer
 scorer = Scorer(metrics=["accuracy", "f1"])
 
 # %% [markdown]
-# Using the [`score_slices`]() method, we can see both `overall` and slice-specific performance.
+# Using the [`score_slices`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/analysis/snorkel.analysis.Scorer.html#snorkel.analysis.Scorer.score_slices) method, we can see both `overall` and slice-specific performance.
 
 # %%
 scorer.score_slices(
@@ -223,8 +223,7 @@ polarity_df = slice_dataframe(df_valid, textblob_polarity)
 polarity_df[["text", "label"]].head()
 
 # %% [markdown]
-# We can evaluate performance on _all SFs_ using the model-agnostic `SliceScorer`.
-# Like we did above, we first collect all `sfs` and `slice_names`.
+# We can evaluate performance on _all SFs_ using the model-agnostic [`Scorer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/analysis/snorkel.analysis.Scorer.html#snorkel-analysis-scorer).
 
 # %%
 extra_sfs = [
@@ -291,7 +290,7 @@ test_dl = create_dict_dataloader(
 )
 
 # %% [markdown]
-# We'll now initialize a `SlicingClassifier`:
+# We'll now initialize a [`SlicingClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html):
 # * `base_architecture`: We define a simple Multi-Layer Perceptron (MLP) in Pytorch to serve as the primary representation architecture. We note that the `BinarySlicingClassifier` is **agnostic to the base architecture** — you might leverage a Transformer model for text, or a ResNet for images.
 # * `head_dim`: identifies the final output feature dimension of the `base_architecture`
 # * `slice_names`: Specify the slices that we plan to train on with this classifier.
@@ -308,9 +307,7 @@ mlp = get_pytorch_mlp(hidden_dim=hidden_dim, num_layers=2)
 
 # Init slice model
 slice_model = SlicingClassifier(
-    base_architecture=mlp,
-    head_dim=hidden_dim,
-    slice_names=[sf.name for sf in sfs],
+    base_architecture=mlp, head_dim=hidden_dim, slice_names=[sf.name for sf in sfs]
 )
 
 # %% [markdown]
@@ -319,7 +316,7 @@ slice_model = SlicingClassifier(
 # Using Snorkel's [`Trainer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Trainer.html), we fit to `train_dl`, and validate on `valid_dl`.
 #
 # We note that we can monitor slice-specific performance during training — this is a powerful way to track especially critical subsets of the data.
-# If logging in `Tensorboard` (i.e. [`snorkel.classification.TensorboardWritier`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.TensorBoardWriter.html)), we would visualize individual loss curves and validation metrics to debug convegence for specific slices.
+# If logging in `Tensorboard` (i.e. [`snorkel.classification.TensorboardWritier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.TensorBoardWriter.html)), we would visualize individual loss curves and validation metrics to debug convegence for specific slices.
 
 # %%
 from snorkel.classification import Trainer
@@ -345,9 +342,9 @@ S_valid = applier.apply(df_valid)
 
 # %% [markdown]
 # In order to train using slice information, we'd like to initialize a **slice-aware dataloader**.
-# To do this, we can use [`slice_model.make_slice_dataloader`]() to add slice labels to an existing dataloader.
+# To do this, we can use [`slice_model.make_slice_dataloader`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html#snorkel.slicing.SlicingClassifier.predict) to add slice labels to an existing dataloader.
 #
-# Under the hood, this method leverages slice metadata to add slice labels to the appropriate fields such that it's compatible with the initialized [`SliceClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.BinarySlicingClassifier.html#snorkel.slicing.BinarySlicingClassifier).
+# Under the hood, this method leverages slice metadata to add slice labels to the appropriate fields such that it's compatible with the initialized [`SliceClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html#snorkel-slicing-slicingclassifier).
 
 # %%
 train_dl_slice = slice_model.make_slice_dataloader(
@@ -372,7 +369,7 @@ trainer.fit(slice_model, [train_dl_slice, valid_dl_slice])
 
 # %% [markdown]
 # At inference time, the primary task head (`spam_task`) will make all final predictions.
-# We'd like to evaluate all the slice heads on the original task head — [`score_slices`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.BinarySlicingClassifier.html#snorkel.slicing.BinarySlicingClassifier.score_slices) remaps all slice-related labels, denoted `spam_task_slice:{slice_name}_pred`, to be evaluated on the `spam_task`.
+# We'd like to evaluate all the slice heads on the original task head — [`score_slices`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html#snorkel.slicing.SlicingClassifier.score_slices) remaps all slice-related labels, denoted `spam_task_slice:{slice_name}_pred`, to be evaluated on the `spam_task`.
 
 # %%
 slice_model.score_slices([valid_dl_slice, test_dl_slice], as_dataframe=True)
