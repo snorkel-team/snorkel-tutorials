@@ -279,10 +279,7 @@ preview_tfs(df_train, tfs)
 from snorkel.augmentation import RandomPolicy
 
 random_policy = RandomPolicy(
-    len(tfs),
-    sequence_length=2,
-    n_per_original=2,
-    keep_original=True,
+    len(tfs), sequence_length=2, n_per_original=2, keep_original=True
 )
 
 # %% [markdown]
