@@ -1,6 +1,6 @@
 #### ESSENTIAL LIBRARIES
 
-git+https://github.com/snorkel-team/snorkel.git
+https://github.com/snorkel-team/snorkel/releases/download/v0.9.0/snorkel-0.9.0-py3-none-any.whl
 
 
 #### DEV TOOLS
