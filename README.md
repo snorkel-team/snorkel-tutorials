@@ -6,13 +6,13 @@ For more information, visit the [Snorkel website](http://snorkel.org).
 
 ## Tutorials
 The Snorkel tutorials are grouped by application, with some applications having multiple associated notebooks in their directory.
-* `spam`: Is this YouTube comment spam?
-* `spouse`: Does this sentence imply that the two marked people are spouses?
-* `visual_relation`: Is object A riding object B in the image, carrying it, or neither?
-* `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
-* `multitask` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
-* `recsys` (Recommender Systems): Will this user read and like this book?
-* [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
+* [`spam`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/README.md): Is this YouTube comment spam?
+* [`spouse`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spouse/README.md): Does this sentence imply that the two marked people are spouses?
+* [`visual_relation`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/visual_relation/README.md): Is object A riding object B in the image, carrying it, or neither?
+* [`crowdsourcing`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/crowdsourcing/README.md): Is this tweet about the weather expressing a positive, negative or neutral sentiment?
+* [`multitask`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/multitask/README.md) (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+* [`recsys`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/recsys/README.md) (Recommender Systems): Will this user read and like this book?
+* [`drybell`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/drybell/README.md): Is a celebrity mentioned in this news article?
 
 See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
 If you are interested in requesting or contributing a new tutorial, let us know on the Snorkel [community forum](https://spectrum.chat/snorkel/tutorials?tab=posts).
