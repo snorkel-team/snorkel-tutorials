@@ -194,7 +194,7 @@ for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
 # 1. Spot check its performance by looking at its output on examples in the training set (or development set if available)
 # 1. Refine and debug to improve coverage or accuracy as necessary
 #
-# Our goal for LF development is to create a high quality set of training labels for our unlabeled data set,
+# Our goal for LF development is to create a high quality set of training labels for our unlabeled dataset,
 # not to label everything or directly create a model for inference using the LFs.
 # The training labels are used to train a separate discriminative model (in this case, one which just uses the comment text) in order to generalize to new, unseen examples.
 # Using this model, we can make predictions for data points that our LFs don't cover.
