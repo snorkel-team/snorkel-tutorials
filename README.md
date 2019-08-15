@@ -105,8 +105,8 @@ python3 scripts/docker_launch.py spam
 Running a tutorial has three required steps if you're installing yourself:
 
 1. Installing repo-wide requirements
-2. Installing tutorial-specific requirements
-3. Launching a Jupyter notebook server or executing as a script
+1. Installing tutorial-specific requirements
+1. Launching a Jupyter notebook server or executing as a script
 
 We recommend installing requirements in a virtual environment using [`virtualenv`](https://virtualenv.pypa.io/en/latest/) or [`conda`](https://docs.conda.io/en/latest/).
 
