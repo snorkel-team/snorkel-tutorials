@@ -217,7 +217,7 @@ def textblob_polarity(x):
 # Again, we'd like to visualize examples in a particular slice. This time, we'll inspect the `textblob_polarity` slice.
 #
 # Most examples with high-polarity sentiments are strong opinions about the video — hence, they are usually relevant to the video, and the corresponding labels are $0$.
-# We define a slice here for *product and marketing reasons*, it's important to make sure that we don't misclassify very positive comments from good users.
+# We might define a slice here for *product and marketing reasons*, it's important to make sure that we don't misclassify very positive comments from good users.
 
 # %%
 polarity_df = slice_dataframe(df_valid, textblob_polarity)
@@ -252,14 +252,16 @@ slice_scorer.score_slices(
 )
 
 # %% [markdown]
-# Looks like they do well — we'll want to monitor these to make sure performance changes on one don't hurt another.
+# Looks like some do extremely well on our small test set, while others do decently.
+# At the very least, we may want to monitor these to make sure that as we iterate to improve certain slices like `short_link`, we don't hurt the performance of others.
+# Next, we'll introduce a model that helps us to do this balancing act automatically!
 
 # %% [markdown]
 # ## 3. Improve slice performance
 #
-# In the following section, we demonstrate a modeling approach that we call _Slice-based Learning,_ which improves performance with slice-specific representation learning.
+# In the following section, we demonstrate a modeling approach that we call _Slice-based Learning,_ which improves performance by adding extra slice-specific representational capacity to whichever model we're using.
 # Intuitively, we'd like to model to learn *representations that are better suited to handle examples in this slice*.
-# In our approach, we model each slice as a separate "expert task" in the style of [multi-task learning](https://github.com/snorkel-team/snorkel-tutorials/blob/master/multitask/multitask_tutorial.ipynb).
+# In our approach, we model each slice as a separate "expert task" in the style of [multi-task learning](https://github.com/snorkel-team/snorkel-tutorials/blob/master/multitask/multitask_tutorial.ipynb); for further details of how slice-based learning works under the hood, check out the [code](https://github.com/snorkel-team/snorkel/blob/master/snorkel/slicing/utils.py) (with paper coming soon)!
 #
 # In other approaches, one might attempt to increase slice performance with techniques like _oversampling_ (i.e. with PyTorch's [`WeightedRandomSampler`](https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler)), effectively shifting the training distribution towards certain populations.
 #
@@ -342,17 +344,6 @@ trainer.fit(slice_model, [train_dl, valid_dl])
 applier = PandasSFApplier(sfs)
 S_train = applier.apply(df_train)
 S_valid = applier.apply(df_valid)
-
-# %% [markdown]
-# We now highlight the slice-aware capabilities of `SlicingClassifier`.
-# At a high-level, this model adds additional capacity corresponding to each slice through additional _slice-specific tasks_.
-
-# %%
-slice_model = SlicingClassifier(
-    base_architecture=mlp,
-    head_dim=bow_dim,
-    slice_names=slice_names,
-)
 
 # %% [markdown]
 # In order to train using slice information, we'd like to initialize a **slice-aware dataloader**.
