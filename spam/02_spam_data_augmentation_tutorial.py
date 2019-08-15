@@ -12,7 +12,7 @@
 #
 # %% [markdown] {"tags": ["md-exclude"]}
 # * For more details on the task, check out the [labeling tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb)
-# * For an overview of Snorkel, visit [snorkel.org](http://snorkel.org)
+# * For an overview of Snorkel, visit [snorkel.org](https://snorkel.org)
 # * You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/)
 #
 #  %% [markdown]
