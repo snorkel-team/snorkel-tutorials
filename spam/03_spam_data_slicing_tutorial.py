@@ -12,10 +12,10 @@
 # 1. **Monitor** application-critical data subsets
 # 2. **Improve model performance** on slices
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # First, we'll set up our notebook for reproducibility and proper logging.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import logging
 import os
 import pandas as pd
@@ -114,7 +114,7 @@ from sklearn.linear_model import LogisticRegression
 
 sklearn_model = LogisticRegression(C=0.001, solver="liblinear")
 sklearn_model.fit(X=X_train, y=Y_train)
-sklearn_model.score(X_test, Y_test)
+print(f"Model Score: {sklearn_model.score(X_test, Y_test)}")
 
 # %%
 from snorkel.utils import preds_to_probs
@@ -389,5 +389,3 @@ slice_model.score_slices([valid_dl_slice, test_dl_slice], as_dataframe=True)
 # This tutorial walked through the process authoring slices, monitoring model performance on specific slices, and improving model performance using slice information.
 # This programming abstraction provides a mechanism to heuristically identify critical data subsets.
 # For more technical details about _Slice-based Learning,_ stay tuned — our technical report is coming soon!
-
-# %%
