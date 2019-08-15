@@ -313,7 +313,7 @@ slice_model = SlicingClassifier(
 # %% [markdown]
 # ### Monitor slice performance _during training_
 #
-# Using Snorkel's [`Trainer`](https://snorkel.readthedocs.io/en/redux/packages/_autosummary/classification/snorkel.classification.Trainer.html), we fit to `train_dl`, and validate on `valid_dl`.
+# Using Snorkel's [`Trainer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.Trainer.html), we fit to `train_dl`, and validate on `valid_dl`.
 #
 # We note that we can monitor slice-specific performance during training — this is a powerful way to track especially critical subsets of the data.
 # If logging in `Tensorboard` (i.e. [`snorkel.classification.TensorboardWritier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.TensorBoardWriter.html)), we would visualize individual loss curves and validation metrics to debug convegence for specific slices.
