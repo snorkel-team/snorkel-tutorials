@@ -37,7 +37,7 @@ if os.path.basename(os.getcwd()) == "snorkel-tutorials":
 # 2. **Modeling & Combining LFs:** Next, we'll use Snorkel's `LabelModel` to automatically learn the accuracies of our LFs and reweight and combine their outputs into a single, confidence-weighted training label per data point.
 # 3. **Writing Transformation Functions (TFs) for Data Augmentation:** Then, we'll augment this labeled training set by writing a simple TF.
 # 4. **Writing _Slicing Functions (SFs)_ for Data Subset Selection:** We'll also preview writing an SF to identify a critical subset or _slice_ of our training set.
-# 5. **Training a final ML model:** Finally, we'll train a simple ML model with our training set.
+# 5. **Training a final ML model:** Finally, we'll train an ML model with our training set.
 #
 # We'll start first by loading the _unlabeled_ comments, which we'll use as our training data, as a Pandas `DataFrame`:
 
@@ -47,7 +47,7 @@ from utils import load_unlabeled_spam_dataset
 df_train = load_unlabeled_spam_dataset()
 
 # %% [markdown]
-# ## (1) Writing Labeling Functions
+# ## 1) Writing Labeling Functions
 #
 # _Labeling functions (LFs)_ are one of the core operators for building and managing training datasets programmatically in Snorkel.
 # The basic idea is simple: **a labeling function is a function that outputs a label for some subset of the training dataset**.
@@ -62,11 +62,12 @@ SPAM = 1
 # %% [markdown]
 # Labeling functions can be used to represent many heuristic and/or noisy strategies for labeling data, often referred to as [weak supervision](https://hazyresearch.github.io/snorkel/blog/ws_blog_post.html).
 # The basic idea of labeling functions, and other programmatic operators in Snorkel, is to let users inject domain information into machine learning models in higher level, higher bandwidth ways than manually labeling thousands or millions of individual data points.
-# **The key idea is that labeling functions do not need to be perfectly accurate**, and can in fact even be  correlated with each other.
+# **The key idea is that labeling functions do not need to be perfectly accurate**, and can in fact even be correlated with each other.
 # Snorkel will automatically estimate their accuracies and correlations in a [provably consistent way](https://papers.nips.cc/paper/6523-data-programming-creating-large-training-sets-quickly), and then reweight and combine their output labels, leading to high-quality training labels.
 
 # %% [markdown]
 # In our text data setting here, labeling functions use:
+# 
 # Keyword matches:
 
 # %%
@@ -116,8 +117,7 @@ def lf_textblob_polarity(x):
 
     We combine this with the heuristic that non-spam comments are often positive.
     """
-    sentiment = TextBlob(x.text).sentiment
-    return NOT_SPAM if sentiment.polarity > 0.3 else ABSTAIN
+    return NOT_SPAM if TextBlob(x.text).sentiment.polarity > 0.3 else ABSTAIN
 
 
 # %% [markdown]
@@ -129,7 +129,7 @@ def lf_textblob_polarity(x):
 # For more detail on the process of developing labeling functions and other training data operators in Snorkel, see the [Introduction Tutorials](http://snorkel.org/use-cases).
 
 # %% [markdown]
-# ## (2) Combining & Cleaning the Labels
+# ## 2) Combining & Cleaning the Labels
 #
 # Our next step is to apply the labeling functions we wrote to the unlabeled training data.
 # The result is a *label matrix*, `L_train`, where each row corresponds to a data point and each column corresponds to a labeling function.
@@ -163,9 +163,10 @@ df_train = df_train[df_train.label != ABSTAIN]
 # However first we'll explore some of Snorkel's other operators for building and managing training data.
 
 # %% [markdown]
-# ## (3): Writing Transformation Functions for Data Augmentation
+# ## 3) Writing Transformation Functions for Data Augmentation
 #
-# An increasingly popular and critical technique in modern machine learning is [data augmentation](https://hazyresearch.github.io/snorkel/blog/tanda.html), the strategy of artificially *augmenting* existing labeled training datasets by creating transformed copies of the data points.
+# An increasingly popular and critical technique in modern machine learning is [data augmentation](https://hazyresearch.github.io/snorkel/blog/tanda.html),
+# the strategy of artificially *augmenting* existing labeled training datasets by creating transformed copies of the data points.
 # Data augmentation is a practical and powerful method for injecting information about domain invariances into ML models via the data, rather than by trying to modify their internal architectures.
 # The canonical example is randomly rotating, stretching, and transforming images when training image classifiers — a ubiquitous technique in the field of computer vision today.
 # However, data augmentation is increasingly used in a range of settings, including text.
@@ -187,7 +188,7 @@ nltk.download("wordnet", quiet=True)
 def get_synonyms(word):
     """Get the synonyms of word from Wordnet."""
     lemmas = set().union(*[s.lemmas() for s in wn.synsets(word)])
-    return list(set([l.name().lower().replace("_", " ") for l in lemmas]) - {word})
+    return list(set(l.name().lower().replace("_", " ") for l in lemmas) - {word})
 
 
 @transformation_function()
@@ -217,7 +218,7 @@ df_train_augmented = tf_applier.apply(df_train)
 # For more detail, see the [Spam TFs tutorial](http://snorkel.org/use-cases/02-spam-data-augmentation-tutorial).
 
 # %% [markdown]
-# ## (4) Writing a Slicing Function
+# ## 4) Writing a Slicing Function
 #
 # Finally, a third operator in Snorkel, *slicing functions (SFs)*, handles the reality that many datasets have certain subsets or _slices_ that are more important than others.
 # In Snorkel, we can write SFs to (a) monitor specific slices and (b) improve model performance over them by adding representational capacity targeted on a per-slice basis.
@@ -240,7 +241,7 @@ def short_link(x):
 # For a walkthrough of these steps, see the [Spam SFs tutorial](http://snorkel.org/use-cases/03-spam-data-slicing-tutorial).
 
 # %% [markdown]
-# ## (5) Training a Machine Learning Model
+# ## 5) Training a Classifier
 #
 # The ultimate goal in Snorkel is to **create a training dataset**, which can then be plugged into an arbitrary machine learning framework (e.g. TensorFlow, Keras, PyTorch, Scikit-Learn, Ludwig, XGBoost) to train powerful machine learning models.
 # Here, to complete this initial walkthrough, we'll train an extremely simple model — a "bag of n-grams" logistic regression model in Scikit-Learn — using the weakly labeled and augmented training set we made with our labeling and transformation functions:
@@ -249,8 +250,7 @@ def short_link(x):
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 
-text_train = [row.text for i, row in df_train_augmented.iterrows()]
-X_train = CountVectorizer(ngram_range=(1, 2)).fit_transform(text_train)
+X_train = CountVectorizer(ngram_range=(1, 2)).fit_transform(df_train_augmented.text.tolist())
 
 clf = LogisticRegression(solver="lbfgs")
 clf.fit(X=X_train, y=df_train_augmented.label.values)
