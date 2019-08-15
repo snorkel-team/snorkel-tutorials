@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # %% [markdown]
-# # 🚀 Snorkel Intro Tutorial: Spam Detection
+# # 🚀 Snorkel Intro Tutorial: Data Labeling
 
 # %% [markdown]
 # In this tutorial, we will walk through the process of using Snorkel to build a training set for classifying YouTube comments as spam or not spam.
 # The goal of this tutorial is to illustrate the basic components and concepts of Snorkel in a simple way, but also to dive into the actual process of iteratively developing real applications in Snorkel.
-# For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
-# You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
+#
+# * For an overview of Snorkel, visit [snorkel.org](http://snorkel.org)
+# * You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/)
 #
 # Our goal is to train a classifier over the comment data that can predict whether a comment is spam or not spam.
 # We have access to a large amount of *unlabeled data* in the form of YouTube comments with some metadata.
@@ -79,7 +80,7 @@
 # ## 1. Loading Data
 
 # %% [markdown]
-# We load the YouTube comments dataset and create Pandas DataFrame objects for each of the sets described above.
+# We load the YouTube comments dataset and create Pandas DataFrame objects for the train, validation, and test sets.
 # DataFrames are extremely popular in Python data analysis workloads, and Snorkel provides native support
 # for several DataFrame-like data structures, including Pandas, Dask, and PySpark.
 # For more information on working with Pandas DataFrames, see the [Pandas DataFrame guide](https://pandas.pydata.org/pandas-docs/stable/getting_started/dsintro.html).
@@ -98,59 +99,63 @@
 # * The `dev` set is a random sample of 200 data points from the `train` set with gold labels added.
 # * The fifth video is split 50/50 between a validation set (`valid`) and `test` set.
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # This next cell takes care of some notebook-specific housekeeping.
 # You can ignore it.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 # %matplotlib inline
 
 import os
-
-# For reproducibility
-os.environ["PYTHONHASHSEED"] = "0"
-
-# Turn off TensorFlow logging messages
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("spam")
 
-# %% [markdown]
+# Turn off TensorFlow logging messages
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# For reproducibility
+os.environ["PYTHONHASHSEED"] = "0"
+
+# %% [markdown] {"tags": ["md-exclude"]}
+# If you want to display all comment text untruncated, change `DISPLAY_ALL_TEXT` to `True` below.
+
+# %% {"tags": ["md-exclude"]}
+import pandas as pd
+
+
+DISPLAY_ALL_TEXT = False
+
+pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
+
+# %% [markdown] {"tags": ["md-exclude"]}
 # This next cell makes sure a spaCy English model is downloaded.
 # If this is your first time downloading this model, restart the kernel after executing the next cell.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 # Download the spaCy english model
 # ! python -m spacy download en_core_web_sm
 
 # %%
 from utils import load_spam_dataset
 
-# %%
 df_train, df_dev, df_valid, df_test = load_spam_dataset()
 
 # We pull out the label vectors for ease of use later
-Y_dev = df_dev["label"].values
-Y_valid = df_valid["label"].values
-Y_test = df_test["label"].values
+Y_dev = df_dev.label.values
+Y_valid = df_valid.label.values
+Y_test = df_test.label.values
 
 
 # %% [markdown]
 # Let's view 5 example data points from the `dev` set.
 
 # %%
-import pandas as pd
-
-# %%
-# Don't truncate text fields in the display
-pd.set_option("display.max_colwidth", 0)
-
 df_dev.sample(5, random_state=3)
 
 # %% [markdown]
-# The class distribution varies slightly from class to class, but all are approximately class-balanced.
+# The class distribution varies slightly between `SPAM` and `HAM`, but they're approximately class-balanced.
 # You can verify this by looking at the `dev` set labels.
 
 # %%
@@ -159,12 +164,10 @@ ABSTAIN = -1
 HAM = 0
 SPAM = 1
 
-for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
-    spam_freq = (df["label"].values == SPAM).mean()
-    print(f"{split_name.upper():<6} {spam_freq * 100:0.1f}% SPAM")
+print(f"Dev SPAM frequency: {100 * (df_dev.label.values == SPAM).mean():.1f}%")
 
 # %% [markdown]
-# ## 2. Write Labeling Functions (LFs)
+# ## 2. Writing Labeling Functions (LFs)
 
 # %% [markdown]
 # ### A gentle introduction to LFs
@@ -230,13 +233,11 @@ df_train[["author", "text", "video"]].sample(20, random_state=2)
 from snorkel.labeling import labeling_function
 
 
-# %%
 @labeling_function()
 def check(x):
     return SPAM if "check" in x.text.lower() else ABSTAIN
 
 
-# %%
 @labeling_function()
 def check_out(x):
     return SPAM if "check out" in x.text.lower() else ABSTAIN
@@ -256,16 +257,16 @@ def check_out(x):
 # It's a NumPy array `L` with one column for each LF and one row for each data point, where `L[i, j]` is the label that the `j`th labeling function output for the `i`th data point.
 # We'll create one label matrix for the `train` set and one for the `dev` set.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import PandasLFApplier
 
-# %%
 lfs = [check_out, check]
 
 applier = PandasLFApplier(lfs=lfs)
 L_train = applier.apply(df=df_train)
 L_dev = applier.apply(df=df_dev)
 
+# %%
 L_train
 
 # %% [markdown]
@@ -300,7 +301,6 @@ print(f"check_out coverage: {coverage_check_out * 100:.1f}%")
 # %%
 from snorkel.labeling import LFAnalysis
 
-# %%
 LFAnalysis(L=L_train, lfs=lfs).lf_summary()
 
 # %%
@@ -318,7 +318,6 @@ LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 # %%
 from snorkel.analysis import get_label_buckets
 
-# %%
 buckets = get_label_buckets(Y_dev, L_dev[:, 1])
 df_dev.iloc[buckets[(HAM, SPAM)]]
 
@@ -351,7 +350,6 @@ df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
 import re
 
 
-# %%
 @labeling_function()
 def regex_check_out(x):
     return SPAM if re.search(r"check.*out", x.text, flags=re.I) else ABSTAIN
@@ -360,7 +358,7 @@ def regex_check_out(x):
 # %% [markdown]
 # Again, let's generate our label matrices and see how we do.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 lfs = [check_out, check, regex_check_out]
 
 applier = PandasLFApplier(lfs=lfs)
@@ -422,7 +420,6 @@ from snorkel.preprocess import preprocessor
 from textblob import TextBlob
 
 
-# %%
 @preprocessor(memoize=True)
 def textblob_sentiment(x):
     scores = TextBlob(x.text)
@@ -431,16 +428,17 @@ def textblob_sentiment(x):
     return x
 
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # We can use a preprocessor on its own as well.
 # In order to see how we should use TextBlob scores in an LF, let's see how the distributions differ for `SPAM` and `HAM`.
+
+# %% [markdown]
 # We'll have to tune the output of our LFs based on the TextBlob scores.
 # Tuning input parameters or thresholds from model outputs is a common practice in developing LFs.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 import matplotlib.pyplot as plt
 
-# %%
 spam_polarities = [
     textblob_sentiment(x).polarity for _, x in df_dev.iterrows() if x.label == SPAM
 ]
@@ -457,7 +455,7 @@ plt.legend(["Spam", "Ham"])
 plt.show()
 
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # We'll target the high polarity bin on the far right in our LF since there are many more `HAM` comments.
 # There are several other ways we could bin this histogram to get plausible LFs, but we'll just
 # write one for now.
@@ -468,11 +466,11 @@ def textblob_polarity(x):
     return HAM if x.polarity > 0.9 else ABSTAIN
 
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # Let's do the same for the subjectivity scores.
 # This will run faster than the last cell, since we memoized the `Preprocessor` outputs.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 spam_subjectivities = [
     textblob_sentiment(x).subjectivity for _, x in df_dev.iterrows() if x.label == SPAM
 ]
@@ -509,7 +507,7 @@ def textblob_subjectivity(x):
 # %% [markdown]
 # Let's apply our LFs so we can analyze their performance.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 lfs = [textblob_polarity, textblob_subjectivity]
 
 applier = PandasLFApplier(lfs)
@@ -526,7 +524,7 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 # Again, these LFs aren't perfect, so we'll rely on our label model to denoise and resolve their outputs.
 
 # %% [markdown]
-# ## More Labeling Functions
+# ## 3. Writing More Labeling Functions
 
 # %% [markdown]
 # If a single LF had high enough coverage to label our entire test dataset accurately, then we wouldn't need a classifier at all.
@@ -537,7 +535,7 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 # In the following sections, we'll show just a few of the many types of LFs that you could write to generate a training dataset for this problem.
 
 # %% [markdown]
-# ### i. Keyword LFs
+# ### a) Keyword LFs
 
 # %% [markdown]
 # For text applications, some of the simplest LFs to write are often just keyword lookups.
@@ -550,7 +548,6 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 from snorkel.labeling import LabelingFunction
 
 
-# %%
 def keyword_lookup(x, keywords, label):
     if any(word in x.text.lower() for word in keywords):
         return label
@@ -582,14 +579,14 @@ keyword_song = make_keyword_lf(keywords=["song"], label=HAM)
 
 
 # %% [markdown]
-# ### ii. Pattern-matching LFs (regular expressions)
+# ### b) Pattern-matching LFs (regular expressions)
 
 # %% [markdown]
 # If we want a little more control over a keyword search, we can look for regular expressions instead.
 # The LF we developed above (`regex_check_out`) is an example of this.
 
 # %% [markdown]
-# ### iii.  Heuristic LFs
+# ### c)  Heuristic LFs
 
 # %% [markdown]
 # There may other heuristics or "rules of thumb" that you come up with as you look at the data.
@@ -603,7 +600,7 @@ def short_comment(x):
 
 
 # %% [markdown]
-# ### iv. LFs with Complex Preprocessors
+# ### d) LFs with Complex Preprocessors
 
 # %% [markdown]
 # Some LFs rely on fields that aren't present in the raw data, but can be derived from it.
@@ -618,7 +615,7 @@ def short_comment(x):
 # If you prefer to use a different NLP tool, you can also wrap that as a `Preprocessor` and use it in the same way.
 # For more info, see the [`preprocessor` documentation](https://snorkel.readthedocs.io/en/master/packages/_autosummary/preprocess/snorkel.preprocess.preprocessor.html#snorkel.preprocess.preprocessor).
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # If the spaCy English model wasn't already installed, the next cell may raise an exception.
 # If this happens, restart the kernel and re-execute the cells up to this point.
 
@@ -649,7 +646,6 @@ def has_person(x):
 from snorkel.labeling.lf.nlp import nlp_labeling_function
 
 
-# %%
 @nlp_labeling_function()
 def has_person_nlp(x):
     """Ham comments mention specific people and are short."""
@@ -664,14 +660,14 @@ def has_person_nlp(x):
 # If you have an idea, feel free to reach out to the maintainers or submit a PR!**
 
 # %% [markdown]
-# ### v. Third-party Model LFs
+# ### e) Third-party Model LFs
 
 # %% [markdown]
 # We can also utilize other models, including ones trained for other tasks that are related to, but not the same as, the one we care about.
 # The TextBlob-based LFs we created above are great examples of this!
 
 # %% [markdown]
-# ### Applying our LFs
+# ## 4. Combining Labeling Function Outputs with the Label Model
 
 # %% [markdown]
 # This tutorial demonstrates just a handful of the types of LFs that one might write for this task.
@@ -702,20 +698,21 @@ lfs = [
 # that Snorkel supports natively, such as Dask DataFrames or PySpark DataFrames, and their corresponding applier objects.
 # For more info, check out the [Snorkel API documentation](https://snorkel.readthedocs.io/en/master/packages/labeling.html).
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 applier = PandasLFApplier(lfs=lfs)
 L_train = applier.apply(df=df_train)
 L_dev = applier.apply(df=df_dev)
 L_valid = applier.apply(df=df_valid)
 
+# %%
 LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # We see that our labeling functions vary in coverage, accuracy, and how much they overlap/conflict with one another.
 # We can view a histogram of how many LF labels the data points in our dev set have to get an idea of our total coverage.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 def plot_label_frequency(L):
     plt.hist((L != ABSTAIN).sum(axis=1), density=True, bins=range(L.shape[1]))
     plt.xlabel("Number of labels")
@@ -725,12 +722,9 @@ def plot_label_frequency(L):
 
 plot_label_frequency(L_train)
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # We see that over half of our `train` dataset data points have 2 or fewer labels from LFs.
 # Fortunately, the signal we do have can be used to train a classifier over the comment text directly, allowing it to generalize beyond what we've specified via our LFs.
-
-# %% [markdown]
-# ## 3. Combining Labeling Function Outputs with the Label Model
 
 # %% [markdown]
 # Our goal is now to convert the labels from our LFs into a single _noise-aware_ probabilistic (or confidence-weighted) label per data point.
@@ -738,12 +732,13 @@ plot_label_frequency(L_train)
 # We can test this with the
 # [`MajorityLabelVoter` baseline model](https://snorkel.readthedocs.io/en/master/packages/_autosummary/labeling/snorkel.labeling.MajorityLabelVoter.html#snorkel.labeling.MajorityLabelVoter).
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import MajorityLabelVoter
 
-# %%
 majority_model = MajorityLabelVoter()
 preds_train = majority_model.predict(L=L_train)
+
+# %%
 preds_train
 
 # %% [markdown]
@@ -757,10 +752,9 @@ preds_train
 # We also specify the `cardinality`, or number of classes.
 # The `LabelModel` trains much more quickly than typical discriminative models since we only need the label matrix as input.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import LabelModel
 
-# %%
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train=L_train, n_epochs=1000, lr=0.001, log_freq=100, seed=123)
 
@@ -795,12 +789,12 @@ df_fp_dev["probability"] = probs_dev[buckets[(SPAM, HAM)], 1]
 df_fp_dev.sample(5, random_state=3)
 
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # Let's briefly confirm that the labels the `LabelModel` produces are probabilistic in nature.
 # The following histogram shows the confidences we have that each data point has the label SPAM.
 # The points we are least certain about will have labels close to 0.5.
 
-# %%
+# %% {"tags": ["md-exclude"]}
 def plot_probabilities_histogram(Y):
     plt.hist(Y, bins=10)
     plt.xlabel("Probability of SPAM")
@@ -822,13 +816,12 @@ plot_probabilities_histogram(probs_train[:, SPAM])
 # %%
 from snorkel.labeling import filter_unlabeled_dataframe
 
-# %%
 df_train_filtered, probs_train_filtered = filter_unlabeled_dataframe(
     X=df_train, y=probs_train, L=L_train
 )
 
 # %% [markdown]
-# ## 4. Training a Classifier
+# ## 5. Training a Classifier
 
 # %% [markdown]
 # In this final section of the tutorial, we'll use the noisy training labels we generated in the last section to train a classifier for our task.
@@ -841,20 +834,15 @@ df_train_filtered, probs_train_filtered = filter_unlabeled_dataframe(
 # %% [markdown]
 # For simplicity and speed, we use a simple "bag of n-grams" feature representation: each data point is represented by a one-hot vector marking which words or 2-word combinations are present in the comment text.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from sklearn.feature_extraction.text import CountVectorizer
 
-# %%
-words_train = [row.text for i, row in df_train_filtered.iterrows()]
-words_dev = [row.text for i, row in df_dev.iterrows()]
-words_valid = [row.text for i, row in df_valid.iterrows()]
-words_test = [row.text for i, row in df_test.iterrows()]
-
 vectorizer = CountVectorizer(ngram_range=(1, 2))
-X_train = vectorizer.fit_transform(words_train)
-X_dev = vectorizer.transform(words_dev)
-X_valid = vectorizer.transform(words_valid)
-X_test = vectorizer.transform(words_test)
+X_train = vectorizer.fit_transform(df_train_filtered.text.tolist())
+
+X_dev = vectorizer.transform(df_dev.text.tolist())
+X_valid = vectorizer.transform(df_valid.text.tolist())
+X_test = vectorizer.transform(df_test.text.tolist())
 
 # %% [markdown]
 # ### Keras Classifier with Probabilistic Labels
@@ -867,13 +855,15 @@ X_test = vectorizer.transform(words_test)
 # We use the common settings of an `Adam` optimizer and early stopping (evaluating the model on the validation set after each epoch and reloading the weights from when it achieved the best score).
 # For more information on Keras, see the [Keras documentation](https://keras.io/).
 
-# %% [markdown]
+# %% [markdown] {"tags": ["md-exclude"]}
 # This next cell makes our Keras results reproducible. You can ignore it.
 
-# %%
-import numpy as np
+# %% {"tags": ["md-exclude"]}
 import random
+
+import numpy as np
 import tensorflow as tf
+
 
 seed = 1
 np.random.seed(seed)
@@ -889,40 +879,24 @@ tf.set_random_seed(seed)
 sess = tf.compat.v1.Session(graph=tf.get_default_graph(), config=session_conf)
 K.set_session(sess)
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.analysis import metric_score
 from snorkel.utils import preds_to_probs
+from utils import get_keras_logreg, get_keras_early_stopping
 
-# %%
-# Our model is a simple linear layer mapping from feature
-# vectors to the number of labels in our problem (2).
-keras_model = tf.keras.Sequential()
-keras_model.add(
-    tf.keras.layers.Dense(
-        units=2,
-        input_dim=X_train.shape[1],
-        activation=tf.nn.softmax,
-        kernel_regularizer=tf.keras.regularizers.l2(0.001),
-    )
-)
-optimizer = tf.keras.optimizers.Adam(lr=0.01)
-keras_model.compile(
-    optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
-)
-
-early_stopping = tf.keras.callbacks.EarlyStopping(
-    monitor="val_acc", patience=10, verbose=1, restore_best_weights=True
-)
+# Define a vanilla logistic regression model with Keras
+keras_model = get_keras_logreg(input_dim=X_train.shape[1])
 
 keras_model.fit(
     x=X_train,
     y=probs_train_filtered,
     validation_data=(X_valid, preds_to_probs(Y_valid, 2)),
-    callbacks=[early_stopping],
+    callbacks=[get_keras_early_stopping()],
     epochs=20,
     verbose=0,
 )
 
+# %%
 preds_test = keras_model.predict(x=X_test).argmax(axis=1)
 test_acc = metric_score(golds=Y_test, preds=preds_test, metric="accuracy")
 print(f"Test Accuracy: {test_acc * 100:.1f}%")
@@ -935,30 +909,19 @@ print(f"Test Accuracy: {test_acc * 100:.1f}%")
 # %% [markdown]
 # We can compare this to the score we could have gotten if we had used our small labeled `dev` set directly as training data instead of using it to guide the creation of LFs.
 
-# %%
-keras_dev_model = tf.keras.Sequential()
-keras_dev_model.add(
-    tf.keras.layers.Dense(
-        units=1,
-        input_dim=X_train.shape[1],
-        activation=tf.nn.sigmoid,
-        kernel_regularizer=tf.keras.regularizers.l2(0.001),
-    )
-)
-optimizer = tf.keras.optimizers.Adam(lr=0.001)
-keras_dev_model.compile(
-    optimizer=optimizer, loss="binary_crossentropy", metrics=["accuracy"]
-)
+# %% {"tags": ["md-exclude-output"]}
+keras_dev_model = get_keras_logreg(input_dim=X_train.shape[1], output_dim=1)
 
 keras_dev_model.fit(
     x=X_dev,
     y=Y_dev,
     validation_data=(X_valid, Y_valid),
-    callbacks=[early_stopping],
+    callbacks=[get_keras_early_stopping()],
     epochs=20,
     verbose=0,
 )
 
+# %%
 preds_test_dev = np.round(keras_dev_model.predict(x=X_test))
 test_acc = metric_score(golds=Y_test, preds=preds_test_dev, metric="accuracy")
 print(f"Test Accuracy: {test_acc * 100:.1f}%")
@@ -975,19 +938,18 @@ print(f"Test Accuracy: {test_acc * 100:.1f}%")
 # %%
 from snorkel.utils import probs_to_preds
 
-# %%
 preds_train_filtered = probs_to_preds(probs=probs_train_filtered)
 
 # %% [markdown]
 # For example, this allows us to use standard models from Scikit-Learn.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from sklearn.linear_model import LogisticRegression
 
-# %%
 sklearn_model = LogisticRegression(C=0.001, solver="liblinear")
 sklearn_model.fit(X=X_train, y=preds_train_filtered)
 
+# %%
 print(f"Test Accuracy: {sklearn_model.score(X=X_test, y=Y_test) * 100:.1f}%")
 
 # %% [markdown]
