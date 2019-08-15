@@ -28,9 +28,16 @@ title: {title}
 description: {description}
 excerpt: {description}
 order: {order}
+github_link: {github_link}
 ---
 
 """
+
+
+GITHUB_LINK_TEMPLATE = (
+    "https://github.com/snorkel-team/snorkel-tutorials/"
+    "blob/master/{notebook_path}"
+)
 
 
 # Credit to: https://gist.github.com/pchc2005/b5f13e136a9c9bb2984e5b92802fc7c9
@@ -92,14 +99,20 @@ class Notebook:
 
 
 class MarkdownHeader:
-    def __init__(self, title: str, description: str, order: int) -> None:
+    def __init__(
+        self, title: str, description: str, order: int, github_link: str
+    ) -> None:
         self.title = title
         self.description = description
         self.order = order
+        self.github_link = github_link
 
     def render(self):
         return HEADER_TEMPLATE.format(
-            title=self.title, description=self.description, order=self.order
+            title=self.title,
+            description=self.description,
+            order=self.order,
+            github_link=self.github_link,
         )
 
 
@@ -146,7 +159,9 @@ def parse_web_yml(tutorial_dir: Optional[str]) -> List[TutorialWebpage]:
         title = cfg.get("title")
         description = cfg.get("description")
         if title is not None and description is not None:
-            header = MarkdownHeader(title, description, i)
+            full_notebook_path = notebook.ipynb.split("/snorkel-tutorials/")[-1]
+            github_link = GITHUB_LINK_TEMPLATE.format(notebook_path=full_notebook_path)
+            header = MarkdownHeader(title, description, i, github_link)
             i += 1
         else:
             header = None
