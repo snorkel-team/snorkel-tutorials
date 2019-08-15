@@ -14,9 +14,6 @@ from snorkel.classification.data import DictDataset, DictDataLoader
 def load_spam_dataset(load_train_labels: bool = False, split_dev: bool = True):
     if os.path.basename(os.getcwd()) == "snorkel-tutorials":
         os.chdir("spam")
-    # TODO:
-    # Add reference to dataset
-    # Send email to dataset owner: tuliocasagrande < AT > acm.org
     try:
         subprocess.run(["bash", "download_data.sh"], check=True, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:

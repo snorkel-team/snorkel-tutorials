@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # %% [markdown]
-# # 🚀 Snorkel Intro Tutorial: Spam Detection
+# # 🚀 Snorkel Intro Tutorial: Data Labeling
 
 # %% [markdown]
 # In this tutorial, we will walk through the process of using Snorkel to build a training set for classifying YouTube comments as spam or not spam.
 # The goal of this tutorial is to illustrate the basic components and concepts of Snorkel in a simple way, but also to dive into the actual process of iteratively developing real applications in Snorkel.
-# For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
-# You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
+#
+# * For an overview of Snorkel, visit [snorkel.org](http://snorkel.org)
+# * You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/)
 #
 # Our goal is to train a classifier over the comment data that can predict whether a comment is spam or not spam.
 # We have access to a large amount of *unlabeled data* in the form of YouTube comments with some metadata.
@@ -99,14 +100,12 @@
 # * The fifth video is split 50/50 between a validation set (`valid`) and `test` set.
 
 # %% [markdown]
-# This next two cell takes care of some notebook-specific housekeeping.
+# This next cell takes care of some notebook-specific housekeeping.
 # You can ignore it.
 
 # %%
 # %matplotlib inline
 
-import numpy as np
-import random
 import os
 
 # Make sure we're running from the spam/ directory
@@ -119,9 +118,16 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 # For reproducibility
 os.environ["PYTHONHASHSEED"] = "0"
 
-seed = 1
-np.random.seed(seed)
-random.seed(seed)
+# %% [markdown]
+# If you want to display all comment text untruncated, change `DISPLAY_ALL_TEXT` to `True` below.
+
+# %%
+import pandas as pd
+
+
+DISPLAY_ALL_TEXT = False
+
+pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
 
 # %% [markdown]
 # This next cell makes sure a spaCy English model is downloaded.
@@ -137,20 +143,15 @@ from utils import load_spam_dataset
 df_train, df_dev, df_valid, df_test = load_spam_dataset()
 
 # We pull out the label vectors for ease of use later
-Y_dev = df_dev["label"].values
-Y_valid = df_valid["label"].values
-Y_test = df_test["label"].values
+Y_dev = df_dev.label.values
+Y_valid = df_valid.label.values
+Y_test = df_test.label.values
 
 
 # %% [markdown]
 # Let's view 5 example data points from the `dev` set.
 
 # %%
-import pandas as pd
-
-# Don't truncate text fields in the display
-pd.set_option("display.max_colwidth", 0)
-
 df_dev.sample(5, random_state=3)
 
 # %% [markdown]
@@ -163,12 +164,12 @@ ABSTAIN = -1
 HAM = 0
 SPAM = 1
 
-for split_name, df in [("dev", df_dev), ("valid", df_valid), ("test", df_test)]:
-    spam_freq = (df["label"].values == SPAM).mean()
-    print(f"{split_name.upper():<6} {spam_freq * 100:0.1f}% SPAM")
+print(f"Dev SPAM frequency: {100 * (df_dev.label.values == SPAM).mean():.1f}%")
+print(f"Valid SPAM frequency: {100 * (df_valid.label.values == SPAM).mean():.1f}%")
+print(f"Test SPAM frequency: {100 * (df_test.label.values == SPAM).mean():.1f}%")
 
 # %% [markdown]
-# ## 2. Write Labeling Functions (LFs)
+# ## 2. Writing Labeling Functions (LFs)
 
 # %% [markdown]
 # ### A gentle introduction to LFs
@@ -267,6 +268,7 @@ applier = PandasLFApplier(lfs=lfs)
 L_train = applier.apply(df=df_train)
 L_dev = applier.apply(df=df_dev)
 
+# %%
 L_train
 
 # %% [markdown]
@@ -522,7 +524,7 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 # Again, these LFs aren't perfect, so we'll rely on our label model to denoise and resolve their outputs.
 
 # %% [markdown]
-# ## More Labeling Functions
+# ## 3. Writing More Labeling Functions
 
 # %% [markdown]
 # If a single LF had high enough coverage to label our entire test dataset accurately, then we wouldn't need a classifier at all.
@@ -533,7 +535,7 @@ LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 # In the following sections, we'll show just a few of the many types of LFs that you could write to generate a training dataset for this problem.
 
 # %% [markdown]
-# ### i. Keyword LFs
+# ### a) Keyword LFs
 
 # %% [markdown]
 # For text applications, some of the simplest LFs to write are often just keyword lookups.
@@ -577,14 +579,14 @@ keyword_song = make_keyword_lf(keywords=["song"], label=HAM)
 
 
 # %% [markdown]
-# ### ii. Pattern-matching LFs (regular expressions)
+# ### b) Pattern-matching LFs (regular expressions)
 
 # %% [markdown]
 # If we want a little more control over a keyword search, we can look for regular expressions instead.
 # The LF we developed above (`regex_check_out`) is an example of this.
 
 # %% [markdown]
-# ### iii.  Heuristic LFs
+# ### c)  Heuristic LFs
 
 # %% [markdown]
 # There may other heuristics or "rules of thumb" that you come up with as you look at the data.
@@ -598,7 +600,7 @@ def short_comment(x):
 
 
 # %% [markdown]
-# ### iv. LFs with Complex Preprocessors
+# ### d) LFs with Complex Preprocessors
 
 # %% [markdown]
 # Some LFs rely on fields that aren't present in the raw data, but can be derived from it.
@@ -658,14 +660,14 @@ def has_person_nlp(x):
 # If you have an idea, feel free to reach out to the maintainers or submit a PR!**
 
 # %% [markdown]
-# ### v. Third-party Model LFs
+# ### e) Third-party Model LFs
 
 # %% [markdown]
 # We can also utilize other models, including ones trained for other tasks that are related to, but not the same as, the one we care about.
 # The TextBlob-based LFs we created above are great examples of this!
 
 # %% [markdown]
-# ### Applying our LFs
+# ## 4. Combining Labeling Function Outputs with the Label Model
 
 # %% [markdown]
 # This tutorial demonstrates just a handful of the types of LFs that one might write for this task.
@@ -702,6 +704,7 @@ L_train = applier.apply(df=df_train)
 L_dev = applier.apply(df=df_dev)
 L_valid = applier.apply(df=df_valid)
 
+# %%
 LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 
 
@@ -724,9 +727,6 @@ plot_label_frequency(L_train)
 # Fortunately, the signal we do have can be used to train a classifier over the comment text directly, allowing it to generalize beyond what we've specified via our LFs.
 
 # %% [markdown]
-# ## 3. Combining Labeling Function Outputs with the Label Model
-
-# %% [markdown]
 # Our goal is now to convert the labels from our LFs into a single _noise-aware_ probabilistic (or confidence-weighted) label per data point.
 # A simple baseline for doing this is to take the majority vote on a per-data point basis: if more LFs voted SPAM than HAM, label it SPAM (and vice versa).
 # We can test this with the
@@ -737,6 +737,8 @@ from snorkel.labeling import MajorityLabelVoter
 
 majority_model = MajorityLabelVoter()
 preds_train = majority_model.predict(L=L_train)
+
+# %%
 preds_train
 
 # %% [markdown]
@@ -819,7 +821,7 @@ df_train_filtered, probs_train_filtered = filter_unlabeled_dataframe(
 )
 
 # %% [markdown]
-# ## 4. Training a Classifier
+# ## 5. Training a Classifier
 
 # %% [markdown]
 # In this final section of the tutorial, we'll use the noisy training labels we generated in the last section to train a classifier for our task.
@@ -857,7 +859,15 @@ X_test = vectorizer.transform(df_test.text.tolist())
 # This next cell makes our Keras results reproducible. You can ignore it.
 
 # %%
+import random
+
+import numpy as np
 import tensorflow as tf
+
+
+seed = 1
+np.random.seed(seed)
+random.seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto(
     intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
@@ -874,8 +884,6 @@ from snorkel.analysis import metric_score
 from snorkel.utils import preds_to_probs
 from utils import get_keras_logreg, get_keras_early_stopping
 
-# Our model is a simple linear layer mapping from feature
-# vectors to the number of labels in our problem (2).
 keras_model = get_keras_logreg(input_dim=X_train.shape[1])
 
 keras_model.fit(
@@ -887,6 +895,7 @@ keras_model.fit(
     verbose=0,
 )
 
+# %%
 preds_test = keras_model.predict(x=X_test).argmax(axis=1)
 test_acc = metric_score(golds=Y_test, preds=preds_test, metric="accuracy")
 print(f"Test Accuracy: {test_acc * 100:.1f}%")
@@ -911,6 +920,7 @@ keras_dev_model.fit(
     verbose=0,
 )
 
+# %%
 preds_test_dev = np.round(keras_dev_model.predict(x=X_test))
 test_acc = metric_score(golds=Y_test, preds=preds_test_dev, metric="accuracy")
 print(f"Test Accuracy: {test_acc * 100:.1f}%")
@@ -938,6 +948,7 @@ from sklearn.linear_model import LogisticRegression
 sklearn_model = LogisticRegression(C=0.001, solver="liblinear")
 sklearn_model.fit(X=X_train, y=preds_train_filtered)
 
+# %%
 print(f"Test Accuracy: {sklearn_model.score(X=X_test, y=Y_test) * 100:.1f}%")
 
 # %% [markdown]

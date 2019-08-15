@@ -1,19 +1,29 @@
 # -*- coding: utf-8 -*-
 # %% [markdown]
-# # Snorkel Transformation Functions Tutorial
+# # 📈 Snorkel Intro Tutorial: Data Augmentation
 
 # %% [markdown]
-# In this tutorial, we will walk through the process of using Snorkel Transformation Functions (TFs) to classify YouTube comments as `SPAM` or `HAM` (not spam). For more details on the task, check out the main labeling functions [tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb).
-# For an overview of Snorkel, visit [snorkel.org](http://snorkel.org).
-# You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/).
+# In this tutorial, we will walk through the process of using transformation functions (TFs) to perform data augmentation.
+# Like the labeling tutorial, our goal is to train a classifier to YouTube comments as `SPAM` or `HAM` (not spam).
+# While data augmentation can be used in concert with labeling functions,
+# we assume that we have access to some labeled YouTube comments for training for the purposes of this tutorial.
 #
-# For our task, we have access to some labeled YouTube comments for training. We generate additional data by transforming the labeled comments using **_Transformation Functions_**.
+# * For more details on the task, check out the [labeling tutorial](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/01_spam_tutorial.ipynb)
+# * For an overview of Snorkel, visit [snorkel.org](http://snorkel.org)
+# * You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/)
+#
+# Data augmentation is a popular technique for increasing the size of labeled training sets by applying class-preserving transformations to create copies of labeled data points.
+# In the image domain, it is a crucial factor in almost every state-of-the-art result today and is quickly gaining
+# popularity in text-based applications.
+# Snorkel models the data augmentation process by applying user-define transformation functions in sequence.
+# You can learn more about data augmentation in our [blog post about the
+# TANDA library](https://snorkel.org/tanda/).
 #
 # The tutorial is divided into four parts:
 # 1. **Loading Data**: We load a [YouTube comments dataset](https://www.kaggle.com/goneee/youtube-spam-classifiedcomments) from Kaggle.
 # 2. **Writing Transformation Functions**: We write Transformation Functions (TFs) that can be applied to training examples to generate new training examples.
-# 3. **Applying Transformation Functions**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
-# 4. **Training A Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
+# 3. **Applying Transformation Functions to Augment Our Dataset**: We apply a sequence of TFs to each training data point, using a random policy, to generate an augmented training set.
+# 4. **Training a Model**: We use the augmented training set to train an LSTM model for classifying new comments as `SPAM` or `HAM`.
 
 # %% [markdown]
 # This next two cell takes care of some notebook-specific housekeeping.
@@ -36,6 +46,17 @@ seed = 0
 os.environ["PYTHONHASHSEED"] = str(seed)
 np.random.seed(0)
 random.seed(0)
+
+# %% [markdown]
+# If you want to display all comment text untruncated, change `DISPLAY_ALL_TEXT` to `True` below.
+
+# %%
+import pandas as pd
+
+
+DISPLAY_ALL_TEXT = False
+
+pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
 
 # %% [markdown]
 # This next cell makes sure a spaCy English model is downloaded.
@@ -71,9 +92,9 @@ Y_test = df_test["label"].values
 df_train.head()
 
 # %% [markdown]
-# ## 2. Writing Transformation Functions
+# ## 2. Writing Transformation Functions (TFs)
 #
-# Transformation Functions are functions that can be applied to a training example to create another valid training example.
+# Transformation functions are functions that can be applied to a training example to create another valid training example of the same class.
 # For example, for image classification problems, it is common to rotate or crop images in the training data to create new training inputs.
 # Transformation functions should be atomic e.g. a small rotation of an image, or changing a single word in a sentence.
 # We then compose multiple transformation functions when applying them to training examples.
@@ -81,7 +102,7 @@ df_train.head()
 # Common ways to augment text includes replacing words with their synonyms, or replacing names entities with other entities.
 # More info can be found
 # [here](https://towardsdatascience.com/data-augmentation-in-nlp-2801a34dfc28) or
-# [here](https://towardsdatascience.com/these-are-the-easiest-data-augmentation-techniques-in-natural-language-processing-you-can-think-of-88e393fd610) .
+# [here](https://towardsdatascience.com/these-are-the-easiest-data-augmentation-techniques-in-natural-language-processing-you-can-think-of-88e393fd610).
 # Applying these operations to a comment shouldn't change whether it is `SPAM` or not.
 #
 # Transformation functions in Snorkel are created with the
@@ -89,7 +110,8 @@ df_train.head()
 # which wraps a function that takes in a single data point and returns a transformed version of the data point.
 # If no transformation is possible, the function should return `None`.
 #
-# Just like the `labeling_function` decorator, `transformation_function` accepts `pre` argument for `Preprocessor` objects.
+# Just like the `labeling_function` decorator, the `transformation_function` decorator
+# accepts `pre` argument for `Preprocessor` objects.
 # Here, we'll use a
 # [`SpacyPreprocessor`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/preprocess/snorkel.preprocess.nlp.SpacyPreprocessor.html#snorkel.preprocess.nlp.SpacyPreprocessor).
 
@@ -102,7 +124,9 @@ spacy = SpacyPreprocessor(text_field="text", doc_field="doc", memoize=True)
 import names
 from snorkel.augmentation import transformation_function
 
+# Generate some random names to replace existing ones with
 replacement_names = [names.get_full_name() for _ in range(50)]
+
 
 # Replace a random named entity with a different entity of the same type.
 @transformation_function(pre=[spacy])
@@ -204,15 +228,7 @@ def replace_adjective_with_synonym(x):
             return x
 
 
-# %% [markdown]
-# Let's check out a few examples of transformed data points to see what our TFs are doing.
-
 # %%
-import pandas as pd
-from utils import preview_tfs
-
-# Prevent truncating displayed sentences.
-pd.set_option("display.max_colwidth", 0)
 tfs = [
     change_person,
     swap_adjectives,
@@ -220,6 +236,12 @@ tfs = [
     replace_noun_with_synonym,
     replace_adjective_with_synonym,
 ]
+
+# %% [markdown]
+# Let's check out a few examples of transformed data points to see what our TFs are doing.
+
+# %%
+from utils import preview_tfs
 
 preview_tfs(df_train, tfs)
 
@@ -236,14 +258,13 @@ preview_tfs(df_train, tfs)
 # ## 3. Applying Transformation Functions
 
 # %% [markdown]
-# To apply one or more TFs that we've written to a collection of data points, we use a `TFApplier`.
-# Because our data points are represented with a Pandas DataFrame in this tutorial, we use a
-# [`PandasTFApplier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.PandasTFApplier.html).
-# In addition, we can apply multiple TFs in a sequence to each example.
-# A `Policy` is used to determine what sequence of TFs to apply to each example.
-# In this case, we just use a [`MeanFieldPolicy`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.MeanFieldPolicy.html)
-# that picks 2 TFs at random per example, with probabilities given by `p`.
-# We give higher probabilities to the replace_X_with_synonym TFs, since those provide more information to the model.
+# To apply one or more TFs that we've written to a collection of data points, we use a
+# [`PandasTFApplier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.PandasTFApplier.html)
+# because our data points are represented with a Pandas DataFrame.
+# We'll then define a `Policy` to determine what sequence of TFs to apply to each example.
+# In this case, we'll use a [`MeanFieldPolicy`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.MeanFieldPolicy.html)
+# that picks 2 TFs at random per example, with sampling probabilities given by `p`.
+# We give higher probabilities to the `replace_[X]_with_synonym` TFs, since those provide more information to the model.
 # The `n_per_original` argument determines how many augmented examples to generate per original example.
 
 # %%
@@ -256,6 +277,7 @@ policy = MeanFieldPolicy(
     keep_original=True,
     p=[0.05, 0.05, 0.3, 0.3, 0.3],
 )
+
 tf_applier = PandasTFApplier(tfs, policy)
 df_train_augmented = tf_applier.apply(df_train)
 Y_train_augmented = df_train_augmented["label"].values
