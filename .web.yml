@@ -1,35 +1,38 @@
+# Tutorial configuration fields
+#   notebook: either the path to the notebook, or optionally a directory name
+#             (if there's only one notebook in the directory)
+#   title (optional): title to display on website
+#   description (optional): description to display on website
+#   exclude_all_output (optional): exclude output from all cells?
+#
+# If either a title or description is not given, the notebook won't
+# be rendered on the Use Cases page. The order on the Use Cases page
+# is given by the order here.
+
 tutorials:
-  - title: Intro to Labeling Functions
+  - notebook: spam/01_spam_tutorial.ipynb
+    title: Intro to Labeling Functions
     description: Labeling data for spam classification
-    notebook: spam/01_spam_tutorial.ipynb
-    exclude_output: true
-  - title: Intro to Transformation Functions
+  - notebook: spam/02_spam_data_augmentation_tutorial.ipynb
+    title: Intro to Transformation Functions
     description: Data augmentation for spam classification
-    notebook: spam/02_spam_data_augmentation_tutorial.ipynb
-    exclude_output: true
-  - title: Intro to Slicing Functions
+  - notebook: spam/03_spam_data_slicing_tutorial.ipynb
+    title: Intro to Slicing Functions
     description: Monitoring critical data subsets for spam classification
-    notebook: spam/03_spam_data_slicing_tutorial.ipynb
-    exclude_output: true
-  - title: Hybrid Crowd Labeling Workflows in Snorkel
+  - notebook: crowdsourcing
+    title: Hybrid Crowd Labeling Workflows in Snorkel
     description: Mixing programmatic and crowdworker labels for sentiment analysis
-    notebook: crowdsourcing
-    exclude_output: true
-  - title: Building Recommender Systems in Snorkel
+  - notebook: recsys
+    title: Building Recommender Systems in Snorkel
     description: Labeling text reviews for book recommendations
-    notebook: recsys
-    exclude_output: true
-  - title: Visual Relation Detection in Snorkel
+  - notebook: visual_relation
+    title: Visual Relation Detection in Snorkel
     description: Multi-class labeling for visual relationships in images
-    notebook: visual_relation
-    exclude_output: true
-  - title: Information Extraction in Snorkel
+  - notebook: spouse
+    title: Information Extraction in Snorkel
     description: Labeling spouse mentions in documents
-    notebook: spouse
-    exclude_output: true
-  - title: Intro to Snorkel's Multitask Learning System
+  - notebook: multitask
+    title: Intro to Snorkel's Multitask Learning System
     description: State-of-the-art framework for pretraining & parameter sharing
-    notebook: multitask
-    exclude_output: true
   - notebook: getting_started
-    exclude_output: true
+    exclude_all_output: true

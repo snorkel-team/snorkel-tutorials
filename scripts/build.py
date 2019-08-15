@@ -16,7 +16,8 @@ logging.basicConfig(level=logging.INFO)
 
 NOTEBOOKS_CONFIG_FNAME = ".notebooks"
 SCRIPTS_CONFIG_FNAME = ".scripts"
-EXCLUDE_TAG = "md-exclude"
+EXCLUDE_CELL_TAG = "md-exclude"
+EXCLUDE_OUTPUT_TAG = "md-exclude-output"
 BUILD_DIR = "build"
 WEB_YML = ".web.yml"
 
@@ -104,11 +105,14 @@ class MarkdownHeader:
 
 class TutorialWebpage:
     def __init__(
-        self, ipynb_path: str, header: Optional[MarkdownHeader], exclude_output: bool
+        self,
+        ipynb_path: str,
+        header: Optional[MarkdownHeader],
+        exclude_all_output: bool,
     ) -> None:
         self.ipynb = ipynb_path
         self.header = header
-        self.exclude_output = exclude_output
+        self.exclude_all_output = exclude_all_output
 
     def markdown_path(self) -> str:
         return os.path.join(
@@ -147,10 +151,11 @@ def parse_web_yml(tutorial_dir: Optional[str]) -> List[TutorialWebpage]:
         else:
             header = None
         # Create TutorialWebpage object
-        exclude = cfg.get("exclude_output", False)
         tutorial_webpages.append(
             TutorialWebpage(
-                ipynb_path=notebook.ipynb, header=header, exclude_output=exclude
+                ipynb_path=notebook.ipynb,
+                header=header,
+                exclude_all_output=cfg.get("exclude_all_output", False),
             )
         )
     return tutorial_webpages
@@ -250,11 +255,12 @@ def build_markdown_notebook(tutorial: TutorialWebpage) -> None:
         tutorial.ipynb,
         "--to",
         "markdown",
-        f"--TagRemovePreprocessor.remove_cell_tags={{'{EXCLUDE_TAG}'}}",
+        f"--TagRemovePreprocessor.remove_cell_tags={{'{EXCLUDE_CELL_TAG}'}}",
+        f"--TagRemovePreprocessor.remove_all_outputs_tags={{'{EXCLUDE_OUTPUT_TAG}'}}",
         "--output-dir",
         BUILD_DIR,
     ]
-    if tutorial.exclude_output:
+    if tutorial.exclude_all_output:
         args.append("--TemplateExporter.exclude_output=True")
     subprocess.run(args, check=True)
     # Prepend header by reading generated file then writing back
