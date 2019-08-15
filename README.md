@@ -2,7 +2,7 @@
 [![build](https://travis-ci.com/snorkel-team/snorkel-tutorials.svg?branch=master)](https://travis-ci.com/snorkel-team/snorkel-tutorials?branch=master)
 
 A collection of tutorials for [Snorkel](https://github.com/snorkel-team/snorkel).
-For more information, visit the [Snorkel website](http://snorkel.org).
+For more information, visit the [Snorkel website](https://snorkel.org).
 
 ## Contents
 * [Tutorials](#tutorials)
@@ -10,7 +10,7 @@ For more information, visit the [Snorkel website](http://snorkel.org).
 
 
 ## Tutorials
-We recommend that all users **start with the [Getting Started](http://snorkel.org/get-started/) tutorial hosted on the Snorkel website** for a gentle introduction to the concepts and classes of Snorkel.
+We recommend that all users **start with the [Getting Started](https://snorkel.org/get-started/) tutorial hosted on the Snorkel website** for a gentle introduction to the concepts and classes of Snorkel.
 All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 After that, the `spam` directory contains three tutorials introducing labeling functions, transformation functions, and slicing functions, respectively.
 The rest of the tutorials explore other tasks, techniques, and integrations.
