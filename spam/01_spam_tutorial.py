@@ -969,7 +969,7 @@ print(f"Test Accuracy: {sklearn_model.score(X=X_test, y=Y_test) * 100:.1f}%")
 #
 # * As part of a [hybrid crowdsourcing pipeline](https://snorkel.org/use-cases/crowdsourcing-tutorial)
 # * For [visual relationship detection over images](https://snorkel.org/use-cases/visual-relation-tutorial)
-# * For [information extraction over text](https://snorkel.org/use-cases/spouse-tutorial)
+# * For [information extraction over text](https://snorkel.org/use-cases/spouse-demo)
 # * For [data augmentation](https://snorkel.org/use-cases/02-spam-data-augmentation-tutorial)
 #
 # and more!
