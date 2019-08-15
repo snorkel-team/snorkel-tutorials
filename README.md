@@ -166,14 +166,29 @@ Make sure to select the right kernel (`conda_spam`) when running the jupyter not
 </details>
 
 Then in the browser tab that opens, navigate to a `.ipynb` file you would like
-to run &mdash; such as `01_spam_tutorial.ipynb` &mdash; and execute the
+to run &mdash; such as `spam/01_spam_tutorial.ipynb` &mdash; and execute the
 cells in sequence.
 
 Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam/01_spam_tutorial.py`).
 The `.py` source files are written in [Jupytext `percent` format](https://jupytext.readthedocs.io/en/latest/), and contain the same content as the notebooks.
 
 
-## Contributing to Snorkel Tutorials
-
-If you're interested in improving existing tutorials or contributing new tutorials,
-check out our [contributing guidelines](./CONTRIBUTING.md).
+## <a name="tutorials-index"> Tutorials Index </a>
+Here we provide an index pointing to different available tutorials by their task type, techniques, and integrations.
+* Task
+    * Text Classification (Text): `spam`, `crowdsourcing`, `drybell`
+    * Relation Extraction (Text): `spouse`
+    * Visual Relationship Detection (Image): `visual_relation`
+    * Recommender systems: `recsys`
+* Techniques
+    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `visual_relation`, `crowdsourcing`
+    * Augmentation with Transformation Functions (TFs): `spam`
+    * Monitoring with Slicing Functions (SFs): `spam`
+    * Using Crowd Worker Labels: `crowdsourcing`
+    * Multi-Task Learning (MTL): `multitask`, `spam`
+* Integrations
+    * TensorFlow/Keras: `spam`, `spouse`
+    * Scikit-Learn: `spam`, `crowdsourcing`
+    * PyTorch: `multitask`, `visual_relation`
+    * Dask: `drybell`
+    * Spark: `drybell`
