@@ -16,13 +16,13 @@ After that, the `spam` directory contains three tutorials introducing labeling f
 The rest of the tutorials explore other tasks, techniques, and integrations.
 
 The Snorkel tutorials are grouped by application:
-* `spam`: Is this YouTube comment spam?
-* `spouse`: Does this sentence imply that the two marked people are spouses?
-* `visual_relation`: Is object A riding object B in the image, carrying it, or neither?
-* `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
-* `multitask`: A synthetic task demonstrating the native Snorkel multi-task classifier API
-* `recsys`: Will this user read and like this book?
-* [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
+* [`spam`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spam/README.md): Is this YouTube comment spam?
+* [`spouse`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/spouse/README.md): Does this sentence imply that the two marked people are spouses?
+* [`visual_relation`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/visual_relation/README.md): Is object A riding object B in the image, carrying it, or neither?
+* [`crowdsourcing`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/crowdsourcing/README.md): Is this tweet about the weather expressing a positive, negative or neutral sentiment?
+* [`multitask`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/multitask/README.md) (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
+* [`recsys`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/recsys/README.md) (Recommender Systems): Will this user read and like this book?
+* [`drybell`](https://github.com/snorkel-team/snorkel-tutorials/blob/master/drybell/README.md): Is a celebrity mentioned in this news article?
 
 Here we provide an index pointing to different available tutorials by their task type, techniques, and integrations.
 * Task
