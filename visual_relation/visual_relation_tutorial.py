@@ -163,7 +163,7 @@ applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
 L_valid = applier.apply(df_valid)
 
-# %% {"tags": ["md-exclude"]}
+# %%
 from snorkel.labeling import LFAnalysis
 
 Y_valid = df_valid.label.values
