@@ -4,21 +4,48 @@
 A collection of tutorials for [Snorkel](https://github.com/snorkel-team/snorkel).
 For more information, visit the [Snorkel website](http://snorkel.org).
 
+## Contents
+* [Tutorials](#tutorials)
+* [Getting Started](#getting-started)
+
+
 ## Tutorials
-The Snorkel tutorials are grouped by application, with some applications having multiple associated notebooks in their directory.
+We recommend that all users **start with the [Getting Started](http://snorkel.org/get-started/) tutorial hosted on the Snorkel website** for a gentle introduction to the concepts and classes of Snorkel.
+All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
+After that, the `spam` directory contains three tutorials introducing labeling functions, transformation functions, and slicing functions, respectively.
+The rest of the tutorials explore other tasks, techniques, and integrations.
+
+The Snorkel tutorials are grouped by application:
 * `spam`: Is this YouTube comment spam?
 * `spouse`: Does this sentence imply that the two marked people are spouses?
 * `visual_relation`: Is object A riding object B in the image, carrying it, or neither?
 * `crowdsourcing`: Is this tweet about the weather expressing a positive, negative or neutral sentiment?
-* `multitask` (Multi-Task Learning): A synthetic task demonstrating the native Snorkel multi-task classifier API
-* `recsys` (Recommender Systems): Will this user read and like this book?
+* `multitask`: A synthetic task demonstrating the native Snorkel multi-task classifier API
+* `recsys`: Will this user read and like this book?
 * [`drybell`](https://ai.googleblog.com/2019/03/harnessing-organizational-knowledge-for.html): Is a celebrity mentioned in this news article?
 
-See the [Tutorials Index](#tutorials-index) for a listing of which tutorials demonstrate which task types, techniques, and integrations.
+Here we provide an index pointing to different available tutorials by their task type, techniques, and integrations.
+* Task
+    * Text Classification (Text): `spam`, `crowdsourcing`, `drybell`
+    * Relation Extraction (Text): `spouse`
+    * Visual Relationship Detection (Image): `visual_relation`
+    * Recommender Systems: `recsys`
+* Techniques
+    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `visual_relation`, `crowdsourcing`
+    * Augmentation with Transformation Functions (TFs): `spam`
+    * Monitoring with Slicing Functions (SFs): `spam`
+    * Using Crowdworker Labels: `crowdsourcing`
+    * Multi-Task Learning (MTL): `multitask`, `visual_relation`, `spam`
+* Integrations
+    * TensorFlow/Keras: `spam`, `spouse`
+    * Scikit-learn: `spam`, `crowdsourcing`
+    * PyTorch: `multitask`
+    * Dask: `drybell`
+    * Spark: `drybell`
+
+
 If you are interested in requesting or contributing a new tutorial, let us know on the Snorkel [community forum](https://spectrum.chat/snorkel/tutorials?tab=posts).
 
-We recommend that all users **start with the `spam` tutorial** for a gentle introduction to the concepts and classes of Snorkel.
-All other tutorials assume that you have already completed that tutorial and are familiar with its concepts.
 
 ## Getting Started
 
@@ -142,24 +169,3 @@ cells in sequence.
 
 Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam/01_spam_tutorial.py`).
 The `.py` source files are written in [Jupytext `percent` format](https://jupytext.readthedocs.io/en/latest/), and contain the same content as the notebooks.
-
-
-## <a name="tutorials-index"> Tutorials Index </a>
-Here we provide an index pointing to different available tutorials by their task type, techniques, and integrations.
-* Task
-    * Text Classification (Text): `spam`, `crowdsourcing`, `drybell`
-    * Relation Extraction (Text): `spouse`
-    * Visual Relationship Detection (Image): `visual_relation`
-    * Recommender systems: `recsys`
-* Techniques
-    * Labeling with Labeling Functions (LFs): `spam`, `spouse`, `visual_relation`, `crowdsourcing`
-    * Augmentation with Transformation Functions (TFs): `spam`
-    * Monitoring with Slicing Functions (SFs): `spam`
-    * Using Crowd Worker Labels: `crowdsourcing`
-    * Multi-Task Learning (MTL): `multitask`, `visual_relation`, `spam`
-* Integrations
-    * TensorFlow/Keras: `spam`, `spouse`
-    * Scikit-Learn: `spam`, `crowdsourcing`
-    * PyTorch: `multitask`
-    * Dask: `drybell`
-    * Spark: `drybell`

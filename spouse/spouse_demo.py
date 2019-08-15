@@ -11,15 +11,17 @@
 # In the above example, our candidate represents the possible relation `(Barack Obama, Michelle Obama)`. As readers, we know this mention is true due to external knowledge and the keyword of `wedding` occuring later in the sentence.
 # We begin with some basic setup and data downloading.
 #
-# %%
+# %% {"tags": ["md-exclude"]}
 # %matplotlib inline
 
 import os
+import pandas as pd
 import pickle
 
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
     os.chdir("spouse")
 
+# %%
 from utils import load_data
 
 ((df_dev, Y_dev), df_train, (df_test, Y_test)) = load_data()
@@ -29,8 +31,7 @@ from utils import load_data
 #
 # We also have certain **preprocessed fields**, that we discuss a few cells below.
 
-# %%
-import pandas as pd
+# %% {"tags": ["md-exclude"]}
 
 # Don't truncate text fields in the display
 pd.set_option("display.max_colwidth", 0)
@@ -248,12 +249,13 @@ lfs = [
 ]
 applier = PandasLFApplier(lfs)
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import LFAnalysis
 
 L_dev = applier.apply(df_dev)
 L_train = applier.apply(df_train)
 
+# %%
 LFAnalysis(L_dev, lfs).lf_summary(Y_dev)
 
 # %% [markdown]
@@ -261,7 +263,7 @@ LFAnalysis(L_dev, lfs).lf_summary(Y_dev)
 #
 # Now, we'll train a model of the LFs to estimate their weights and combine their outputs. Once the model is trained, we can combine the outputs of the LFs into a single, noise-aware training label set for our extractor.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from snorkel.labeling import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
@@ -300,7 +302,7 @@ df_train_filtered, probs_train_filtered = filter_unlabeled_dataframe(
 # %% [markdown]
 # Next, we train a simple [LSTM](https://en.wikipedia.org/wiki/Long_short-term_memory) network for classifying candidates. `tf_model` contains functions for processing features and building the keras model for training and evaluation.
 
-# %%
+# %% {"tags": ["md-exclude-output"]}
 from tf_model import get_model, get_feature_arrays
 from utils import get_n_epochs
 
