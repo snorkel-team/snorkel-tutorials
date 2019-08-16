@@ -973,4 +973,4 @@ print(f"Test Accuracy: {sklearn_model.score(X=X_test, y=Y_test) * 100:.1f}%")
 # * For [data augmentation](https://snorkel.org/use-cases/02-spam-data-augmentation-tutorial)
 #
 # and more!
-# You can also visit the [Snorkel homepage](https://snorkel.org) or [Snorkel API documentation](https://snorkel.readthedocs.io) for more info!
+# You can also visit the [Snorkel website](https://snorkel.org) or [Snorkel API documentation](https://snorkel.readthedocs.io) for more info!
