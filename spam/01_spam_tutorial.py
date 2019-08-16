@@ -6,7 +6,7 @@
 # In this tutorial, we will walk through the process of using Snorkel to build a training set for classifying YouTube comments as spam or not spam.
 # The goal of this tutorial is to illustrate the basic components and concepts of Snorkel in a simple way, but also to dive into the actual process of iteratively developing real applications in Snorkel.
 #
-# * For an overview of Snorkel, visit [snorkel.org](http://snorkel.org)
+# * For an overview of Snorkel, visit [snorkel.org](https://snorkel.org)
 # * You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/)
 #
 # Our goal is to train a classifier over the comment data that can predict whether a comment is spam or not spam.
@@ -965,12 +965,12 @@ print(f"Test Accuracy: {sklearn_model.score(X=X_test, y=Y_test) * 100:.1f}%")
 # ### Next Steps
 
 # %% [markdown]
-# If you enjoyed this tutorial and you've already checked out the [Getting Started](http://snorkel.org/get-started/) tutorial, check out the [Tutorials](https://snorkel.org/use-cases/) page for other tutorials that you may find interesting, including demonstrations of how to use Snorkel
+# If you enjoyed this tutorial and you've already checked out the [Getting Started](https://snorkel.org/get-started/) tutorial, check out the [Tutorials](https://snorkel.org/use-cases/) page for other tutorials that you may find interesting, including demonstrations of how to use Snorkel
 #
-# * As part of a [hybrid crowdsourcing pipeline](http://snorkel.org/use-cases/crowdsourcing-tutorial)
-# * For [visual relationship detection over images](http://snorkel.org/use-cases/visual-relation-tutorial)
-# * For [information extraction over text](http://snorkel.org/use-cases/spouse-demo)
-# * For [data augmentation](http://snorkel.org/use-cases/02-spam-data-augmentation-tutorial)
+# * As part of a [hybrid crowdsourcing pipeline](https://snorkel.org/use-cases/crowdsourcing-tutorial)
+# * For [visual relationship detection over images](https://snorkel.org/use-cases/visual-relation-tutorial)
+# * For [information extraction over text](https://snorkel.org/use-cases/spouse-demo)
+# * For [data augmentation](https://snorkel.org/use-cases/02-spam-data-augmentation-tutorial)
 #
 # and more!
-# You can also visit the [Snorkel homepage](http://snorkel.org) or [Snorkel API documentation](https://snorkel.readthedocs.io) for more info!
+# You can also visit the [Snorkel website](https://snorkel.org) or [Snorkel API documentation](https://snorkel.readthedocs.io) for more info!
