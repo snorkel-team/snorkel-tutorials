@@ -69,7 +69,7 @@ or the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/faq).
 It can be tricky to get the installation right using application-specific shells
 (e.g. the `conda` shell).
 Additionally, the shell scripts included in this repo (such as those for
-downloading datasets) use *nix-style commands.
+downloading datasets) use \*nix-style commands.
 
 
 ### <a name="docker"> Running with Docker </a>
