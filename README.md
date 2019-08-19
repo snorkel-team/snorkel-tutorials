@@ -1,5 +1,7 @@
 # Snorkel Tutorials
+![Python Version](https://img.shields.io/badge/python-3.6%20%7C%203.7-blue)
 [![build](https://travis-ci.com/snorkel-team/snorkel-tutorials.svg?branch=master)](https://travis-ci.com/snorkel-team/snorkel-tutorials?branch=master)
+[![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 A collection of tutorials for [Snorkel](https://github.com/snorkel-team/snorkel).
 For more information, visit the [Snorkel website](https://snorkel.org).
@@ -7,6 +9,7 @@ For more information, visit the [Snorkel website](https://snorkel.org).
 ## Contents
 * [Tutorials](#tutorials)
 * [Getting Started](#getting-started)
+* [Contributing to Snorkel Tutorials](#contributing-to-snorkel-tutorials)
 
 
 ## Tutorials
@@ -42,9 +45,6 @@ Here we provide an index pointing to different available tutorials by their task
     * PyTorch: `multitask`
     * Dask: `drybell`
     * Spark: `drybell`
-
-
-If you are interested in requesting or contributing a new tutorial, let us know on the Snorkel [community forum](https://spectrum.chat/snorkel/tutorials?tab=posts).
 
 
 ## Getting Started
@@ -171,3 +171,9 @@ cells in sequence.
 
 Alternatively, you can run the tutorial as a script by calling `python3` on the corresponding `.py` file directly (e.g. `python3 spam/01_spam_tutorial.py`).
 The `.py` source files are written in [Jupytext `percent` format](https://jupytext.readthedocs.io/en/latest/), and contain the same content as the notebooks.
+
+
+## Contributing to Snorkel Tutorials
+
+If you're interested in improving existing tutorials or contributing new tutorials,
+check out our [contributing guidelines](./CONTRIBUTING.md).
