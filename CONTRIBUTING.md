@@ -64,7 +64,7 @@ Also add the command name to `envlist`.
         * Run `tox -e my_tutorial_dir -- sync --py` to generate a Python script version from the notebook version. Run this command to update when changes are made to the tutorial notebook.
     * For script-based tutorials, write your tutoral as a Python script.
 1. [Test your changes locally](#testing-changes-locally)
-1. Submit a PR!
+1. Submit a PR! Make sure to include a reference to the Spectrum planning thread.
 
 ## Testing Changes Locally
 
