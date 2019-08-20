@@ -43,7 +43,9 @@ Once you've worked out details with the maintainers, follow these general steps:
 
 1. Make your changes to the source files
     * For notebook-based tutorials, we recommend making changes to the `.py` version
-    then syncing changes with `tox -e my_tutorial_dir -- sync`.
+    then syncing changes with `tox -e my_tutorial_dir -- sync`. Alternatively, if
+    you have already run all the cells in your browser, you can select
+    File &rarr; Jupytext &rarr; Pair Notebook with Percept Script to save the ipynb.
     * For script-based tutorials, just make the changes as you normally would.
 1. [Test your changes locally](#testing-changes-locally)
 1. Submit a PR!
@@ -69,7 +71,8 @@ Once you've worked out details with the maintainers, follow these general steps:
 Also add the command name to `envlist`.
 1. Write your tutorial!
     * For notebook-based tutorials, write your tutorial either as a Python script (e.g. `my_tutorial_dir/my_tutorial.py`) in [Jupytext percent format](https://gist.github.com/mwouts/91f3e1262871cdaa6d35394cd14f9bdc) or a Jupyter notebook.
-        * Run `tox -e my_tutorial_dir -- sync` to generate a notebook version from the Python script version. Run this command to update when changes are made to the tutorial script.
+        * Run `tox -e my_tutorial_dir -- sync` to generate a notebook version from the Python script version
+          (or if you have run all cells, select File &rarr; Jupytext &rarr; Pair Notebook with Percept Script). Do this to update the notebook whenever changes are made to the tutorial script.
         * Run `tox -e my_tutorial_dir -- sync --py` to generate a Python script version from the notebook version. Run this command to update when changes are made to the tutorial notebook.
     * For script-based tutorials, write your tutoral as a Python script.
 1. [Test your changes locally](#testing-changes-locally)
