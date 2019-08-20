@@ -9,6 +9,7 @@ so please read through it before contributing.
 ### Contents
 
 * [Types of Tutorials](#types-of-tutorials)
+* [Dev Setup](#dev-setup)
 * [Making Changes to an Existing Tutorial](#making-changes-to-an-existing-tutorial)
 * [Adding a New Tutorial](#adding-a-new-tutorial)
 * [Testing Changes Locally](#testing-changes-locally)
