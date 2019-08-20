@@ -36,8 +36,8 @@ from utils import load_vrd_data
 
 # setting sample=False will take ~3 hours to run (downloads full VRD dataset)
 sample = True
-is_travis = os.environ.get("TRAVIS") == "true"
-df_train, df_valid, df_test = load_vrd_data(sample, is_travis)
+is_test = os.environ.get("TRAVIS") == "true" or os.environ.get("IS_TEST") == "true"
+df_train, df_valid, df_test = load_vrd_data(sample, is_test)
 
 print("Train Relationships: ", len(df_train))
 print("Dev Relationships: ", len(df_valid))

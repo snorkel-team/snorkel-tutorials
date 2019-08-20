@@ -7,7 +7,7 @@ import numpy as np
 
 import pandas as pd
 
-IS_TRAVIS = os.environ.get("TRAVIS") == "true"
+IS_TEST = os.environ.get("TRAVIS") == "true" or os.environ.get("IS_TEST") == "true"
 
 
 def load_data() -> Tuple[
@@ -30,7 +30,7 @@ def load_data() -> Tuple[
 
     with open(os.path.join("data", "train_data.pkl"), "rb") as f:
         df_train = pickle.load(f)
-        if IS_TRAVIS:
+        if IS_TEST:
             # Reduce train set size to speed up travis.
             df_train = df_train.iloc[:2000]
 
@@ -45,4 +45,4 @@ def load_data() -> Tuple[
 
 
 def get_n_epochs() -> int:
-    return 3 if IS_TRAVIS else 30
+    return 3 if IS_TEST else 30
