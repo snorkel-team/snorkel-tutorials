@@ -13,6 +13,7 @@ from jupytext.compare import compare_notebooks
 
 logging.basicConfig(level=logging.INFO)
 
+
 NOTEBOOKS_CONFIG_FNAME = ".notebooks"
 SCRIPTS_CONFIG_FNAME = ".scripts"
 EXCLUDE_CELL_TAG = "md-exclude"
