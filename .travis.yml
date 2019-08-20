@@ -25,7 +25,10 @@ jobs:
 
 jobs:
   include:
-    - if: type = pull_request
+    - stage: fast tests
+      script: tox -e style
+    - stage: all tests
+      if: type = pull_request
       name: "Python 3.6: affected tutorial tests"
       python: 3.6
       env: JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
