@@ -9,6 +9,7 @@ so please read through it before contributing.
 ### Contents
 
 * [Types of Tutorials](#types-of-tutorials)
+* [Dev Setup](#dev-setup)
 * [Making Changes to an Existing Tutorial](#making-changes-to-an-existing-tutorial)
 * [Adding a New Tutorial](#adding-a-new-tutorial)
 * [Testing Changes Locally](#testing-changes-locally)
@@ -25,6 +26,14 @@ Script-based tutorials act more as examples of how to deploy certain Snorkel fun
 (the [`drybell` tutorial](https://github.com/snorkel-team/snorkel-tutorials/tree/master/drybell) is a good example).
 We default to using notebook-based tutorials.
 
+## Dev Setup
+
+The only required dev setup is installing [`tox`](https://tox.readthedocs.io).
+For example, if you use `pip`:
+
+```bash
+python3 -m pip install -U 'tox>=3.13.0,<4.0.0'
+```
 
 ## Making Changes to an Existing Tutorial
 
