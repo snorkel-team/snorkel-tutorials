@@ -37,8 +37,8 @@ python3 -m pip install --upgrade virtualenv
 virtualenv -p python3 .env
 source .env/bin/activate
 
-pip3 install -r requirements.txt
-pip3 install -r spam/requirements.txt  # Change based on tutorial.
+python3 -m pip install -r requirements.txt
+python3 -m pip install -r spam/requirements.txt  # Change based on tutorial.
 ```
 
 Start jupyter from the virtualenv to make sure the kernel has all the required dependencies.
