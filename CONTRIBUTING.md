@@ -28,12 +28,20 @@ We default to using notebook-based tutorials.
 
 ## Dev Setup
 
-The only required dev setup is installing [`tox`](https://tox.readthedocs.io).
-For example, if you use `pip`:
+For dev setup, you  will need to install [`tox`](https://tox.readthedocs.io), and set up a virtualenv with all the requirements.
+For example, if you use `pip`, and want to work on the `spam` tutorial:
 
 ```bash
 python3 -m pip install -U 'tox>=3.13.0,<4.0.0'
+pip3 install --upgrade virtualenv
+virtualenv -p python3 .env
+source .env/bin/activate
+
+pip3 install -r requirements.txt
+pip3 install -r spam/requirements.txt  # Change based on tutorial.
 ```
+
+Start jupyter from the virtualenv to make sure the kernel has all the required dependencies.
 
 ## Making Changes to an Existing Tutorial
 
