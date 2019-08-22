@@ -25,10 +25,12 @@ jobs:
 
 jobs:
   include:
-    - stage: fast tests
+    - stage: "Python 3.6: fail fast tests"
+      python: 3.6
       install:
         - pip install -U pip setuptools
         - pip install -U tox==3.13.0
+        - tox --notest -e style
       script: tox -e style
     - stage: all tests
       if: type = pull_request
