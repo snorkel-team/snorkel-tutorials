@@ -48,6 +48,9 @@ def get_changed_tox_envs(all_envs: bool, no_travis_strict: bool, plan: bool) -> 
     # Find unique snorkel-tutorial subdirectories affected by patch
     unique_directories = set()
     for p in modified_paths:
+        # Skip changed markdown files as they don't need a test env.
+        if p.endswith('.md'):
+            continue
         splits = p.split("/")
         # If there's a directory, parse it; otherwise, add placeholder "."
         unique_directories.add("." if len(splits) == 1 else splits[0])
