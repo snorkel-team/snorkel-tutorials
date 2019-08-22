@@ -13,7 +13,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import backend as K
 
-IS_TRAVIS = os.environ.get("TRAVIS") == "true"
+IS_TEST = os.environ.get("TRAVIS") == "true" or os.environ.get("IS_TEST") == "true"
 
 YA_BOOKS_URL = "https://drive.google.com/uc?id=1gH7dG4yQzZykTpbHYsrw2nFknjUm0Mol"
 YA_INTERACTIONS_URL = "https://drive.google.com/uc?id=1NNX7SWcKahezLFNyiW88QFPAqOAYP5qg"
@@ -63,7 +63,7 @@ def load_small_sample():
 def maybe_download_files(data_dir: str = "data") -> None:
     if not os.path.exists(data_dir):
         os.makedirs(data_dir, exist_ok=True)
-        if IS_TRAVIS:
+        if IS_TEST:
             # Sample data pickle
             gdown.download(SMALL_DATA_URL, output=SAMPLE_DATA, quiet=None)
         else:
@@ -212,7 +212,7 @@ def split_data(user_idxs, data: pd.DataFrame) -> Tuple[pd.DataFrame, ...]:
 def download_and_process_data() -> Tuple[Tuple[pd.DataFrame, ...], pd.DataFrame]:
     logging.info("Downloading raw data")
     maybe_download_files()
-    if IS_TRAVIS:
+    if IS_TEST:
         return load_small_sample()
     logging.info("Processing book data")
     df_books, book_id_to_idx = process_books_data()
@@ -262,4 +262,4 @@ def f1_batch(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def get_n_epochs() -> int:
-    return 2 if IS_TRAVIS else 30
+    return 2 if IS_TEST else 30

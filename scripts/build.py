@@ -239,6 +239,7 @@ def get_scripts(tutorial_dir: str) -> List[Notebook]:
 
 def check_notebook(notebook: Notebook) -> None:
     assert os.path.exists(notebook.py), f"No file {notebook.py}"
+    os.environ["IS_TEST"] = "true"
     logging.info(f"Checking links in [{notebook.py}]")
     check_links(notebook.py)
     notebook_actual = jupytext.read(notebook.ipynb, fmt=dict(extension="ipynb"))
@@ -246,6 +247,14 @@ def check_notebook(notebook: Notebook) -> None:
         logging.info(f"Executing notebook [{notebook.py}]")
         call_jupytext(notebook, f.name, to_ipynb=True)
         notebook_expected = jupytext.read(f.name, fmt=dict(extension="ipynb"))
+        # notebook_metadata_filter gets flipped during execution. Remove it to ensure
+        # all metadata is tested.
+        notebook_actual.metadata.get("jupytext", {}).pop(
+            "notebook_metadata_filter", None
+        )
+        notebook_expected.metadata.get("jupytext", {}).pop(
+            "notebook_metadata_filter", None
+        )
         compare_notebooks(notebook_actual, notebook_expected)
 
 
