@@ -33,7 +33,7 @@ For example, if you use `pip`, and want to work on the `spam` tutorial:
 
 ```bash
 python3 -m pip install -U 'tox>=3.13.0,<4.0.0'
-pip3 install --upgrade virtualenv
+python3 -m pip install --upgrade virtualenv
 virtualenv -p python3 .env
 source .env/bin/activate
 
