@@ -26,6 +26,9 @@ jobs:
 jobs:
   include:
     - stage: fast tests
+      install:
+        - pip install -U pip setuptools
+        - pip install -U tox==3.13.0
       script: tox -e style
     - stage: all tests
       if: type = pull_request
