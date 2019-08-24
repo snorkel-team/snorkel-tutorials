@@ -776,7 +776,7 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 
 # %% [markdown]
 # We can also run error analysis after the label model has been trained.
-# For example, let's take a look at 5 random false positives from the `dev` set, which might inspire some more LFs that vote `SPAM`.
+# For example, let's take a look at 5 random false negatives from the `dev` set, which might inspire some more LFs that vote `SPAM`.
 
 # %%
 probs_dev = majority_model.predict_proba(L=L_dev)
