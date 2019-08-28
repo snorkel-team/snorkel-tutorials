@@ -50,7 +50,7 @@ def get_changed_tox_envs(all_envs: bool, no_travis_strict: bool, plan: bool) -> 
     unique_directories = set()
     for p in modified_paths:
         # Skip changed markdown / text files as they don't need a test env.
-        if any([p.endswith(ext) for ext in SKIP_EXT]):
+        if any(p.endswith(ext) for ext in SKIP_EXT):
             continue
         splits = p.split("/")
         # If there's a directory, parse it; otherwise, add placeholder "."
