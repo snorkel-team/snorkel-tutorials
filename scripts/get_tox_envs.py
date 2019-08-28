@@ -4,6 +4,7 @@ import subprocess
 from typing import List
 
 EXTRA_ENVIRONMENTS = ["style"]
+SKIP_EXT = [".md", ".txt"]
 
 
 def get_modified_paths(no_travis_strict: bool) -> List[str]:
@@ -48,6 +49,9 @@ def get_changed_tox_envs(all_envs: bool, no_travis_strict: bool, plan: bool) -> 
     # Find unique snorkel-tutorial subdirectories affected by patch
     unique_directories = set()
     for p in modified_paths:
+        # Skip changed markdown / text files as they don't need a test env.
+        if any(p.endswith(ext) for ext in SKIP_EXT):
+            continue
         splits = p.split("/")
         # If there's a directory, parse it; otherwise, add placeholder "."
         unique_directories.add("." if len(splits) == 1 else splits[0])
