@@ -22,7 +22,7 @@ done
 if [ "$RELOAD" = true ]; then
     if [ -d "data/" ]; then rm -Rf "data/"; fi
     mkdir -p data
-    wget $DATA_URL -O data.zip
+    curl $DATA_URL > data.zip
     mv data.zip data/
     cd data
     unzip data.zip
