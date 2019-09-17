@@ -5,20 +5,30 @@ import pandas as pd
 from snorkel.types import DataPoint
 
 import tensorflow as tf
-from tensorflow.keras.layers import Bidirectional, Concatenate, Dense, Embedding, Input, LSTM
+from tensorflow.keras.layers import (
+    Bidirectional,
+    Concatenate,
+    Dense,
+    Embedding,
+    Input,
+    LSTM,
+)
+
 
 def _get_left_tokens(cand: DataPoint) -> str:
     end = min(cand.person1_word_idx[0], cand.person2_word_idx[0])
-    return (cand.tokens[:end][-4 : -1])
+    return cand.tokens[:end][-4:-1]
+
 
 def _get_tokens_between(cand: DataPoint) -> str:
     start = cand.person1_word_idx[1] + 1
     end = cand.person2_word_idx[0]
-    return (cand.tokens[start:end])
+    return cand.tokens[start:end]
+
 
 def _get_right_tokens(cand: DataPoint) -> str:
     start = max(cand.person1_word_idx[1], cand.person2_word_idx[1]) + 1
-    return (cand.tokens[start:][:3])
+    return cand.tokens[start:][:3]
 
 
 def get_feature_arrays(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -47,11 +57,10 @@ def bilstm(
     return Bidirectional(LSTM(rnn_state_size, activation=tf.nn.relu))(
         embedded_input, mask=tf.strings.length(tokens)
     )
-    
+
+
 def get_model(
-    rnn_state_size: int = 64,
-    num_buckets: int = 40000,
-    embed_dim: int = 12,
+    rnn_state_size: int = 64, num_buckets: int = 40000, embed_dim: int = 12
 ) -> tf.keras.Model:
     """
     Return LSTM model for predicting label probabilities.
