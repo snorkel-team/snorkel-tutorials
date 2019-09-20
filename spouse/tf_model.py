@@ -2,7 +2,6 @@
 from typing import Tuple
 import numpy as np
 import pandas as pd
-from snorkel.types import DataPoint
 
 import tensorflow as tf
 from tensorflow.keras.layers import (
@@ -15,27 +14,11 @@ from tensorflow.keras.layers import (
 )
 
 
-def _get_left_tokens(cand: DataPoint) -> str:
-    end = min(cand.person1_word_idx[0], cand.person2_word_idx[0])
-    return cand.tokens[:end][-4:-1]
-
-
-def _get_tokens_between(cand: DataPoint) -> str:
-    start = cand.person1_word_idx[1] + 1
-    end = cand.person2_word_idx[0]
-    return cand.tokens[start:end]
-
-
-def _get_right_tokens(cand: DataPoint) -> str:
-    start = max(cand.person1_word_idx[1], cand.person2_word_idx[1]) + 1
-    return cand.tokens[start:][:3]
-
-
 def get_feature_arrays(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Get np arrays of upto max_length tokens and person idxs."""
-    bet = df.apply(_get_tokens_between, axis=1)
-    left = df.apply(_get_left_tokens, axis=1)
-    right = df.apply(_get_right_tokens, axis=1)
+    bet = df.between_tokens
+    left = df.apply(lambda c: c.tokens[: c.person1_word_idx[0]][-4:-1], axis=1)
+    right = df.person2_right_tokens
 
     def pad_or_truncate(l, max_length=40):
         return l[:max_length] + [""] * (max_length - len(l))
