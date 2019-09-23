@@ -38,11 +38,11 @@ Here we provide an index pointing to different available tutorials by their task
     * Augmentation with Transformation Functions (TFs): `spam`
     * Monitoring with Slicing Functions (SFs): `spam`
     * Using Crowdworker Labels: `crowdsourcing`
-    * Multi-Task Learning (MTL): `multitask`, `visual_relation`, `spam`
+    * Multi-Task Learning (MTL): `multitask`, `spam`
 * Integrations
     * TensorFlow/Keras: `spam`, `spouse`
     * Scikit-learn: `spam`, `crowdsourcing`
-    * PyTorch: `multitask`
+    * PyTorch: `multitask`, `visual_relation`
     * Dask: `drybell`
     * Spark: `drybell`
 
