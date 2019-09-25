@@ -1,4 +1,5 @@
 # Snorkel Tutorials
+![Snorkel Version](https://img.shields.io/badge/snorkel-0.9.0-65baf6)
 ![Python Version](https://img.shields.io/badge/python-3.6%20%7C%203.7-blue)
 [![build](https://travis-ci.com/snorkel-team/snorkel-tutorials.svg?branch=master)](https://travis-ci.com/snorkel-team/snorkel-tutorials?branch=master)
 [![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -61,6 +62,16 @@ If you're looking to quickly get started with a tutorial, we recommend using
 our [Docker setup](#docker).
 If you want to install things yourself using `pip` or `conda`, you can follow
 our [installation steps](#install) below instead.
+
+***Snorkel version***
+
+This tutorials repo is pinned to a specific version of the Snorkel library,
+which is specified in the
+[requirements file](https://github.com/snorkel-team/snorkel-tutorials/blob/master/requirements.txt).
+Note that this will likely not be up to date with the `master` branch in
+the main Snorkel repo.
+We recommend using virtual environments or Docker containers to run the
+tutorials, so check out the details below.
 
 ***A quick note for Windows users***
 
