@@ -85,9 +85,10 @@ def get_keras_lstm(num_buckets, embed_dim=16, rnn_state_size=64):
     return lstm_model
 
 
-def get_keras_early_stopping(patience=10):
+def get_keras_early_stopping(patience=10, monitor="val_acc"):
+    """Stops training if monitor value doesn't exceed the current max value after patience num of epochs"""
     return tf.keras.callbacks.EarlyStopping(
-        monitor="val_acc", patience=10, verbose=1, restore_best_weights=True
+        monitor=monitor, patience=patience, verbose=1, restore_best_weights=True
     )
 
 
