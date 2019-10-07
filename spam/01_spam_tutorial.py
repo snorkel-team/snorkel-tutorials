@@ -783,10 +783,10 @@ probs_dev = majority_model.predict_proba(L=L_dev)
 preds_dev = probs_dev >= 0.5
 buckets = get_label_buckets(Y_dev, preds_dev[:, 1])
 
-df_fp_dev = df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]]
-df_fp_dev["probability"] = probs_dev[buckets[(SPAM, HAM)], 1]
+df_fn_dev = df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]]
+df_fn_dev["probability"] = probs_dev[buckets[(SPAM, HAM)], 1]
 
-df_fp_dev.sample(5, random_state=3)
+df_fn_dev.sample(5, random_state=3)
 
 
 # %% [markdown] {"tags": ["md-exclude"]}
