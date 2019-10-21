@@ -65,5 +65,5 @@ def get_model(
     layer = Dense(32, activation=tf.nn.relu)(layer)
     probabilities = Dense(2, activation=tf.nn.softmax)(layer)
     model = tf.keras.Model(inputs=[bet_ph, left_ph, right_ph], outputs=probabilities)
-    model.compile(tf.train.AdagradOptimizer(0.1), "categorical_crossentropy")
+    model.compile(tf.optimizers.Adam(0.1), "categorical_crossentropy")
     return model
