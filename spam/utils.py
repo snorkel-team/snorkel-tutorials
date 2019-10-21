@@ -2,6 +2,7 @@ import glob
 import os
 import subprocess
 from collections import OrderedDict
+import sys
 
 import numpy as np
 import pandas as pd
@@ -12,15 +13,18 @@ from sklearn.model_selection import train_test_split
 
 from snorkel.classification.data import DictDataset, DictDataLoader
 
+sys.path.insert(0, os.path.split(os.path.dirname(__file__))[0]) # so we can import from utils
+from snorkle_example_utils.download_files import download_files
+
+FILES=( "Youtube01-Psy.csv", "Youtube02-KatyPerry.csv", "Youtube03-LMFAO.csv", "Youtube04-Eminem.csv", "Youtube05-Shakira.csv" )
+DATA_URL="https://archive.ics.uci.edu/ml/machine-learning-databases/00380/YouTube-Spam-Collection-v1.zip"
+DIRECTORY = "spam"
 
 def load_spam_dataset(load_train_labels: bool = False, split_dev: bool = True):
     if os.path.basename(os.getcwd()) == "snorkel-tutorials":
         os.chdir("spam")
-    try:
-        subprocess.run(["bash", "download_data.sh"], check=True, stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError as e:
-        print(e.stderr.decode())
-        raise e
+    download_files(FILES, DATA_URL, DIRECTORY)
+
     filenames = sorted(glob.glob("data/Youtube*.csv"))
 
     dfs = []

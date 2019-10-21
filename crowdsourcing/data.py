@@ -1,6 +1,8 @@
 import os
 import subprocess
 from typing import Tuple
+import urllib
+import shutil
 
 import pandas as pd
 
@@ -13,15 +15,22 @@ LABEL_MAPPING = {
     "Tweet not related to weather condition": 2,
 }
 
+def download_files():
+    reload = any(not os.path.exists(os.path.join("data", filename)) for filename in ("weather-non-agg-DFE.csv", "weather-evaluated-agg-DFE.csv"))    
+    if reload:
+        if os.path.exists("data"):
+            shutil.rmtree("data")
+        os.mkdir("data")
+        
+        urllib.request.urlretrieve("https://www.dropbox.com/s/94d2wsrrwh1ioyd/weather-non-agg-DFE.csv", os.path.join("data", "weather-non-agg-DFE.csv"))
+        urllib.request.urlretrieve("https://d1p17r2m4rzlbo.cloudfront.net/wp-content/uploads/2016/03/weather-evaluated-agg-DFE.csv", os.path.join("data", "weather-evaluated-agg-DFE.csv"))
+  
 
 def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     if os.path.basename(os.getcwd()) != "crowdsourcing":
         raise ValueError("Function must be called from crowdsourcing/ directory.")
-    try:
-        subprocess.run(["bash", "download-data.sh"], check=True, stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError as e:
-        print(e.stderr.decode())
-        raise e
+    download_files()
+
 
     gold_labels = pd.read_csv("data/weather-evaluated-agg-DFE.csv")
     gold_labels = gold_labels.set_index("tweet_id", drop=False)
@@ -61,3 +70,8 @@ def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
     crowd_labels = crowd_labels.drop(df_train[: int(len(df_train) / 2)].tweet_id)
 
     return crowd_labels, df_train, df_dev, df_test
+
+if __name__ == "__main__":
+    if os.path.basename(os.getcwd()) == "snorkel-tutorials":
+        os.chdir("crowdsourcing")
+    download_files()

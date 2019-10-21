@@ -2,13 +2,22 @@ import os
 import pickle
 import subprocess
 from typing import Tuple
+import sys
 
 import numpy as np
+import shutil
 
 import pandas as pd
 
-IS_TEST = os.environ.get("TRAVIS") == "true" or os.environ.get("IS_TEST") == "true"
 
+
+sys.path.insert(0, os.path.split(os.path.dirname(__file__))[0]) # so we can import from utils
+from snorkle_example_utils.download_files import download_files
+
+IS_TEST = os.environ.get("TRAVIS") == "true" or os.environ.get("IS_TEST") == "true"
+DATA_URL="https://www.dropbox.com/s/jmrvyaqew4zp9cy/spouse_data.zip?dl=1"
+FILES=( "train_data.pkl", "dev_data.pkl", "test_data.pkl", "dbpedia.pkl" )
+DIRECTORY = "spouse"
 
 def load_data() -> Tuple[
     Tuple[pd.DataFrame, np.ndarray], pd.DataFrame, Tuple[pd.DataFrame, np.ndarray]
@@ -19,11 +28,8 @@ def load_data() -> Tuple[
         df_train: Training set data points dataframe.
         df_test, Y_test: Test set data points dataframe and 1D labels ndarray.
     """
-    try:
-        subprocess.run(["bash", "download_data.sh"], check=True, stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError as e:
-        print(e.stderr.decode())
-        raise e
+    
+    download_files(FILES, DATA_URL, DIRECTORY)
     with open(os.path.join("data", "dev_data.pkl"), "rb") as f:
         df_dev = pickle.load(f)
         Y_dev = pickle.load(f)
