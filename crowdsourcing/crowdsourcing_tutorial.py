@@ -229,7 +229,7 @@ print(f"LabelModel Accuracy: {acc:.3f}")
 # at inference time.**
 # In order to run inference on new incoming data points, we need to train a
 # discriminative model over the tweets themselves.
-# Let's generate a set of probabilistic labels for that training set.
+# Let's generate a set of labels for that training set.
 
 # %%
 preds_train = label_model.predict(L_train)
@@ -261,7 +261,7 @@ X_train = np.array(list(df_train.tweet_text.apply(encode_text).values))
 X_test = np.array(list(df_test.tweet_text.apply(encode_text).values))
 
 # %% [markdown]
-# ### Model on probabilistic labels
+# ### Model on labels
 # Now, we train a simple logistic regression model on the BERT features, using labels
 # obtained from our LabelModel.
 
@@ -283,4 +283,4 @@ print(f"Accuracy of trained model: {sklearn_model.score(X_test, Y_test)}")
 # In this tutorial, we accomplished the following:
 # * We demonstrated how to combine crowdsourced labels with other programmatic LFs to improve coverage.
 # * We used the `LabelModel` to combine inputs from crowdworkers and other LFs to generate high quality probabilistic labels.
-# * We used our probabilistic labels to train a classifier for making predictions on new, unseen data points.
+# * We used our labels to train a classifier for making predictions on new, unseen data points.
