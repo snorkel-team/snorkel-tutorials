@@ -18,11 +18,16 @@
 # %% {"tags": ["md-exclude"]}
 import logging
 import os
-from snorkel.utils import set_seed
+import numpy as np
+import random
+import torch
 
 # For reproducibility
 os.environ["PYTHONHASHSEED"] = "0"
-set_seed(111)
+SEED = 123
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
 
 # Make sure we're running from the spam/ directory
 if os.path.basename(os.getcwd()) == "snorkel-tutorials":
@@ -277,7 +282,7 @@ scorer.score_slices(
 # This might work with small number of slices, but with hundreds or thousands or production slices at scale, it could quickly become intractable to tune upsampling weights per slice.
 
 # %% [markdown]
-# ### Set up modeling pipeline with [`SlicingClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html)
+# ### Set up modeling pipeline with [`SliceAwareClassifier`](https://snorkel.readthedocs.io/en/v0.9.3/packages/_autosummary/slicing/snorkel.slicing.SliceAwareClassifier.html)
 #
 # Snorkel supports performance monitoring on slices using discriminative models from [`snorkel.slicing`](https://snorkel.readthedocs.io/en/master/packages/slicing.html).
 # To demonstrate this functionality, we'll first set up a the datasets + modeling pipeline in the PyTorch-based [`snorkel.classification`](https://snorkel.readthedocs.io/en/master/packages/classification.html) package.
@@ -302,13 +307,13 @@ test_dl = create_dict_dataloader(
 )
 
 # %% [markdown]
-# We'll now initialize a [`SlicingClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html):
+# We'll now initialize a [`SliceAwareClassifier`](https://snorkel.readthedocs.io/en/v0.9.3/packages/_autosummary/slicing/snorkel.slicing.SliceAwareClassifier.html):
 # * `base_architecture`: We define a simple Multi-Layer Perceptron (MLP) in Pytorch to serve as the primary representation architecture. We note that the `BinarySlicingClassifier` is **agnostic to the base architecture** — you might leverage a Transformer model for text, or a ResNet for images.
 # * `head_dim`: identifies the final output feature dimension of the `base_architecture`
 # * `slice_names`: Specify the slices that we plan to train on with this classifier.
 
 # %%
-from snorkel.slicing import SlicingClassifier
+from snorkel.slicing import SliceAwareClassifier
 from utils import get_pytorch_mlp
 
 
@@ -318,7 +323,7 @@ hidden_dim = bow_dim
 mlp = get_pytorch_mlp(hidden_dim=hidden_dim, num_layers=2)
 
 # Init slice model
-slice_model = SlicingClassifier(
+slice_model = SliceAwareClassifier(
     base_architecture=mlp, head_dim=hidden_dim, slice_names=[sf.name for sf in sfs]
 )
 
@@ -354,9 +359,9 @@ S_valid = applier.apply(df_valid)
 
 # %% [markdown]
 # In order to train using slice information, we'd like to initialize a **slice-aware dataloader**.
-# To do this, we can use [`slice_model.make_slice_dataloader`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html#snorkel.slicing.SlicingClassifier.predict) to add slice labels to an existing dataloader.
+# To do this, we can use [`slice_model.make_slice_dataloader`](https://snorkel.readthedocs.io/en/v0.9.3/packages/_autosummary/slicing/snorkel.slicing.SliceAwareClassifier.html#snorkel.slicing.SliceAwareClassifier.predict) to add slice labels to an existing dataloader.
 #
-# Under the hood, this method leverages slice metadata to add slice labels to the appropriate fields such that it's compatible with the initialized [`SliceClassifier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html#snorkel-slicing-slicingclassifier).
+# Under the hood, this method leverages slice metadata to add slice labels to the appropriate fields such that it's compatible with the initialized [`SliceClassifier`](https://snorkel.readthedocs.io/en/v0.9.3/packages/_autosummary/slicing/snorkel.slicing.SliceAwareClassifier.html#snorkel-slicing-slicingclassifier).
 
 # %%
 train_dl_slice = slice_model.make_slice_dataloader(
@@ -381,7 +386,7 @@ trainer.fit(slice_model, [train_dl_slice, valid_dl_slice])
 
 # %% [markdown]
 # At inference time, the primary task head (`spam_task`) will make all final predictions.
-# We'd like to evaluate all the slice heads on the original task head — [`score_slices`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/slicing/snorkel.slicing.SlicingClassifier.html#snorkel.slicing.SlicingClassifier.score_slices) remaps all slice-related labels, denoted `spam_task_slice:{slice_name}_pred`, to be evaluated on the `spam_task`.
+# We'd like to evaluate all the slice heads on the original task head — [`score_slices`](https://snorkel.readthedocs.io/en/v0.9.3/packages/_autosummary/slicing/snorkel.slicing.SliceAwareClassifier.html#snorkel.slicing.SliceAwareClassifier.score_slices) remaps all slice-related labels, denoted `spam_task_slice:{slice_name}_pred`, to be evaluated on the `spam_task`.
 
 # %%
 slice_model.score_slices([valid_dl_slice, test_dl_slice], as_dataframe=True)

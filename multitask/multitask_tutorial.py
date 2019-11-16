@@ -26,10 +26,10 @@
 # %% {"tags": ["md-exclude"]}
 # %matplotlib inline
 
-from snorkel.utils import set_seed
+import torch
 
 SEED = 123
-set_seed(SEED)
+torch.manual_seed(SEED)
 
 # %% [markdown]
 # ## Create Toy Data
@@ -112,7 +112,6 @@ plt.show()
 # `DictDataloader` is a wrapper for `torch.utils.data.Dataloader`, which handles the collate function for `DictDataset` appropriately.
 
 # %%
-import torch
 from snorkel.classification import DictDataset, DictDataLoader
 
 dataloaders = []

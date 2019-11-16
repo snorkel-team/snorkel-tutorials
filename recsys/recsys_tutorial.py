@@ -195,7 +195,7 @@ applier = PandasLFApplier(lfs)
 L_dev = applier.apply(df_dev)
 
 # %%
-LFAnalysis(L_dev, lfs).lf_summary(df_dev.rating)
+LFAnalysis(L_dev, lfs).lf_summary(df_dev.rating.values)
 
 # %% [markdown]
 # ### Applying labeling functions to the training set
