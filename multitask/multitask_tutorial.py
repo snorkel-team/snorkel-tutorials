@@ -26,9 +26,13 @@
 # %% {"tags": ["md-exclude"]}
 # %matplotlib inline
 
+import numpy as np
+import random
 import torch
 
 SEED = 123
+np.random.seed(SEED)
+random.seed(SEED)
 torch.manual_seed(SEED)
 
 # %% [markdown]
