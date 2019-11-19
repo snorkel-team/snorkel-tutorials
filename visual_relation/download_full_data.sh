@@ -28,6 +28,7 @@ if [ "$RELOAD" = true ]; then
     cd data
 
     # download and unzip metadata and annotations
+    echo "Downloading full VRD dataset..."
     wget $ANNOTATIONS_URL
     unzip vrd.zip
 
