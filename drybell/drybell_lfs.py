@@ -1,3 +1,4 @@
+from snorkel.labeling.lf import labeling_function
 from snorkel.labeling.lf.nlp import nlp_labeling_function
 from snorkel.preprocess import preprocessor
 
@@ -35,3 +36,8 @@ def person_in_db(x, celebrity_knowledge_base):
         if ent.label_ == "PERSON" and ent.text.lower() in celebrity_knowledge_base:
             return POSITIVE
     return ABSTAIN
+
+
+@labeling_function()
+def body_contains_fortune(x):
+    return POSITIVE if "fortune" in x.body else ABSTAIN

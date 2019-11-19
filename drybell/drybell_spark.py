@@ -6,7 +6,11 @@ from pyspark.sql import SQLContext
 from snorkel.labeling import LabelModel
 from snorkel.labeling.apply.spark import SparkLFApplier
 
-from drybell_lfs_spark import article_mentions_person, person_in_db
+from drybell_lfs_spark import (
+    article_mentions_person,
+    body_contains_fortune,
+    person_in_db,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -20,7 +24,7 @@ def main(data_path, output_path):
 
     # Build label matrix
     logging.info("Applying LFs")
-    lfs = [article_mentions_person, person_in_db]
+    lfs = [article_mentions_person, body_contains_fortune, person_in_db]
     applier = SparkLFApplier(lfs)
     L = applier.apply(data.rdd)
 
