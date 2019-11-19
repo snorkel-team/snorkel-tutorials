@@ -64,7 +64,7 @@ install:
   - tox --notest -e $(python scripts/get_tox_envs.py $ALL_ENVS)
 
 script:
-  - travis_wait 30 tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
+  - tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
 
 after_success:
   - if [[ ${BUILD_WEB} == "true" ]] && [[ ${TRAVIS_BRANCH} == "master" ]]; then
