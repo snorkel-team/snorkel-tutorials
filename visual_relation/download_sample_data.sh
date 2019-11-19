@@ -36,6 +36,7 @@ if [ "$RELOAD" = true ]; then
     cd VRD
 
     # Download and unzip sample images
+    echo "Downloading sample VRD dataset..."
     mkdir sg_dataset
     cd sg_dataset
     git clone $SAMPLE_IMAGES_URL
