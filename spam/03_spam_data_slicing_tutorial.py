@@ -347,7 +347,7 @@ trainer.fit(slice_model, [train_dl, valid_dl])
 
 # %% [markdown]
 # To cope with scale, we will attempt to learn and combine many slice-specific representations with an attention mechanism.
-# (For details about this approach, please see our [technical report](https://arxiv.org/abs/1909.06349).)
+# (Please see our [Section 3 of our technical report](https://arxiv.org/abs/1909.06349) for details on this approach).
 
 # %% [markdown]
 # First, we'll generate the remaining `S` matrixes with the new set of slicing functions.
