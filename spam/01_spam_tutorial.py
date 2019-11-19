@@ -756,7 +756,7 @@ preds_train
 from snorkel.labeling import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
-label_model.fit(L_train=L_train, n_epochs=1000, lr=0.001, log_freq=100, seed=123)
+label_model.fit(L_train=L_train, n_epochs=500, lr=0.001, log_freq=100, seed=123)
 
 # %%
 majority_acc = majority_model.score(L=L_valid, Y=Y_valid)["accuracy"]
@@ -892,7 +892,7 @@ keras_model.fit(
     y=probs_train_filtered,
     validation_data=(X_valid, preds_to_probs(Y_valid, 2)),
     callbacks=[get_keras_early_stopping()],
-    epochs=20,
+    epochs=50,
     verbose=0,
 )
 
@@ -917,7 +917,7 @@ keras_dev_model.fit(
     y=Y_dev,
     validation_data=(X_valid, Y_valid),
     callbacks=[get_keras_early_stopping()],
-    epochs=20,
+    epochs=50,
     verbose=0,
 )
 
