@@ -1,5 +1,5 @@
 # Snorkel Tutorials
-![Snorkel Version](https://img.shields.io/badge/snorkel-0.9.0-65baf6)
+![Snorkel Version](https://img.shields.io/badge/snorkel-0.9.2-65baf6)
 ![Python Version](https://img.shields.io/badge/python-3.6%20%7C%203.7-blue)
 [![build](https://travis-ci.com/snorkel-team/snorkel-tutorials.svg?branch=master)](https://travis-ci.com/snorkel-team/snorkel-tutorials?branch=master)
 [![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
