@@ -20,7 +20,10 @@ done
 
 ANNOTATIONS_URL="https://www.dropbox.com/s/bnfhm6kt9xumik8/vrd.zip"
 SAMPLE_IMAGES_URL="https://github.com/Prof-Lu-Cewu/Visual-Relationship-Detection.git"
-GLOVE_URL="http://nlp.stanford.edu/data/wordvecs/glove.6B.zip"
+
+# NOTE: We download a smaller version of the 6B glove embeddings file, where
+# originally GLOVE_URL="http://nlp.stanford.edu/data/wordvecs/glove.6B.zip"
+GLOVE_URL="https://www.dropbox.com/s/2yg2r8931qx12xp/glove.100d.zip"
 
 if [ "$RELOAD" = true ]; then
     if [ -d "data" ]; then rm -Rf "data"; fi
@@ -48,10 +51,10 @@ if [ "$RELOAD" = true ]; then
     cd glove
 
     wget $GLOVE_URL
-    unzip glove.6B.zip
+    unzip glove.100d.zip
 
     # Delete the zip files
-    rm  glove.6B.zip
+    rm  glove.100d.zip
     cd ../..
 fi
 
