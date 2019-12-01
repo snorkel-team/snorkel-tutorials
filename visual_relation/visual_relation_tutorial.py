@@ -243,4 +243,7 @@ trainer.fit(model, [dl_train])
 model.score([dl_valid])
 
 # %% [markdown]
+# ## Recap
 # We have successfully trained a visual relationship detection model! Using categorical and spatial intuition about how objects in a visual relationship interact with each other, we are able to assign high quality training labels to object pairs in the VRD dataset in a multi-class classification setting.
+#
+# For more on how Snorkel can be used for visual relationship tasks, please see our [ICCV 2019 paper](https://arxiv.org/abs/1904.11622)!
