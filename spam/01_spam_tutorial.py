@@ -956,23 +956,26 @@ print(f"Test Accuracy: {sklearn_model.score(X=X_test, y=Y_test) * 100:.1f}%")
 # ### Code-Free Deep Learning Classifier with Ludwig
 
 # %% [markdown]
-# We'll also demonstrate how Snorkel labels can be easily integrated with Ludwig, a simple, code-free interface for training deep machine learning models.  This package allows for out-of-the-box experimentation with different neural network architectures -- even for datapoints with many modalities! -- via a simple command line interface. 
+# We'll also demonstrate how Snorkel labels can be easily integrated with Ludwig, a simple, code-free interface for training deep machine learning models.  This package allows for out-of-the-box experimentation with different neural network architectures -- even for datapoints with many modalities! -- via a simple command line interface.
 #
 # First, we update our dataframes with a column called `probs`.  As is convention for Ludwig [`vector features`](https://uber.github.io/ludwig/user_guide/#vector-features) -- the type we'll need to use for probabilistic labels -- this field contains the probabilistic label vector as a space-separated list of float values.  Note that in our development and test sets, we encode the true label as a one-hot encoding, with a value of 1 at the index of the true label and 0 otherwise.
 
 # %%
 # This cell suppresses some verbose warnings -- you can ignore it
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 
 # %%
 # This cell checks to see if you have tensorflow-gpu & CUDA installed,
 # and also have a GPU available; if so, it will print `GPU Available? True`
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='0'
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import tensorflow as tf
+
 gpu = tf.test.is_gpu_available()
 print(f"GPU Available? {gpu}")
 
@@ -980,25 +983,26 @@ print(f"GPU Available? {gpu}")
 from utils import indices_to_one_hot
 
 # Adding probabilistic labels to dataframes as a one-hot encoded list
-df_train_filtered['probs'] = list(probs_train_filtered)
-df_dev['probs'] = list(indices_to_one_hot(df_dev['label']))
-df_test['probs'] = list(indices_to_one_hot(df_test['label']))
+df_train_filtered["probs"] = list(probs_train_filtered)
+df_dev["probs"] = list(indices_to_one_hot(df_dev["label"]))
+df_test["probs"] = list(indices_to_one_hot(df_test["label"]))
 
 # Converting probabilistic labels to string representation and stripping brackets
 # to align with Ludwig convention
-df_train_filtered['probs'] = df_train_filtered['probs'].astype(str).str.strip('[]')
-df_dev['probs'] = df_dev['probs'].astype(str).str.strip('[]')
-df_test['probs'] = df_test['probs'].astype(str).str.strip('[]')
+df_train_filtered["probs"] = df_train_filtered["probs"].astype(str).str.strip("[]")
+df_dev["probs"] = df_dev["probs"].astype(str).str.strip("[]")
+df_test["probs"] = df_test["probs"].astype(str).str.strip("[]")
 
 # %% [markdown]
 # Now that we've formatted our dataframes correctly, we can simply save them as `.csv` files.
 
 # %%
 import os
-os.makedirs('ludwig/data', exist_ok=True)
-df_train_filtered.to_csv('ludwig/data/spam_train.csv')
-df_dev.to_csv('ludwig/data/spam_dev.csv')
-df_test.to_csv('ludwig/data/spam_test.csv')
+
+os.makedirs("ludwig/data", exist_ok=True)
+df_train_filtered.to_csv("ludwig/data/spam_train.csv")
+df_dev.to_csv("ludwig/data/spam_dev.csv")
+df_test.to_csv("ludwig/data/spam_test.csv")
 
 # %% [markdown]
 # To define the type of model we wish to train in Ludwig, we provide a [`model defintion`](https://uber.github.io/ludwig/user_guide/#command-line-interface) file that will contain all required information for building and training the model.  We use this interface to create our model definition [file](ludwig/model/spam_model_definition.yaml), which is a relatively straightforward `.yaml` file defining a single-layer, bidirectional Long Short-Term Memory (LSTM) network, a common tool for text analysis.  More examples of how to build model definition files can be found in the [Ludwig User Guide](https://uber.github.io/ludwig/examples/).
@@ -1013,7 +1017,7 @@ df_test.to_csv('ludwig/data/spam_test.csv')
 #   --data_test_csv ludwig/data/spam_test.csv \
 #   --model_definition_file ludwig/model/spam_model_definition.yaml \
 #   --output_directory results/spam_experiment_run \
-#   --experiment_name trial_1 
+#   --experiment_name trial_1
 
 # %% [markdown]
 # We can also use tools in Ludwig to visualize the training curves from the model run logs -- just load up the `.json` file with the training statistics, and run a quick visualization function as below.  Note that the validation and training loss track each other, indicating that this model likely has not overfit.  The accessibility of such common diagnostics is an advantage of focusing on model supervision, and letting modern deep learning software handle the model training procedures.
@@ -1022,25 +1026,28 @@ df_test.to_csv('ludwig/data/spam_test.csv')
 import json
 
 # Opening log file from experiment
-with open(f'results/spam_experiment_run/trial_1_run/training_statistics.json') as f:
+with open(f"results/spam_experiment_run/trial_1_run/training_statistics.json") as f:
     train_stats = json.load(f)
-    
+
 # USing ludwig to visualize the training curves
 from ludwig.visualize import learning_curves
+
 a = learning_curves(
-  train_stats,
-  'SPAM',
-  model_names='trial_1_model',
-  output_directory=None,
-  file_format='pdf')
+    train_stats,
+    "SPAM",
+    model_names="trial_1_model",
+    output_directory=None,
+    file_format="pdf",
+)
 
 # %% [markdown]
 # Finally, as before, we confirm that we've learned a useful spam classifier!
 
 # %%
 import numpy as np
+
 # Loading probabilistic labels
-probs = np.load('results/spam_experiment_run/trial_1_run/probs_predictions.npy')
+probs = np.load("results/spam_experiment_run/trial_1_run/probs_predictions.npy")
 # Evaluating model with a cutoff of 0.5
 preds_test = probs[:, 1] > 0.5
 # Computing and printing test set accuracy
