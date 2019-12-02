@@ -15,7 +15,7 @@
 # * For an overview of Snorkel, visit [snorkel.org](https://snorkel.org)
 # * You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/)
 #
-#  %% [markdown]
+# %% [markdown]
 # Data augmentation is a popular technique for increasing the size of labeled training sets by applying class-preserving transformations to create copies of labeled data points.
 # In the image domain, it is a crucial factor in almost every state-of-the-art result today and is quickly gaining
 # popularity in text-based applications.
