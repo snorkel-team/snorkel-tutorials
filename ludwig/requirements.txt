@@ -1,0 +1,2 @@
+ludwig[full]==0.2.1
+tensorflow-gpu==1.14.0
