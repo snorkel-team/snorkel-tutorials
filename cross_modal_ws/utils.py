@@ -18,7 +18,7 @@ except ImportError:
 from snorkel.analysis import Scorer
 from snorkel.classification import DictDataset, DictDataLoader, MultitaskClassifier, Operation, Task
 from snorkel.classification.data import XDict, YDict
-
+from snorkel.classification.loss import cross_entropy_with_probs
 
 def load_ids(filename):
     fin = open(filename, "r")
@@ -151,6 +151,10 @@ def init_fc(fc):
     torch.nn.init.xavier_uniform_(fc.weight)
     fc.bias.data.fill_(0.01)
     
+class SqueezeModule(torch.nn.Module):
+    def forward(self, x):
+        return x.squeeze()
+
 def create_model(resnet_cnn, num_classes):
 
     # define input features
@@ -158,11 +162,14 @@ def create_model(resnet_cnn, num_classes):
     feature_extractor = torch.nn.Sequential(*list(resnet_cnn.children())[:-1])
     fc = torch.nn.Linear(in_features, num_classes)
     init_fc(fc)
+    
+    squeeze_module = SqueezeModule()
 
     # define layers
     module_pool = torch.nn.ModuleDict(
         {
             "feature_extractor": feature_extractor,
+            "squeeze_module": squeeze_module,
             "prediction_head": fc,
         }
     )
@@ -175,12 +182,19 @@ def create_model(resnet_cnn, num_classes):
             module_name="feature_extractor",
             inputs=[("_input_","xray")],
         ),
+        
+        Operation(
+            name="squeeze_op",
+            module_name="squeeze_module",
+            inputs=["feat_op"]
+        
+        ),
 
         # define the prediction operation
         Operation(
             name="head_op", 
             module_name="prediction_head", 
-            inputs=["feat_op"]
+            inputs=["squeeze_op"]
         )       
     ]
     
@@ -188,7 +202,8 @@ def create_model(resnet_cnn, num_classes):
         name="openi_task",
         module_pool=module_pool,
         op_sequence=op_sequence,
-        scorer=Scorer(metrics=["f1_micro"]),
+        scorer=Scorer(metrics=['accuracy','precision', 'recall', 'f1','roc_auc']),
+        loss_func=cross_entropy_with_probs
     )
     
     return MultitaskClassifier([pred_cls_task])
@@ -203,7 +218,7 @@ def get_data_loader(paths, labels, split=None, batch_size=32, input_size=224, sh
     split = 'valid' if split == 'dev' else split
     
     dataset = OpenIDataset(
-        name=f"{split} dataset", paths=paths, labels=labels, transform=standard_transform(input_size), ref=front_view_ids, split=split,
+        name=f"{split}", paths=paths, labels=labels, transform=standard_transform(input_size), ref=front_view_ids, split=split,
     )
 
     # Build data loader
