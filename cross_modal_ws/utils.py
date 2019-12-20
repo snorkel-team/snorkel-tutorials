@@ -626,3 +626,32 @@ def plot_predictions_histogram(Y_ph, Y, title=None):
     if isinstance(title, str):
         plt.title(title)
     plt.show()
+    
+def indices_to_one_hot(data):
+    """Convert an iterable of indices to one-hot encoded labels."""
+    nb_classes = len(np.unique(data))
+    targets = np.array(data).reshape(-1)
+    return np.eye(nb_classes)[targets]
+
+def get_ludwig_ap_paths(data):
+    
+    fin = open("./data/front_view_ids.txt", "r")
+    front_view_ids = [_.strip() for _ in fin]
+    fin.close()
+    
+    ref = front_view_ids
+    
+    impaths = []
+    for paths in data['xray_paths'].tolist():
+        if isinstance(paths, list):
+                for i in range(len(paths)):
+                    impath = paths[i]
+                    if impath in ref:
+                        idx = i
+                        break
+        else:
+            impath = paths
+            
+        impaths.append(f"../../../cross_modal_ws/{impath}")
+            
+    return impaths
