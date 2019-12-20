@@ -14,9 +14,15 @@ try:
     from PIL import Image as pil_image
 except ImportError:
     pil_image = None
-    
+
 from snorkel.analysis import Scorer
-from snorkel.classification import DictDataset, DictDataLoader, MultitaskClassifier, Operation, Task
+from snorkel.classification import (
+    DictDataset,
+    DictDataLoader,
+    MultitaskClassifier,
+    Operation,
+    Task,
+)
 from snorkel.classification.data import XDict, YDict
 from snorkel.classification.loss import cross_entropy_with_probs
 
@@ -81,6 +87,7 @@ def img_to_array(img, data_format="channels_last", dtype="float32"):
     else:
         raise ValueError("Unsupported image shape: %s" % (x.shape,))
     return x
+
 
 def array_to_img(x, data_format="channels_last", scale=True, dtype="float32"):
     """Converts a 3D Numpy array to a PIL Image instance.
@@ -151,7 +158,7 @@ if pil_image is not None:
     # This method is new in version 1.1.3 (2013).
     if hasattr(pil_image, "LANCZOS"):
         _PIL_INTERPOLATION_METHODS["lanczos"] = pil_image.LANCZOS
-        
+
 
 def load_img(
     path, grayscale=False, color_mode="rgb", target_size=None, interpolation="nearest"
@@ -226,6 +233,7 @@ class OpenIDataset(DictDataset):
     """
     Snorkel Pytorch DictDataset for OpenI chest X-ray task
     """
+
     def __init__(
         self,
         name: str,
@@ -233,7 +241,7 @@ class OpenIDataset(DictDataset):
         paths: list,
         labels: list,
         ref=None,
-        transform=None, #transforms.transforms.Compose,
+        transform=None,  # transforms.transforms.Compose,
         loader=default_xray_loader,
         image_size=224,
     ) -> None:
@@ -241,18 +249,14 @@ class OpenIDataset(DictDataset):
         self.ref = ref
         self.loader = loader
         self.paths = paths
-        
-        X_dict = {
-            "paths": paths,
-        }
-        Y_dict = {
-            "openi_task": torch.tensor(labels)
-        }
+
+        X_dict = {"paths": paths}
+        Y_dict = {"openi_task": torch.tensor(labels)}
         super(OpenIDataset, self).__init__(name, split, X_dict, Y_dict)
 
     def __getitem__(self, index: int) -> Tuple[XDict, YDict]:
-        
-        # This snippet ignores 
+
+        # This snippet ignores
         img_fn = self.X_dict["paths"][index]
         idx = 0
         if self.ref is not None and isinstance(self.paths[index], list):
@@ -267,17 +271,19 @@ class OpenIDataset(DictDataset):
         img = self.loader(impath)
         if self.transform is not None:
             img = self.transform(img)
-            
+
         x_dict = {"xray": img}
-        y_dict =  {name: label[index] for name, label in self.Y_dict.items()}
+        y_dict = {name: label[index] for name, label in self.Y_dict.items()}
 
         return x_dict, y_dict
 
     def __len__(self):
         return len(self.X_dict["paths"])
-    
-    
-def get_data_loader(paths, labels, split=None, batch_size=32, input_size=224, shuffle=False):
+
+
+def get_data_loader(
+    paths, labels, split=None, batch_size=32, input_size=224, shuffle=False
+):
     """
     Helper that builds dataloader for OpenI chest X-ray task
     """
@@ -286,20 +292,23 @@ def get_data_loader(paths, labels, split=None, batch_size=32, input_size=224, sh
     front_view_ids = [_.strip() for _ in fin]
     fin.close()
 
-    split = 'valid' if split == 'dev' else split
-    
+    split = "valid" if split == "dev" else split
+
     dataset = OpenIDataset(
-        name=f"{split}", paths=paths, labels=labels, transform=standard_transform(input_size), ref=front_view_ids, split=split,
+        name=f"{split}",
+        paths=paths,
+        labels=labels,
+        transform=standard_transform(input_size),
+        ref=front_view_ids,
+        split=split,
     )
 
     # Build data loader
-    data_loader = DictDataLoader(
-        dataset, batch_size=batch_size, shuffle=shuffle
-    )
-    
+    data_loader = DictDataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
     return data_loader
-    
-    
+
+
 ##################################################################################################
 ########################### HELPERS FOR MODEL DEFINITION ###########################
 ##################################################################################################
@@ -311,14 +320,17 @@ def init_fc(fc):
     """
     torch.nn.init.xavier_uniform_(fc.weight)
     fc.bias.data.fill_(0.01)
-    
+
+
 class SqueezeModule(torch.nn.Module):
     """
     Squeezes a torch Tensor -- for use with pretrained models
     within an op sequence
     """
+
     def forward(self, x):
         return x.squeeze()
+
 
 def create_model(resnet_cnn, num_classes):
     """
@@ -329,7 +341,7 @@ def create_model(resnet_cnn, num_classes):
     feature_extractor = torch.nn.Sequential(*list(resnet_cnn.children())[:-1])
     fc = torch.nn.Linear(in_features, num_classes)
     init_fc(fc)
-    
+
     squeeze_module = SqueezeModule()
 
     # define layers
@@ -342,38 +354,27 @@ def create_model(resnet_cnn, num_classes):
     )
 
     # define task flow through modules
-    op_sequence = [        
-     # define the feature extraction operation
+    op_sequence = [
+        # define the feature extraction operation
         Operation(
             name="feat_op",
             module_name="feature_extractor",
-            inputs=[("_input_","xray")],
+            inputs=[("_input_", "xray")],
         ),
-        
-        Operation(
-            name="squeeze_op",
-            module_name="squeeze_module",
-            inputs=["feat_op"]
-        
-        ),
-
+        Operation(name="squeeze_op", module_name="squeeze_module", inputs=["feat_op"]),
         # define the prediction operation
-        Operation(
-            name="head_op", 
-            module_name="prediction_head", 
-            inputs=["squeeze_op"]
-        )       
+        Operation(name="head_op", module_name="prediction_head", inputs=["squeeze_op"]),
     ]
-    
+
     # Define the task
     pred_cls_task = Task(
         name="openi_task",
         module_pool=module_pool,
         op_sequence=op_sequence,
-        scorer=Scorer(metrics=['accuracy','precision', 'recall', 'f1','roc_auc']),
-        loss_func=cross_entropy_with_probs
+        scorer=Scorer(metrics=["accuracy", "precision", "recall", "f1", "roc_auc"]),
+        loss_func=cross_entropy_with_probs,
     )
-    
+
     return MultitaskClassifier([pred_cls_task])
 
 
@@ -480,7 +481,7 @@ class ConfusionMatrix(object):
 
         mat = np.zeros((k, k), dtype=int)
         for (y, l), v in self.counter.items():
-            mat[l+1, y+1] = v
+            mat[l + 1, y + 1] = v
 
         if trim and not self.null_pred:
             mat = mat[1:, :]
@@ -498,19 +499,19 @@ class ConfusionMatrix(object):
 
         # Print headers
         s = margin + " " * (5 + spacing)
-        for j in range(-1,n-1):
+        for j in range(-1, n - 1):
             if j == -1 and not self.null_gold:
                 continue
             s += f" y={j} " + tab
         print(s)
 
         # Print data
-        for i in range(-1,m-1):
+        for i in range(-1, m - 1):
             # Skip null predictions row if necessary
             if i == -1 and not self.null_pred:
                 continue
             s = margin + f" l={i} " + tab
-            for j in range(-1,n-1):
+            for j in range(-1, n - 1):
                 # Skip null gold if necessary
                 if j == -1 and not self.null_gold:
                     continue
@@ -522,6 +523,7 @@ class ConfusionMatrix(object):
                     else:
                         s += f"{mat[i+1,j+1]:^5d}" + tab
             print(s)
+
 
 def view_label_matrix(L, colorbar=True):
     """Display an [n, m] matrix of labels"""
@@ -586,6 +588,7 @@ def _get_conflicts_matrix(L, normalize=True):
         C = C / n
     return C
 
+
 def plot_probabilities_histogram(Y_p, title=None):
     """Plot a histogram from a numpy array of probabilities
     Args:
@@ -604,7 +607,8 @@ def plot_probabilities_histogram(Y_p, title=None):
     if isinstance(title, str):
         plt.title(title)
     plt.show()
-    
+
+
 def plot_predictions_histogram(Y_ph, Y, title=None):
     """Plot a histogram comparing int predictions vs true labels by class
     Args:
@@ -623,7 +627,8 @@ def plot_predictions_histogram(Y_ph, Y, title=None):
     if isinstance(title, str):
         plt.title(title)
     plt.show()
-    
+
+
 ##################################################################################################
 ######################################## HELPERS FOR LUDWIG ######################################
 ##################################################################################################
@@ -635,25 +640,26 @@ def indices_to_one_hot(data):
     targets = np.array(data).reshape(-1)
     return np.eye(nb_classes)[targets]
 
+
 def get_ludwig_ap_paths(data):
-    
+
     fin = open("./data/front_view_ids.txt", "r")
     front_view_ids = [_.strip() for _ in fin]
     fin.close()
-    
+
     ref = front_view_ids
-    
+
     impaths = []
-    for paths in data['xray_paths'].tolist():
+    for paths in data["xray_paths"].tolist():
         if isinstance(paths, list):
-                for i in range(len(paths)):
-                    impath = paths[i]
-                    if impath in ref:
-                        idx = i
-                        break
+            for i in range(len(paths)):
+                impath = paths[i]
+                if impath in ref:
+                    idx = i
+                    break
         else:
             impath = paths
-            
+
         impaths.append(f"../../../cross_modal_ws/{impath}")
-            
+
     return impaths
