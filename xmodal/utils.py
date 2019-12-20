@@ -29,6 +29,8 @@ from snorkel.classification.loss import cross_entropy_with_probs
 class StdNormalize(object):
     """
     Normalize torch tensor to have zero mean and unit std deviation
+    
+    Reproduced from https://github.com/ncullen93/torchsample/blob/master/torchsample/transforms/tensor_transforms.py
     """
 
     def __call__(self, *inputs):
@@ -312,7 +314,8 @@ def init_fc(fc):
     
 class SqueezeModule(torch.nn.Module):
     """
-    Squeezes input -- for use with pretrained models
+    Squeezes a torch Tensor -- for use with pretrained models
+    within an op sequence
     """
     def forward(self, x):
         return x.squeeze()
@@ -378,6 +381,147 @@ def create_model(resnet_cnn, num_classes):
 ############################### OLD UTILITIES -- HOW MUCH TO KEEP? ###############################
 ##################################################################################################
 
+
+def arraylike_to_numpy(array_like):
+    """Convert a 1d array-like (e.g,. list, tensor, etc.) to an np.ndarray"""
+
+    orig_type = type(array_like)
+
+    # Convert to np.ndarray
+    if isinstance(array_like, np.ndarray):
+        pass
+    elif isinstance(array_like, list):
+        array_like = np.array(array_like)
+    elif issparse(array_like):
+        array_like = array_like.toarray()
+    elif isinstance(array_like, torch.Tensor):
+        array_like = array_like.numpy()
+    elif not isinstance(array_like, np.ndarray):
+        array_like = np.array(array_like)
+    else:
+        msg = f"Input of type {orig_type} could not be converted to 1d " "np.ndarray"
+        raise ValueError(msg)
+
+    # Correct shape
+    if (array_like.ndim > 1) and (1 in array_like.shape):
+        array_like = array_like.flatten()
+    if array_like.ndim != 1:
+        raise ValueError("Input could not be converted to 1d np.array")
+
+    # Convert to ints
+    if any(array_like % 1):
+        raise ValueError("Input contains at least one non-integer value.")
+    array_like = array_like.astype(np.dtype(int))
+
+    return array_like
+
+
+def confusion_matrix(
+    gold, pred, null_pred=False, null_gold=False, normalize=False, pretty_print=True
+):
+    """A shortcut method for building a confusion matrix all at once.
+    Args:
+        gold: an array-like of gold labels (ints)
+        pred: an array-like of predictions (ints)
+        null_pred: If True, include the row corresponding to null predictions
+        null_gold: If True, include the col corresponding to null gold labels
+        normalize: if True, divide counts by the total number of items
+        pretty_print: if True, pretty-print the matrix before returning
+    """
+    conf = ConfusionMatrix(null_pred=null_pred, null_gold=null_gold)
+    gold = arraylike_to_numpy(gold)
+    pred = arraylike_to_numpy(pred)
+    conf.add(gold, pred)
+    mat = conf.compile()
+
+    if normalize:
+        mat = mat / len(gold)
+
+    if pretty_print:
+        conf.display(normalize=normalize)
+
+    return mat
+
+
+class ConfusionMatrix(object):
+    """
+    An iteratively built abstention-aware confusion matrix with pretty printing
+    Assumed axes are true label on top, predictions on the side.
+    """
+
+    def __init__(self, null_pred=False, null_gold=False):
+        """
+        Args:
+            null_pred: If True, include the row corresponding to null
+                predictions
+            null_gold: If True, include the col corresponding to null gold
+                labels
+        """
+        self.counter = Counter()
+        self.mat = None
+        self.null_pred = null_pred
+        self.null_gold = null_gold
+
+    def __repr__(self):
+        if self.mat is None:
+            self.compile()
+        return str(self.mat)
+
+    def add(self, gold, pred):
+        """
+        Args:
+            gold: a np.ndarray of gold labels (ints)
+            pred: a np.ndarray of predictions (ints)
+        """
+        self.counter.update(zip(gold, pred))
+
+    def compile(self, trim=True):
+        k = max([max(tup) for tup in self.counter.keys()]) + 2  # include 0 and -1
+
+        mat = np.zeros((k, k), dtype=int)
+        for (y, l), v in self.counter.items():
+            mat[l+1, y+1] = v
+
+        if trim and not self.null_pred:
+            mat = mat[1:, :]
+        if trim and not self.null_gold:
+            mat = mat[:, 1:]
+
+        self.mat = mat
+        return mat
+
+    def display(self, normalize=False, indent=0, spacing=2, decimals=3, mark_diag=True):
+        mat = self.compile(trim=False)
+        m, n = mat.shape
+        tab = " " * spacing
+        margin = " " * indent
+
+        # Print headers
+        s = margin + " " * (5 + spacing)
+        for j in range(-1,n-1):
+            if j == -1 and not self.null_gold:
+                continue
+            s += f" y={j} " + tab
+        print(s)
+
+        # Print data
+        for i in range(-1,m-1):
+            # Skip null predictions row if necessary
+            if i == -1 and not self.null_pred:
+                continue
+            s = margin + f" l={i} " + tab
+            for j in range(-1,n-1):
+                # Skip null gold if necessary
+                if j == -1 and not self.null_gold:
+                    continue
+                else:
+                    if i == j and mark_diag and normalize:
+                        s = s[:-1] + "*"
+                    if normalize:
+                        s += f"{mat[i+1,j+1]/sum(mat[i+1,1:]):>5.3f}" + tab
+                    else:
+                        s += f"{mat[i+1,j+1]:^5d}" + tab
+            print(s)
 
 def view_label_matrix(L, colorbar=True):
     """Display an [n, m] matrix of labels"""
