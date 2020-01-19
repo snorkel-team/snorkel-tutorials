@@ -759,10 +759,14 @@ label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train=L_train, n_epochs=500, lr=0.001, log_freq=100, seed=123)
 
 # %%
-majority_acc = majority_model.score(L=L_valid, Y=Y_valid)["accuracy"]
+majority_acc = majority_model.score(L=L_valid, Y=Y_valid, tie_break_policy="random")[
+    "accuracy"
+]
 print(f"{'Majority Vote Accuracy:':<25} {majority_acc * 100:.1f}%")
 
-label_model_acc = label_model.score(L=L_valid, Y=Y_valid)["accuracy"]
+label_model_acc = label_model.score(L=L_valid, Y=Y_valid, tie_break_policy="random")[
+    "accuracy"
+]
 print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 
 # %% [markdown]
@@ -902,7 +906,7 @@ test_acc = metric_score(golds=Y_test, preds=preds_test, metric="accuracy")
 print(f"Test Accuracy: {test_acc * 100:.1f}%")
 
 # %% [markdown]
-# **We observe an additional boost in accuracy over the `LabelModel` by multiple points!
+# **We observe an additional boost in accuracy over the `LabelModel` by multiple points! This is in part because the discriminative model makes good predictions on all data points, not just the ones covered by labeling functions.
 # By using the label model to transfer the domain knowledge encoded in our LFs to the discriminative model,
 # we were able to generalize beyond the noisy labeling heuristics**.
 
