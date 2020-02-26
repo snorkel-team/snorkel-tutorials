@@ -140,19 +140,14 @@ pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
 # %%
 from utils import load_spam_dataset
 
-df_train, df_dev, df_valid, df_test = load_spam_dataset()
+df_train, df_test = load_spam_dataset(load_train_labels=True)
 
 # We pull out the label vectors for ease of use later
-Y_dev = df_dev.label.values
-Y_valid = df_valid.label.values
 Y_test = df_test.label.values
 
 
 # %% [markdown]
 # Let's view 5 data points from the `dev` set.
-
-# %%
-df_dev.sample(5, random_state=3)
 
 # %% [markdown]
 # The class distribution varies slightly between `SPAM` and `HAM`, but they're approximately class-balanced.
@@ -163,8 +158,6 @@ df_dev.sample(5, random_state=3)
 ABSTAIN = -1
 HAM = 0
 SPAM = 1
-
-print(f"Dev SPAM frequency: {100 * (df_dev.label.values == SPAM).mean():.1f}%")
 
 # %% [markdown]
 # ## 2. Writing Labeling Functions (LFs)
@@ -264,7 +257,6 @@ lfs = [check_out, check]
 
 applier = PandasLFApplier(lfs=lfs)
 L_train = applier.apply(df=df_train)
-L_dev = applier.apply(df=df_dev)
 
 # %%
 L_train
@@ -303,9 +295,6 @@ from snorkel.labeling import LFAnalysis
 
 LFAnalysis(L=L_train, lfs=lfs).lf_summary()
 
-# %%
-LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
-
 # %% [markdown]
 # So even these very simple rules do quite well!
 # We might want to pick the `check` rule, since both have high precision and `check` has higher coverage.
@@ -314,12 +303,6 @@ LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
 # The helper method `get_label_buckets(...)` groups data points by their predicted label and true label.
 # For example, we can find the indices of data points that the LF labeled `SPAM` that actually belong to class `HAM`.
 # This may give ideas for where the LF could be made more specific.
-
-# %%
-from snorkel.analysis import get_label_buckets
-
-buckets = get_label_buckets(Y_dev, L_dev[:, 1])
-df_dev.iloc[buckets[(HAM, SPAM)]]
 
 # %% [markdown]
 # There's only one row here because `check` produced only one false positive on the `dev` set.
@@ -331,10 +314,6 @@ df_train.iloc[L_train[:, 1] == SPAM].sample(10, random_state=1)
 # %% [markdown]
 # No clear false positives here, but many look like they could be labeled by `check_out` as well.
 # Let's see 10 data points where `check_out` abstained, but `check` labeled.
-
-# %%
-buckets = get_label_buckets(L_train[:, 0], L_train[:, 1])
-df_train.iloc[buckets[(ABSTAIN, SPAM)]].sample(10, random_state=1)
 
 # %% [markdown]
 # Most of these seem like small modifications of "check out", like "check me out" or "check it out".
@@ -363,31 +342,19 @@ lfs = [check_out, check, regex_check_out]
 
 applier = PandasLFApplier(lfs=lfs)
 L_train = applier.apply(df=df_train)
-L_dev = applier.apply(df=df_dev)
 
 # %%
 LFAnalysis(L=L_train, lfs=lfs).lf_summary()
-
-# %%
-LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 
 # %% [markdown]
 # We've split the difference in `train` set coverage, and increased our accuracy on the `dev` set to 100%!
 # This looks promising.
 # Let's verify that we corrected our false positive from before.
 
-# %%
-buckets = get_label_buckets(L_dev[:, 1], L_dev[:, 2])
-df_dev.iloc[buckets[(SPAM, ABSTAIN)]]
-
 # %% [markdown]
 # To understand the coverage difference between `check` and `regex_check_out`, let's take a look at 10 data points from the `train` set.
 # Remember: coverage isn't always good.
 # Adding false positives will increase coverage.
-
-# %%
-buckets = get_label_buckets(L_train[:, 1], L_train[:, 2])
-df_train.iloc[buckets[(SPAM, ABSTAIN)]].sample(10, random_state=1)
 
 # %% [markdown]
 # Most of these are SPAM, but a good number are false positives.
@@ -437,14 +404,16 @@ def textblob_sentiment(x):
 # Tuning input parameters or thresholds from model outputs is a common practice in developing LFs.
 
 # %% {"tags": ["md-exclude"]}
+## TODO: WHAT TO DO WITH THIS CELL
+
 import matplotlib.pyplot as plt
 
 spam_polarities = [
-    textblob_sentiment(x).polarity for _, x in df_dev.iterrows() if x.label == SPAM
+    textblob_sentiment(x).polarity for _, x in df_train.iterrows() if x.label == SPAM
 ]
 
 ham_polarities = [
-    textblob_sentiment(x).polarity for _, x in df_dev.iterrows() if x.label == HAM
+    textblob_sentiment(x).polarity for _, x in df_train.iterrows() if x.label == HAM
 ]
 
 plt.hist([spam_polarities, ham_polarities])
@@ -471,12 +440,17 @@ def textblob_polarity(x):
 # This will run faster than the last cell, since we memoized the `Preprocessor` outputs.
 
 # %% {"tags": ["md-exclude"]}
+## TODO: WHAT TO DO WITH THIS CELL
+
+
 spam_subjectivities = [
-    textblob_sentiment(x).subjectivity for _, x in df_dev.iterrows() if x.label == SPAM
+    textblob_sentiment(x).subjectivity
+    for _, x in df_train.iterrows()
+    if x.label == SPAM
 ]
 
 ham_subjectivities = [
-    textblob_sentiment(x).subjectivity for _, x in df_dev.iterrows() if x.label == HAM
+    textblob_sentiment(x).subjectivity for _, x in df_train.iterrows() if x.label == HAM
 ]
 
 plt.hist([spam_subjectivities, ham_subjectivities])
@@ -512,13 +486,9 @@ lfs = [textblob_polarity, textblob_subjectivity]
 
 applier = PandasLFApplier(lfs)
 L_train = applier.apply(df_train)
-L_dev = applier.apply(df_dev)
 
 # %%
 LFAnalysis(L_train, lfs).lf_summary()
-
-# %%
-LFAnalysis(L_dev, lfs).lf_summary(Y=Y_dev)
 
 # %% [markdown]
 # Again, these LFs aren't perfect, so we'll rely on our label model to denoise and resolve their outputs.
@@ -701,11 +671,7 @@ lfs = [
 # %% {"tags": ["md-exclude-output"]}
 applier = PandasLFApplier(lfs=lfs)
 L_train = applier.apply(df=df_train)
-L_dev = applier.apply(df=df_dev)
-L_valid = applier.apply(df=df_valid)
-
-# %%
-LFAnalysis(L=L_dev, lfs=lfs).lf_summary(Y=Y_dev)
+L_test = applier.apply(df=df_test)
 
 
 # %% [markdown] {"tags": ["md-exclude"]}
@@ -759,15 +725,16 @@ label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train=L_train, n_epochs=500, lr=0.001, log_freq=100, seed=123)
 
 # %%
-majority_acc = majority_model.score(L=L_valid, Y=Y_valid, tie_break_policy="random")[
+majority_acc = majority_model.score(L=L_test, Y=Y_test, tie_break_policy="random")[
     "accuracy"
 ]
 print(f"{'Majority Vote Accuracy:':<25} {majority_acc * 100:.1f}%")
 
-label_model_acc = label_model.score(L=L_valid, Y=Y_valid, tie_break_policy="random")[
+label_model_acc = label_model.score(L=L_test, Y=Y_test, tie_break_policy="random")[
     "accuracy"
 ]
 print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
+
 
 # %% [markdown]
 # So our `LabelModel` improves over the majority vote baseline!
@@ -781,17 +748,6 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 # %% [markdown]
 # We can also run error analysis after the label model has been trained.
 # For example, let's take a look at 5 random false negatives from the `dev` set, which might inspire some more LFs that vote `SPAM`.
-
-# %%
-probs_dev = majority_model.predict_proba(L=L_dev)
-preds_dev = probs_dev >= 0.5
-buckets = get_label_buckets(Y_dev, preds_dev[:, 1])
-
-df_fn_dev = df_dev[["text", "label"]].iloc[buckets[(SPAM, HAM)]]
-df_fn_dev["probability"] = probs_dev[buckets[(SPAM, HAM)], 1]
-
-df_fn_dev.sample(5, random_state=3)
-
 
 # %% [markdown] {"tags": ["md-exclude"]}
 # Let's briefly confirm that the labels the `LabelModel` produces are probabilistic in nature.
@@ -844,8 +800,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 vectorizer = CountVectorizer(ngram_range=(1, 2))
 X_train = vectorizer.fit_transform(df_train_filtered.text.tolist())
 
-X_dev = vectorizer.transform(df_dev.text.tolist())
-X_valid = vectorizer.transform(df_valid.text.tolist())
 X_test = vectorizer.transform(df_test.text.tolist())
 
 # %% [markdown]

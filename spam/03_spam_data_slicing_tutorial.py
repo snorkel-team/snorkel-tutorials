@@ -55,7 +55,7 @@ pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
 # %%
 from utils import load_spam_dataset
 
-df_train, df_valid, df_test = load_spam_dataset(load_train_labels=True, split_dev=False)
+df_train, df_test = load_spam_dataset(load_train_labels=True)
 
 
 # %% [markdown]
@@ -94,7 +94,7 @@ sfs = [short_link]
 # %% {"tags": ["md-exclude-output"]}
 from snorkel.slicing import slice_dataframe
 
-short_link_df = slice_dataframe(df_valid, short_link)
+short_link_df = slice_dataframe(df_test, short_link)
 
 # %%
 short_link_df[["text", "label"]]
@@ -115,7 +115,6 @@ from utils import df_to_features
 
 vectorizer = CountVectorizer(ngram_range=(1, 1))
 X_train, Y_train = df_to_features(vectorizer, df_train, "train")
-X_valid, Y_valid = df_to_features(vectorizer, df_valid, "valid")
 X_test, Y_test = df_to_features(vectorizer, df_test, "test")
 
 # %% [markdown]
@@ -233,7 +232,7 @@ def textblob_polarity(x):
 # We might define a slice here for *product and marketing reasons*, it's important to make sure that we don't misclassify very positive comments from good users.
 
 # %% {"tags": ["md-exclude-output"]}
-polarity_df = slice_dataframe(df_valid, textblob_polarity)
+polarity_df = slice_dataframe(df_test, textblob_polarity)
 
 # %%
 polarity_df[["text", "label"]].head()
@@ -299,9 +298,6 @@ BATCH_SIZE = 64
 train_dl = create_dict_dataloader(
     X_train, Y_train, "train", batch_size=BATCH_SIZE, shuffle=True
 )
-valid_dl = create_dict_dataloader(
-    X_valid, Y_valid, "valid", batch_size=BATCH_SIZE, shuffle=False
-)
 test_dl = create_dict_dataloader(
     X_test, Y_test, "test", batch_size=BATCH_SIZE, shuffle=True
 )
@@ -330,7 +326,7 @@ slice_model = SliceAwareClassifier(
 # %% [markdown]
 # ### Monitor slice performance _during training_
 #
-# Using Snorkel's [`Trainer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.Trainer.html), we fit to `train_dl`, and validate on `valid_dl`.
+# Using Snorkel's [`Trainer`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.Trainer.html), we fit to `train_dl`.
 #
 # We note that we can monitor slice-specific performance during training — this is a powerful way to track especially critical subsets of the data.
 # If logging in `Tensorboard` (i.e. [`snorkel.classification.TensorboardWritier`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/classification/snorkel.classification.TensorBoardWriter.html)), we would visualize individual loss curves and validation metrics to debug convegence for specific slices.
@@ -340,7 +336,7 @@ from snorkel.classification import Trainer
 
 # For demonstration purposes, we set n_epochs=2
 trainer = Trainer(lr=1e-4, n_epochs=2)
-trainer.fit(slice_model, [train_dl, valid_dl])
+trainer.fit(slice_model, [train_dl])
 
 # %% [markdown]
 # ### Representation learning with slices
@@ -355,7 +351,7 @@ trainer.fit(slice_model, [train_dl, valid_dl])
 # %% {"tags": ["md-exclude-output"]}
 applier = PandasSFApplier(sfs)
 S_train = applier.apply(df_train)
-S_valid = applier.apply(df_valid)
+S_test = applier.apply(df_test)
 
 # %% [markdown]
 # In order to train using slice information, we'd like to initialize a **slice-aware dataloader**.
@@ -366,9 +362,6 @@ S_valid = applier.apply(df_valid)
 # %%
 train_dl_slice = slice_model.make_slice_dataloader(
     train_dl.dataset, S_train, shuffle=True, batch_size=BATCH_SIZE
-)
-valid_dl_slice = slice_model.make_slice_dataloader(
-    valid_dl.dataset, S_valid, shuffle=False, batch_size=BATCH_SIZE
 )
 test_dl_slice = slice_model.make_slice_dataloader(
     test_dl.dataset, S_test, shuffle=False, batch_size=BATCH_SIZE
@@ -382,14 +375,14 @@ from snorkel.classification import Trainer
 
 # For demonstration purposes, we set n_epochs=2
 trainer = Trainer(n_epochs=2, lr=1e-4, progress_bar=True)
-trainer.fit(slice_model, [train_dl_slice, valid_dl_slice])
+trainer.fit(slice_model, [train_dl_slice, test_dl_slice])
 
 # %% [markdown]
 # At inference time, the primary task head (`spam_task`) will make all final predictions.
 # We'd like to evaluate all the slice heads on the original task head — [`score_slices`](https://snorkel.readthedocs.io/en/v0.9.3/packages/_autosummary/slicing/snorkel.slicing.SliceAwareClassifier.html#snorkel.slicing.SliceAwareClassifier.score_slices) remaps all slice-related labels, denoted `spam_task_slice:{slice_name}_pred`, to be evaluated on the `spam_task`.
 
 # %%
-slice_model.score_slices([valid_dl_slice, test_dl_slice], as_dataframe=True)
+slice_model.score_slices([test_dl_slice], as_dataframe=True)
 
 # %% [markdown]
 # *Note: in this toy dataset, we see high variance in slice performance, because our dataset is so small that (i) there are few data points in the train split, giving little signal to learn over, and (ii) there are few data points in the test split, making our evaluation metrics very noisy.
