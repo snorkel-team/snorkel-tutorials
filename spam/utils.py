@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 from snorkel.classification.data import DictDataset, DictDataLoader
 
 
-def load_spam_dataset(load_train_labels: bool = False, split_dev: bool = True):
+def load_spam_dataset(load_train_labels: bool = False, split_dev_valid: bool = False):
     if os.path.basename(os.getcwd()) == "snorkel-tutorials":
         os.chdir("spam")
     try:
@@ -39,9 +39,7 @@ def load_spam_dataset(load_train_labels: bool = False, split_dev: bool = True):
         dfs.append(df)
 
     df_train = pd.concat(dfs[:4])
-
-    if split_dev:
-        df_dev = df_train.sample(100, random_state=123)
+    df_dev = df_train.sample(100, random_state=123)
 
     if not load_train_labels:
         df_train["label"] = np.ones(len(df_train["label"])) * -1
@@ -50,10 +48,10 @@ def load_spam_dataset(load_train_labels: bool = False, split_dev: bool = True):
         df_valid_test, test_size=250, random_state=123, stratify=df_valid_test.label
     )
 
-    if split_dev:
+    if split_dev_valid:
         return df_train, df_dev, df_valid, df_test
     else:
-        return df_train, df_valid, df_test
+        return df_train, df_test
 
 
 def get_keras_logreg(input_dim, output_dim=2):
