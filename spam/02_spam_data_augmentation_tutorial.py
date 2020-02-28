@@ -15,7 +15,7 @@
 # * For an overview of Snorkel, visit [snorkel.org](https://snorkel.org)
 # * You can also check out the [Snorkel API documentation](https://snorkel.readthedocs.io/)
 #
-#  %% [markdown]
+# %% [markdown]
 # Data augmentation is a popular technique for increasing the size of labeled training sets by applying class-preserving transformations to create copies of labeled data points.
 # In the image domain, it is a crucial factor in almost every state-of-the-art result today and is quickly gaining
 # popularity in text-based applications.
@@ -75,7 +75,7 @@ pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
 # ## 1. Loading Data
 
 # %% [markdown]
-# We load the Kaggle dataset and create Pandas DataFrame objects for each of the sets described above.
+# We load the Kaggle dataset and create Pandas DataFrame objects for the `train` and `test` sets.
 # The two main columns in the DataFrames are:
 # * **`text`**: Raw text content of the comment
 # * **`label`**: Whether the comment is `SPAM` (1) or `HAM` (0).
@@ -85,10 +85,9 @@ pd.set_option("display.max_colwidth", 0 if DISPLAY_ALL_TEXT else 50)
 # %%
 from utils import load_spam_dataset
 
-df_train, _, df_valid, df_test = load_spam_dataset(load_train_labels=True)
+df_train, df_test = load_spam_dataset(load_train_labels=True)
 
 # We pull out the label vectors for ease of use later
-Y_valid = df_valid["label"].values
 Y_train = df_train["label"].values
 Y_test = df_test["label"].values
 
@@ -352,33 +351,17 @@ tf.compat.v1.keras.backend.set_session(sess)
 # Now we'll train our LSTM on both the original and augmented datasets to compare performance.
 
 # %% {"tags": ["md-exclude-output"]}
-from utils import featurize_df_tokens, get_keras_lstm, get_keras_early_stopping
+from utils import featurize_df_tokens, get_keras_lstm
 
 X_train = featurize_df_tokens(df_train)
 X_train_augmented = featurize_df_tokens(df_train_augmented)
-X_valid = featurize_df_tokens(df_valid)
 X_test = featurize_df_tokens(df_test)
 
 
-def train_and_test(
-    X_train,
-    Y_train,
-    X_valid=X_valid,
-    Y_valid=Y_valid,
-    X_test=X_test,
-    Y_test=Y_test,
-    num_buckets=30000,
-):
+def train_and_test(X_train, Y_train, X_test=X_test, Y_test=Y_test, num_buckets=30000):
     # Define a vanilla LSTM model with Keras
     lstm_model = get_keras_lstm(num_buckets)
-    lstm_model.fit(
-        X_train,
-        Y_train,
-        epochs=25,
-        validation_data=(X_valid, Y_valid),
-        callbacks=[get_keras_early_stopping(5)],
-        verbose=0,
-    )
+    lstm_model.fit(X_train, Y_train, epochs=5, verbose=0)
     preds_test = lstm_model.predict(X_test)[:, 0] > 0.5
     return (preds_test == Y_test).mean()
 
@@ -394,4 +377,4 @@ print(f"Test Accuracy (augmented training data): {100 * acc_augmented:.1f}%")
 # %% [markdown]
 # So using the augmented dataset indeed improved our model!
 # There is a lot more you can do with data augmentation, so try a few ideas
-# our on your own!
+# out on your own!
