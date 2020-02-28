@@ -656,6 +656,7 @@ from snorkel.labeling import LabelModel
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train=L_train, n_epochs=500, log_freq=100, seed=123)
 
+# %%
 majority_acc = majority_model.score(L=L_test, Y=Y_test, tie_break_policy="random")[
     "accuracy"
 ]
