@@ -8,7 +8,7 @@ if [ ! "${PWD##*/}" = "spam" ]; then
 fi
 
 FILES=( "Youtube01-Psy.csv" "Youtube02-KatyPerry.csv" "Youtube03-LMFAO.csv" "Youtube04-Eminem.csv" "Youtube05-Shakira.csv" )
-DATA_URL="https://archive.ics.uci.edu/ml/machine-learning-databases/00380/YouTube-Spam-Collection-v1.zip"
+DATA_URL="http://archive.ics.uci.edu/ml/machine-learning-databases/00380/YouTube-Spam-Collection-v1.zip"
 RELOAD=false
 
 # Check if at least any file is missing. If so, reload all data.
@@ -22,7 +22,7 @@ done
 if [ "$RELOAD" = true ]; then
     if [ -d "data/" ]; then rm -Rf "data/"; fi
     mkdir -p data
-    wget $DATA_URL -O data.zip
+    curl $DATA_URL > data.zip
     mv data.zip data/
     cd data
     unzip data.zip
