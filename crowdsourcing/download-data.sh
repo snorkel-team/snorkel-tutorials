@@ -22,5 +22,5 @@ if [ "$RELOAD" = "true" ]; then
     if [ -d "data/" ]; then rm -Rf "data/"; fi
     mkdir -p data
     wget https://www.dropbox.com/s/94d2wsrrwh1ioyd/weather-non-agg-DFE.csv -P data
-    wget https://d1p17r2m4rzlbo.cloudfront.net/wp-content/uploads/2016/03/weather-evaluated-agg-DFE.csv -P data
+    wget https://www.dropbox.com/s/upz3ijyp7rztse6/weather-evaluated-agg-DFE.csv -P data
 fi

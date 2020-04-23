@@ -204,7 +204,7 @@ print(f"Dev set coverage: {100 * LFAnalysis(L_dev).label_coverage(): 0.1f}%")
 # ## Train LabelModel And Generate Probabilistic Labels
 
 # %% {"tags": ["md-exclude-output"]}
-from snorkel.labeling import LabelModel
+from snorkel.labeling.model import LabelModel
 
 # Train LabelModel.
 label_model = LabelModel(cardinality=2, verbose=True)

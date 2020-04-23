@@ -1,7 +1,7 @@
 import logging
 
 import dask.dataframe as dd
-from snorkel.labeling import LabelModel
+from snorkel.labeling.model import LabelModel
 from snorkel.labeling.apply.dask import DaskLFApplier
 
 from drybell_lfs import article_mentions_person, body_contains_fortune, person_in_db

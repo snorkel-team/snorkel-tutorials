@@ -137,7 +137,8 @@ def lf_textblob_polarity(x):
 # We use the `LabelModel` to automatically estimate their accuracies and correlations, reweight and combine their labels, and produce our final set of clean, integrated training labels:
 
 # %%
-from snorkel.labeling import LabelModel, PandasLFApplier
+from snorkel.labeling.model import LabelModel
+from snorkel.labeling import PandasLFApplier
 
 # Define the set of labeling functions (LFs)
 lfs = [lf_keyword_my, lf_regex_check_out, lf_short_comment, lf_textblob_polarity]
