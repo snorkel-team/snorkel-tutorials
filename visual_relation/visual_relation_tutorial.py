@@ -174,7 +174,7 @@ LFAnalysis(L_valid, lfs).lf_summary(Y_valid)
 # We now train a multi-class `LabelModel` to assign training labels to the unalabeled training set.
 
 # %%
-from snorkel.labeling import LabelModel
+from snorkel.labeling.model import LabelModel
 
 label_model = LabelModel(cardinality=3, verbose=True)
 label_model.fit(L_train, seed=123, lr=0.01, log_freq=10, n_epochs=100)

@@ -21,7 +21,7 @@
 # popularity in text-based applications.
 # Snorkel models the data augmentation process by applying user-defined *transformation functions* (TFs) in sequence.
 # You can learn more about data augmentation in
-# [this blog post about our NeurIPS 2017 work on automatically learned data augmentation](https://snorkel.org/tanda/).
+# [this blog post about our NeurIPS 2017 work on automatically learned data augmentation](https://snorkel.org/blog/tanda/).
 #
 # The tutorial is divided into four parts:
 # 1. **Loading Data**: We load a [YouTube comments dataset](http://www.dt.fee.unicamp.br/~tiago//youtubespamcollection/).
@@ -262,7 +262,7 @@ preview_tfs(df_train, tfs)
 # The TFs are expected to be heuristic strategies that indeed preserve the class most of the time, but
 # [don't need to be perfect](https://arxiv.org/pdf/1901.11196.pdf).
 # This is especially true when using automated
-# [data augmentation techniques](https://snorkel.org/tanda/)
+# [data augmentation techniques](https://snorkel.org/blog/tanda/)
 # which can learn to avoid particularly corrupted data points.
 # As we'll see below, Snorkel is compatible with such learned augmentation policies.
 
@@ -285,7 +285,7 @@ random_policy = RandomPolicy(
 # %% [markdown]
 # In some cases, we can do better than uniform random sampling.
 # We might have domain knowledge that some TFs should be applied more frequently than others,
-# or have trained an [automated data augmentation model](https://snorkel.org/tanda/)
+# or have trained an [automated data augmentation model](https://snorkel.org/blog/tanda/)
 # that learned a sampling distribution for the TFs.
 # Snorkel supports this use case with a
 # [`MeanFieldPolicy`](https://snorkel.readthedocs.io/en/master/packages/_autosummary/augmentation/snorkel.augmentation.MeanFieldPolicy.html),

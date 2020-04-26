@@ -264,7 +264,7 @@ LFAnalysis(L_dev, lfs).lf_summary(Y_dev)
 # Now, we'll train a model of the LFs to estimate their weights and combine their outputs. Once the model is trained, we can combine the outputs of the LFs into a single, noise-aware training label set for our extractor.
 
 # %% {"tags": ["md-exclude-output"]}
-from snorkel.labeling import LabelModel
+from snorkel.labeling.model import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train, Y_dev, n_epochs=5000, log_freq=500, seed=12345)

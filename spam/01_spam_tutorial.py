@@ -629,10 +629,10 @@ plot_label_frequency(L_train)
 # Our goal is now to convert the labels from our LFs into a single _noise-aware_ probabilistic (or confidence-weighted) label per data point.
 # A simple baseline for doing this is to take the majority vote on a per-data point basis: if more LFs voted SPAM than HAM, label it SPAM (and vice versa).
 # We can test this with the
-# [`MajorityLabelVoter` baseline model](https://snorkel.readthedocs.io/en/master/packages/_autosummary/labeling/snorkel.labeling.MajorityLabelVoter.html#snorkel.labeling.MajorityLabelVoter).
+# [`MajorityLabelVoter` baseline model](https://snorkel.readthedocs.io/en/master/packages/_autosummary/labeling/snorkel.labeling.model.baselines.MajorityLabelVoter.html#snorkel.labeling.model.baselines.MajorityLabelVoter).
 
 # %% {"tags": ["md-exclude-output"]}
-from snorkel.labeling import MajorityLabelVoter
+from snorkel.labeling.model import MajorityLabelVoter
 
 majority_model = MajorityLabelVoter()
 preds_train = majority_model.predict(L=L_train)
@@ -643,7 +643,7 @@ preds_train
 # %% [markdown]
 # However, as we can see from the summary statistics of our LFs in the previous section, they have varying properties and should not be treated identically. In addition to having varied accuracies and coverages, LFs may be correlated, resulting in certain signals being overrepresented in a majority-vote-based model. To handle these issues appropriately, we will instead use a more sophisticated Snorkel `LabelModel` to combine the outputs of the LFs.
 #
-# This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers. For more info on the API, see the [`LabelModel` documentation](https://snorkel.readthedocs.io/en/master/packages/_autosummary/labeling/snorkel.labeling.LabelModel.html#snorkel.labeling.LabelModel).
+# This model will ultimately produce a single set of noise-aware training labels, which are probabilistic or confidence-weighted labels. We will then use these labels to train a classifier for our task. For more technical details of this overall approach, see our [NeurIPS 2016](https://arxiv.org/abs/1605.07723) and [AAAI 2019](https://arxiv.org/abs/1810.02840) papers. For more info on the API, see the [`LabelModel` documentation](https://snorkel.readthedocs.io/en/master/packages/_autosummary/labeling/snorkel.labeling.model.label_model.LabelModel.html#snorkel.labeling.model.label_model.LabelModel).
 #
 # Note that no gold labels are used during the training process.
 # The only information we need is the label matrix, which contains the output of the LFs on our training set.
@@ -651,7 +651,7 @@ preds_train
 # We also specify the `cardinality`, or number of classes.
 
 # %% {"tags": ["md-exclude-output"]}
-from snorkel.labeling import LabelModel
+from snorkel.labeling.model import LabelModel
 
 label_model = LabelModel(cardinality=2, verbose=True)
 label_model.fit(L_train=L_train, n_epochs=500, log_freq=100, seed=123)
@@ -672,7 +672,7 @@ print(f"{'Label Model Accuracy:':<25} {label_model_acc * 100:.1f}%")
 # However, these models (i.e. these re-weighted combinations of our labeling function's votes) will abstain on the data points that our labeling functions don't cover (and additionally, may require slow or unavailable features to execute at test time).
 # In the next section, we will instead use the outputs of the `LabelModel` as training labels to train a discriminative classifier **which can generalize beyond the labeling function outputs** to see if we can improve performance further.
 # This classifier will also only need the text of the comment to make predictions, making it much more suitable for inference over unseen comments.
-# For more information on the properties of the label model, see the [Snorkel documentation](https://snorkel.readthedocs.io/en/master/packages/_autosummary/labeling/snorkel.labeling.LabelModel.html#snorkel.labeling.LabelModel).
+# For more information on the properties of the label model, see the [Snorkel documentation](https://snorkel.readthedocs.io/en/master/packages/_autosummary/labeling/snorkel.labeling.model.label_model.LabelModel.html#snorkel.labeling.model.label_model.LabelModel).
 
 # %% [markdown] {"tags": ["md-exclude"]}
 # Let's briefly confirm that the labels the `LabelModel` produces are indeed probabilistic in nature.

@@ -3,7 +3,7 @@ import logging
 import pyspark.sql.functions as F
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
-from snorkel.labeling import LabelModel
+from snorkel.labeling.model import LabelModel
 from snorkel.labeling.apply.spark import SparkLFApplier
 
 from drybell_lfs_spark import (

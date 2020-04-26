@@ -203,7 +203,7 @@ LFAnalysis(L_dev, lfs).lf_summary(df_dev.rating.values)
 # We apply the labeling functions to the training set, and then filter out data points unlabeled by any LF to form our final training set.
 
 # %% {"tags": ["md-exclude-output"]}
-from snorkel.labeling.model.label_model import LabelModel
+from snorkel.labeling.model import LabelModel
 
 L_train = applier.apply(df_train)
 label_model = LabelModel(cardinality=2, verbose=True)
