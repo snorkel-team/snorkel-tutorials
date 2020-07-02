@@ -1,5 +1,5 @@
 # Snorkel Tutorials
-![Snorkel Version](https://img.shields.io/badge/snorkel-0.9.2-65baf6)
+![Snorkel Version](https://img.shields.io/badge/snorkel-0.9.5-65baf6)
 ![Python Version](https://img.shields.io/badge/python-3.6%20%7C%203.7-blue)
 [![build](https://travis-ci.com/snorkel-team/snorkel-tutorials.svg?branch=master)](https://travis-ci.com/snorkel-team/snorkel-tutorials?branch=master)
 [![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -164,7 +164,7 @@ conda activate spam
 pip install environment_kernels
 # We specify PyTorch here to ensure compatibility, but it may not be necessary.
 conda install pytorch==1.1.0 -c pytorch
-conda install snorkel==0.9.0 -c conda-forge
+conda install snorkel==0.9.5 -c conda-forge
 pip install -r spam/requirements.txt
 
 # Launch the Jupyter notebook interface
