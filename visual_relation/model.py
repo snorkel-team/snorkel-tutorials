@@ -186,7 +186,7 @@ def get_op_sequence():
     concat_op = Operation(
         name="concat_op",
         module_name="feat_concat",
-        inputs=["obj_feat_op", "sub_feat_op", "union_feat_op", "word_emb_op"],
+        inputs=["obj_feat_op", "sub_feat_op", "union_feat_op"],
     )
 
     # define an operation to make a prediction over all concatenated features
@@ -198,7 +198,6 @@ def get_op_sequence():
         sub_feat_op,
         obj_feat_op,
         union_feat_op,
-        word_emb_op,
         concat_op,
         prediction_op,
     ]
@@ -216,17 +215,17 @@ def create_model(resnet_cnn):
 
     # initialize FC layer: maps 3 sets of image features to class logits
     WEMB_SIZE = 100
-    fc = nn.Linear(in_features * 3 + 2 * WEMB_SIZE, 3)
+    fc = nn.Linear(in_features * 3, 3)
     init_fc(fc)
 
     # define layers
+    # define layers
     module_pool = nn.ModuleDict(
-        {
-            "feat_extractor": feature_extractor,
-            "prediction_head": fc,
-            "feat_concat": FlatConcat(),
-            "word_emb": WordEmb(),
-        }
+       {
+          "feat_extractor": feature_extractor,
+          "prediction_head": fc,
+          "feat_concat": FlatConcat()
+       }
     )
 
     # define task flow through modules
