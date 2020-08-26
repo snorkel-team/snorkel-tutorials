@@ -13,6 +13,7 @@ COPY . /app
 ARG TUTORIAL
 RUN wget -O snorkel-requirements.txt \
     https://raw.githubusercontent.com/snorkel-team/snorkel/master/requirements.txt \
+    && sed -i 's/tensorboard>=1.14.0,<2.0.0/tensorboard==2.3.0/g' snorkel-requirements.txt \
     && pip3 install -r $TUTORIAL/requirements.txt \
     && pip3 install -r requirements.txt \
     && pip3 install -r snorkel-requirements.txt \
