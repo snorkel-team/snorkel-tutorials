@@ -15,7 +15,7 @@ def check_docker() -> None:
 def build_image(tutorial_name: str) -> None:
     arg = f"TUTORIAL={tutorial_name}"
     tag = f"--tag={tutorial_name}"
-    subprocess.run(["docker", "build", "--build-arg", arg, tag, "."], check=True)
+    subprocess.run(["docker", "build","--network=host", "--build-arg", arg, tag, "."], check=True)
 
 
 def check_port(port: int) -> None:
