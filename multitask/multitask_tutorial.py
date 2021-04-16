@@ -384,7 +384,7 @@ model.score(all_dataloaders)
 # The following assert statements should also pass if you uncomment and run it.
 
 # %%
-# assert len(model.tasks) == 3
+# assert len(model.task_names) == 3
 # assert len(model.module_pool) == 4  # 1 shared module plus 3 separate task heads
 
 # %% [markdown]
