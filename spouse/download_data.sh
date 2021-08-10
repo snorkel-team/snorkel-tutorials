@@ -22,7 +22,7 @@ done
 if [ "$RELOAD" = true ]; then
     if [ -d "data/" ]; then rm -Rf "data/"; fi
     mkdir -p data
-    wget $DATA_URL -O data.zip
+    wget $DATA_URL -O data.zip --no-check-certificate
     cd data/
     unzip ../data.zip
     rm ../data.zip
