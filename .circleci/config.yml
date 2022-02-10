@@ -42,7 +42,7 @@ commands:
           command: python scripts/get_tox_envs.py --plan --$ALL_ENVS
       - run:  
           name: "Run Tox"
-          command: tox --notest -e $(python scripts/get_tox_envs.py $ALL_ENVS)
+          command: tox --notest -e $(python scripts/get_tox_envs.py --$ALL_ENVS)
       - steps: << parameters.after-deps >>
 
 # We want to make sure we run this only on master branch, release, or when we make tags
