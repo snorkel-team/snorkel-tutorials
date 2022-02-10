@@ -26,11 +26,11 @@ commands:
           name: "Run Java Alternatives install for JDK"
           command: sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
       - run:
-          name: "Run pip install setup tools and wheel"
-          command: pip install -U pip setuptools wheel
+          name: "Run pip install setup tools"
+          command: pip install -U pip setuptools
       - run:  
           name: "Install Tox"
-          command: pip install -U tox==3.12.0
+          command: pip install -U tox==3.13.0
       - steps: << parameters.after-deps >>
 
 # We want to make sure we run this only on master branch, release, or when we make tags
@@ -48,9 +48,8 @@ jobs:
     docker:
       - image: cimg/python:3.8
     environment:
-      TOXENV: coverage,doctest,type,check 
-      TOX_INSTALL_DIR: .env
-      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-
+      ALL_ENVS: all
 
     steps:
       - checkout
@@ -63,8 +62,8 @@ jobs:
     docker:
       - image: cimg/python:3.7
     environment:
-      TOX_INSTALL_DIR: .env
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+      ALL_ENVS: all
 
     steps:
       - checkout
@@ -77,8 +76,8 @@ jobs:
     docker:
       - image: cimg/python:3.6
     environment:
-      TOX_INSTALL_DIR: .env
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+      ALL_ENVS: all
 
     steps:
       - checkout
@@ -90,8 +89,8 @@ jobs:
     docker:
       - image: cimg/python:3.8
     environment:
-      TOX_INSTALL_DIR: .env
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+      ALL_ENVS: all
 
     steps:
       - checkout
@@ -107,6 +106,7 @@ jobs:
       TOXENV: complex,spark,type,check
       TOX_INSTALL_DIR: .env
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+      ALL_ENVS: all
 
     steps:
       - checkout
@@ -122,6 +122,7 @@ jobs:
       TOXENV: coverage,complex,spark,doctest,type,check 
       TOX_INSTALL_DIR: .env
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+      ALL_ENVS: all
 
     steps:
       - checkout
