@@ -31,9 +31,6 @@ commands:
       - run:  
           name: "Install Tox"
           command: pip install -U tox==3.12.0
-      - run: 
-          name: "Install Code Cov"
-          command: pip install -U codecov
       - steps: << parameters.after-deps >>
 
 # We want to make sure we run this only on master branch, release, or when we make tags
