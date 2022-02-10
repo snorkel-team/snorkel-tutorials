@@ -50,19 +50,6 @@ run_complex: &run_complex
       only: /.*/
 
 jobs:
-  Python38-Unit-Tests: 
-    docker:
-      - image: cimg/python:3.8
-    environment:
-      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-
-      ALL_ENVS: --all
-
-    steps:
-      - checkout
-      - setup_dependencies
-      - run:
-          name: "Run Tox"
-          command:  tox
 
   Python37-Unit-Tests: 
     docker:
@@ -134,4 +121,3 @@ workflows:
     jobs:
       - Python37-Unit-Tests
       - Python36-Unit-Tests
-      - Python38-Unit-Tests
