@@ -27,10 +27,16 @@ commands:
           command: sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
       - run:
           name: "Run pip install setup tools"
-          command: pip install -U pip setuptools
+          command: pip install -U pip setuptools wheel
       - run:  
           name: "Install Tox"
           command: pip install -U tox==3.13.0
+      - run:  
+          name: "Get Tox Envs"
+          command: python scripts/get_tox_envs.py --plan $ALL_ENVS
+      - run:  
+          name: "Run Tox"
+          command: tox --notest -e $(python scripts/get_tox_envs.py $ALL_ENVS)
       - steps: << parameters.after-deps >>
 
 # We want to make sure we run this only on master branch, release, or when we make tags
