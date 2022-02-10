@@ -32,9 +32,6 @@ def get_default_environments() -> List[str]:
 
 
 def get_changed_tox_envs(all_envs: bool, no_travis_strict: bool, plan: bool) -> None:
-    # Check we're in the right place, otherwise git paths are messed up
-    if os.path.split(os.getcwd())[1] != "snorkel-tutorials":
-        raise ValueError(f"Execute this script from the snorkel-tutorials directory {os.getcwd()}")
     # If we passed in --all flag, just run all environments
     default_environments = get_default_environments()
     if all_envs:
