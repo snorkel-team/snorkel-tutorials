@@ -32,6 +32,9 @@ commands:
           name: "Install Tox"
           command: pip install -U tox==3.13.0
       - run:  
+          name: "get cur dir"
+          command: pwd
+      - run:  
           name: "Get Tox Envs"
           command: python scripts/get_tox_envs.py --plan --$ALL_ENVS
       - run:  
