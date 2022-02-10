@@ -32,17 +32,11 @@ commands:
           name: "Install Tox"
           command: pip install -U tox==3.13.0
       - run:  
-          name: "get cur dir"
-          command: pwd
-      - run:  
-          name: "ls"
-          command: ls
-      - run:  
           name: "Get Tox Envs"
-          command: python scripts/get_tox_envs.py --plan --$ALL_ENVS
+          command: python scripts/get_tox_envs.py --plan $ALL_ENVS
       - run:  
           name: "Run Tox"
-          command: tox --notest -e $(python scripts/get_tox_envs.py --$ALL_ENVS)
+          command: tox --notest -e $(python scripts/get_tox_envs.py $ALL_ENVS)
       - steps: << parameters.after-deps >>
 
 # We want to make sure we run this only on master branch, release, or when we make tags
@@ -61,7 +55,7 @@ jobs:
       - image: cimg/python:3.8
     environment:
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-
-      ALL_ENVS: all
+      ALL_ENVS: --all
 
     steps:
       - checkout
@@ -75,7 +69,7 @@ jobs:
       - image: cimg/python:3.7
     environment:
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
-      ALL_ENVS: all
+      ALL_ENVS: --all
 
     steps:
       - checkout
@@ -89,7 +83,7 @@ jobs:
       - image: cimg/python:3.6
     environment:
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
-      ALL_ENVS: all
+      ALL_ENVS: --all
 
     steps:
       - checkout
@@ -97,20 +91,7 @@ jobs:
       - run:
           name: "Run Tox"
           command:  tox
-  Python38-Integration-Tests: 
-    docker:
-      - image: cimg/python:3.8
-    environment:
-      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
-      ALL_ENVS: all
-
-    steps:
-      - checkout
-      - setup_dependencies
-      - run:
-          name: "Run Tox"
-          command:  tox
-
+  
   Python37-Integration-Tests: 
     docker:
       - image: cimg/python:3.7
@@ -145,8 +126,6 @@ workflows:
 
   Interation-Tests: 
     jobs:
-      - Python38-Integration-Tests:
-          <<: *run_complex
       - Python37-Integration-Tests:
          <<: *run_complex
       - Python36-Integration-Tests:
