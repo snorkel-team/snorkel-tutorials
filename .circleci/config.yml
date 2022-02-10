@@ -35,6 +35,9 @@ commands:
           name: "get cur dir"
           command: pwd
       - run:  
+          name: "ls"
+          command: ls
+      - run:  
           name: "Get Tox Envs"
           command: python scripts/get_tox_envs.py --plan --$ALL_ENVS
       - run:  
