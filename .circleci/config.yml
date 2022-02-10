@@ -1,47 +1,154 @@
 # Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-# Orbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.
-# See: https://circleci.com/docs/2.0/orb-intro/
 orbs:
-  # The python orb contains a set of prepackaged CircleCI configuration you can use repeatedly in your configuration files
-  # Orb commands and jobs help you with common scripting around a language/tool
-  # so you dont have to copy and paste it everywhere.
-  # See the orb documentation here: https://circleci.com/developer/orbs/orb/circleci/python
-  python: circleci/python@1.5.0
+  python: circleci/python@1.2
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+commands:
+  setup_dependencies:
+    description: "Install depenencies"
+    parameters:
+      after-deps:
+        description: "Install dependenceis"
+        type: steps
+        default: []
+    steps:
+      - run: 
+          name: "Install open JDK"
+          command: sudo add-apt-repository -y ppa:openjdk-r/ppa
+      - run: 
+          name: "Install qq"
+          command: sudo apt-get -qq update
+      - run: 
+          name: "No install recommends for JDK"
+          command: sudo apt-get install -y openjdk-8-jdk --no-install-recommends
+      - run: 
+          name: "Run Java Alternatives install for JDK"
+          command: sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
+      - run:
+          name: "Run pip install setup tools and wheel"
+          command: pip install -U pip setuptools wheel
+      - run:  
+          name: "Install Tox"
+          command: pip install -U tox==3.12.0
+      - run: 
+          name: "Install Code Cov"
+          command: pip install -U codecov
+      - steps: << parameters.after-deps >>
+
+# We want to make sure we run this only on master branch, release, or when we make tags
+run_complex: &run_complex
+  filters:
+    branches:
+      only:
+        - master
+        - /release-v.*/
+    tags:
+      only: /.*/
+
 jobs:
-  build-and-test: # This is the name of the job, feel free to change it to better match what you're trying to do!
-    # These next lines defines a Docker executors: https://circleci.com/docs/2.0/executor-types/
-    # You can specify an image from Dockerhub or use one of the convenience images from CircleCI's Developer Hub
-    # A list of available CircleCI Docker convenience images are available here: https://circleci.com/developer/images/image/cimg/python
-    # The executor is the environment in which the steps below will be executed - below will use a python 3.10.2 container
-    # Change the version below to your required version of python
+  Python38-Unit-Tests: 
     docker:
-      - image: cimg/python:3.10.2
-    # Checkout the code as the first step. This is a dedicated CircleCI step.
-    # The python orb's install-packages step will install the dependencies from a Pipfile via Pipenv by default.
-    # Here we're making sure we use just use the system-wide pip. By default it uses the project root's requirements.txt.
-    # Then run your tests!
-    # CircleCI will report the results back to your VCS provider.
+      - image: cimg/python:3.8
+    environment:
+      TOXENV: coverage,doctest,type,check 
+      TOX_INSTALL_DIR: .env
+      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+
     steps:
       - checkout
-      - python/install-packages:
-          pkg-manager: pip
-          # app-dir: ~/project/package-directory/  # If you're requirements.txt isn't in the root directory.
-          # pip-dependency-file: test-requirements.txt  # if you have a different name for your requirements file, maybe one that combines your runtime and test requirements.
+      - setup_dependencies
       - run:
-          name: Run tests
-          # This assumes pytest is installed via the install-package step above
-          command: pytest
+          name: "Run Tox"
+          command:  tox
 
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+  Python37-Unit-Tests: 
+    docker:
+      - image: cimg/python:3.7
+    environment:
+      TOXENV: coverage,doctest,type,check 
+      TOX_INSTALL_DIR: .env
+      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+
+    steps:
+      - checkout
+      - setup_dependencies
+      - run:
+          name: "Run Tox"
+          command:  tox
+
+  Python36-Unit-Tests: 
+    docker:
+      - image: cimg/python:3.6
+    environment:
+      TOXENV: coverage,doctest,type,check 
+      TOX_INSTALL_DIR: .env
+      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+
+    steps:
+      - checkout
+      - setup_dependencies
+      - run:
+          name: "Run Tox"
+          command:  tox
+  Python38-Integration-Tests: 
+    docker:
+      - image: cimg/python:3.8
+    environment:
+      TOXENV: complex,type,check
+      TOX_INSTALL_DIR: .env
+      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+
+    steps:
+      - checkout
+      - setup_dependencies
+      - run:
+          name: "Run Tox"
+          command:  tox
+
+  Python37-Integration-Tests: 
+    docker:
+      - image: cimg/python:3.7
+    environment:
+      TOXENV: complex,spark,type,check
+      TOX_INSTALL_DIR: .env
+      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+
+    steps:
+      - checkout
+      - setup_dependencies
+      - run:
+          name: "Run Tox"
+          command:  tox
+
+  Python36-Integration-Tests: 
+    docker:
+      - image: cimg/python:3.6
+    environment:
+      TOXENV: coverage,complex,spark,doctest,type,check 
+      TOX_INSTALL_DIR: .env
+      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+
+    steps:
+      - checkout
+      - setup_dependencies
+      - run:
+          name: "Run Tox"
+          command:  tox
+
 workflows:
-  sample: # This is the name of the workflow, feel free to change it to better match your workflow.
-    # Inside the workflow, you define the jobs you want to run.
+  version: 2
+
+  Interation-Tests: 
     jobs:
-      - build-and-test
+      - Python38-Integration-Tests:
+          <<: *run_complex
+      - Python37-Integration-Tests:
+         <<: *run_complex
+      - Python36-Integration-Tests:
+          <<: *run_complex
+  Unit-Tests:
+    jobs:
+      - Python37-Unit-Tests
+      - Python36-Unit-Tests
+      - Python38-Unit-Tests
