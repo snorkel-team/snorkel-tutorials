@@ -36,7 +36,7 @@ commands:
           command: python scripts/get_tox_envs.py --plan $ALL_ENVS
       - run:  
           name: "Run Tox"
-          command: tox --notest -e $(python scripts/get_tox_envs.py $ALL_ENVS); cat /home/circleci/project/.tox/getting_started/log/getting_started-1.log  
+          command: tox --notest -e $(python scripts/get_tox_envs.py $ALL_ENVS); cat /home/circleci/project/.tox/spouse/log/spouse-1.log
       - steps: << parameters.after-deps >>
 
 # We want to make sure we run this only on master branch, release, or when we make tags
@@ -63,7 +63,7 @@ jobs:
       - setup_dependencies
       - run:
           name: "Run Tox"
-          command:  tox -e $(python scripts/get_tox_envs.py $ALL_ENVS); cat /home/circleci/project/.tox/getting_started/log/getting_started-1.log  
+          command:  tox -e $(python scripts/get_tox_envs.py $ALL_ENVS); cat /home/circleci/project/.tox/spouse/log/spouse-1.log
 
   
 
