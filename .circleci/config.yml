@@ -64,6 +64,9 @@ jobs:
       - run:
           name: "Run Tox"
           command:  tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)  
+      - run:
+          name: "Get logs"
+          command: cat /home/circleci/project/.tox/getting_started/log/getting_started-1.log
   
 
 workflows:
