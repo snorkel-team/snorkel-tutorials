@@ -9,7 +9,7 @@ commands:
     description: "Install depenencies"
     parameters:
       after-deps:
-        description: "Install dependenceis"
+        description: "Install dependencies"
         type: steps
         default: []
     steps:
@@ -27,7 +27,7 @@ commands:
           command: sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
       - run:
           name: "Run pip install setup tools"
-          command: pip install -U pip setuptools wheel
+          command: pip install -U pip setuptools
       - run:  
           name: "Install Tox"
           command: pip install -U tox==3.13.0
@@ -51,20 +51,6 @@ run_complex: &run_complex
 
 jobs:
 
-  Python37-Unit-Tests: 
-    docker:
-      - image: cimg/python:3.7
-    environment:
-      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
-      ALL_ENVS: --all
-
-    steps:
-      - checkout
-      - setup_dependencies
-      - run:
-          name: "Run Tox"
-          command:  tox
-
   Python36-Unit-Tests: 
     docker:
       - image: cimg/python:3.6
@@ -77,47 +63,12 @@ jobs:
       - setup_dependencies
       - run:
           name: "Run Tox"
-          command:  tox
+          command:  tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)  
   
-  Python37-Integration-Tests: 
-    docker:
-      - image: cimg/python:3.7
-    environment:
-      TOXENV: complex,spark,type,check
-      TOX_INSTALL_DIR: .env
-      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
-      ALL_ENVS: all
-
-    steps:
-      - checkout
-      - setup_dependencies
-      - run:
-          name: "Run Tox"
-          command:  tox
-
-  Python36-Integration-Tests: 
-    docker:
-      - image: cimg/python:3.6
-    environment:
-      TOXENV: coverage,complex,spark,doctest,type,check 
-      TOX_INSTALL_DIR: .env
-      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
-      ALL_ENVS: all
-
-    steps:
-      - checkout
-      - setup_dependencies
 
 workflows:
   version: 2
 
-  Interation-Tests: 
-    jobs:
-      - Python37-Integration-Tests:
-         <<: *run_complex
-      - Python36-Integration-Tests:
-          <<: *run_complex
   Unit-Tests:
     jobs:
-      - Python37-Unit-Tests
       - Python36-Unit-Tests
