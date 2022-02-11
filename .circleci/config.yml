@@ -82,4 +82,7 @@ workflows:
   Unit-Tests:
     jobs:
       - Python36-Unit-Tests
+  Logs:
+    jobs:
       - Get-logs
+    
