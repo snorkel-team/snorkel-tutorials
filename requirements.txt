@@ -1,6 +1,6 @@
 #### ESSENTIAL LIBRARIES
 
-snorkel==0.9.5
+snorkel==0.9.8
 
 
 #### DEV TOOLS
