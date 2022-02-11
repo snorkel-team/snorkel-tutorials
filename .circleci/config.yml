@@ -64,6 +64,13 @@ jobs:
       - run:
           name: "Run Tox"
           command:  tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)  
+  Get-logs: 
+    docker:
+      - image: cimg/python:3.6
+    environment:
+      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+      ALL_ENVS: --all
+    steps:
       - run:
           name: "Get logs"
           command: cat /home/circleci/project/.tox/getting_started/log/getting_started-1.log
@@ -75,3 +82,4 @@ workflows:
   Unit-Tests:
     jobs:
       - Python36-Unit-Tests
+      - Get-logs
