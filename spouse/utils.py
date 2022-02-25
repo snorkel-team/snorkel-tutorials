@@ -1,6 +1,5 @@
 import os
 import pickle
-import subprocess
 from typing import Tuple
 
 import numpy as np
@@ -19,11 +18,7 @@ def load_data() -> Tuple[
         df_train: Training set data points dataframe.
         df_test, Y_test: Test set data points dataframe and 1D labels ndarray.
     """
-    try:
-        subprocess.run(["bash", "download_data.sh"], check=True, stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError as e:
-        print(e.stderr.decode())
-        raise e
+
     with open(os.path.join("data", "dev_data.pkl"), "rb") as f:
         df_dev = pickle.load(f)
         Y_dev = pickle.load(f)
