@@ -52,12 +52,10 @@ def get_text_between(cand: DataPoint) -> DataPoint:
 
 
 @preprocessor()
-def get_left_tokens(cand: DataPoint) -> DataPoint:
+def get_left_tokens(cand: DataPoint,window=3) -> DataPoint:
     """
     Returns tokens in the length 3 window to the left of the person mentions
     """
-    # TODO: need to pass window as input params
-    window = 3
 
     end = cand.person1_word_idx[0]
     cand.person1_left_tokens = cand.tokens[0:end][-1 - window : -1]
