@@ -81,7 +81,9 @@ It can be tricky to get the installation right using application-specific shells
 (e.g. the `conda` shell).
 Additionally, the shell scripts included in this repo (such as those for
 downloading datasets) use \*nix-style commands.
-
+Note that if you wish to download the files manually then you should do so by 
+first opening the bash script in a text editor/ide and then visiting the mentioned 
+link to download the data.
 
 ### <a name="docker"> Running with Docker </a>
 

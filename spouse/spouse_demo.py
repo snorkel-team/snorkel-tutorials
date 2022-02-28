@@ -26,6 +26,10 @@ from utils import load_data
 
 ((df_dev, Y_dev), df_train, (df_test, Y_test)) = load_data()
 
+# Note: If you have problems with downloading the data via the bash script
+# then run 'load_data(download_data=False)' and download the data manually as
+# mentioned in the README file.
+
 # %% [markdown]
 # **Input Data:** `df_dev`, `df_train`, and `df_test` are `Pandas DataFrame` objects, where each row represents a particular __candidate__. For our problem, a candidate consists of a sentence, and two people mentioned in the sentence. The DataFrames contain the fields `sentence`, which refers to the sentence of the candidate, `tokens`, the tokenized form of the sentence, and `person1_word_idx` and `person2_word_idx`, which represent `[start, end]` indices in the tokens at which the first and second person's name appear, respectively.
 #
