@@ -70,7 +70,7 @@ jobs:
       - setup_dependencies
       - run:
           name: "Make log files"
-          command: ls; ls visual_relation/; mkdir -p visual_relation/log && touch visual_relation/log/visual_relation-1.log; mkdir -p recsys/log && touch recsys/log/recsys-1.log; mkdir -p getting_started/log && touch getting_started/log/getting_started-1.log; mkdir -p spam/log && touch spam/log/spam-1.log; mkdir -p crowdsourcing/log && touch crowdsourcing/log/crowdsourcing-1.log; mkdir -p multitask/log && touch multitask/log/multitask-1.log; mkdir -p drybell/log && touch drybell/log/drybell-1.log;
+          command: ls visual_relation/; mkdir -p visual_relation/log && touch visual_relation/log/visual_relation-1.log; mkdir -p recsys/log && touch recsys/log/recsys-1.log; mkdir -p getting_started/log && touch getting_started/log/getting_started-1.log; mkdir -p spam/log && touch spam/log/spam-1.log; mkdir -p crowdsourcing/log && touch crowdsourcing/log/crowdsourcing-1.log; mkdir -p multitask/log && touch multitask/log/multitask-1.log; mkdir -p drybell/log && touch drybell/log/drybell-1.log;
 
       - run:
           name: "Run Tox"
