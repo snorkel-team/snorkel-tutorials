@@ -75,7 +75,7 @@ jobs:
 
       - run:
           name: "Run Tox"
-          command:  ls ~/visual_relation/; ls ~/visual_relation/log; getox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
+          command:  ls ~/visual_relation/; ls ~/visual_relation/log; tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
 
   
 
