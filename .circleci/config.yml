@@ -63,6 +63,7 @@ jobs:
     environment:
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
       ALL_ENVS: --all
+      toxinidir: ~/
 
     steps:
       - checkout
