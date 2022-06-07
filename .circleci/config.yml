@@ -70,8 +70,12 @@ jobs:
       - checkout
       - setup_dependencies
       - run:
+          name: "Make log files"
+          command: touch ~/visual_relation/log/visual_relation-1.log; touch ~/recsys/log/recsys-1.log; touch ~/getting_started/log/getting_started-1.log; touch ~/spam/log/spam-1.log; touch ~/crowdsourcing/log/crowdsourcing-1.log; touch ~/multitask/log/multitask-1.log; touch drybell/log/drybell-1.log;
+
+      - run:
           name: "Run Tox"
-          command:  ls; tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
+          command:  tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
 
   
 
