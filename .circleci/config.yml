@@ -63,7 +63,7 @@ jobs:
     environment:
       JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
       ALL_ENVS: --all
-      toxinidir: pwd
+      toxinidir: /home/circleci/project
 
     steps:
       - checkout
@@ -74,7 +74,7 @@ jobs:
 
       - run:
           name: "Run Tox"
-          command:  pwd; tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
+          command:  cd $toxinidir; tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
 
   
 
