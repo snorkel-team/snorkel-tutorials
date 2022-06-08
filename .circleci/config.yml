@@ -74,7 +74,10 @@ jobs:
 
       - run:
           name: "Run Tox"
-          command:  cd $toxinidir; tox -e $(python scripts/get_tox_envs.py $ALL_ENVS); cat /home/circleci/project/.tox/drybell/log/drybell-1.log;
+          command:  cd $toxinidir; tox -e $(python scripts/get_tox_envs.py $ALL_ENVS);
+      - run:
+          name: "Inspect Logs"
+          command: cat /home/circleci/project/.tox/drybell/log/drybell-1.log;
 
   
 
