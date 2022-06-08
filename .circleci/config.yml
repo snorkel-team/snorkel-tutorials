@@ -74,7 +74,7 @@ jobs:
 
       - run:
           name: "Run Tox"
-          command:  cd $toxindir && ls; tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
+          command:  pwd; tox -e $(python scripts/get_tox_envs.py $ALL_ENVS)
 
   
 
