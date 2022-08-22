@@ -142,8 +142,8 @@ source .envspam/bin/activate
 pip3 install -r requirements.txt
 pip3 install -r spam/requirements.txt
 
-# Launch the Jupyter notebook interface
-jupyter notebook spam
+# Launch the Jupyter notebook interface (making sure the right virtual environment is used)
+.envspam/bin/jupyter notebook spam
 ```
 
 </p>
