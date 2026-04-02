@@ -17,7 +17,7 @@ from tensorflow.keras.layers import (
 def get_feature_arrays(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Get np arrays of upto max_length tokens and person idxs."""
     bet = df.between_tokens
-    left = df.apply(lambda c: c.tokens[: c.person1_word_idx[0]][-4:-1], axis=1)
+    left = df.apply(lambda c: c.tokens[: c.person1_word_idx[0]][-4:], axis=1)
     right = df.person2_right_tokens
 
     def pad_or_truncate(l, max_length=40):
